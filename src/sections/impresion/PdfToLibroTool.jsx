@@ -518,65 +518,37 @@ export default function PdfToLibroTool() {
 
               {/* Sincronización de Foliado desde la Selección del Visor */}
               <div style={{ backgroundColor: 'var(--bg-surface)', padding: '0.8rem 1rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-subtle)' }}>
-                <div style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', marginBottom: '0.6rem' }}>
-                  {refPdfPage ? (
-                    <span style={{ color: 'var(--accent)', fontWeight: 700 }}>
-                      ✓ Página física N° {refPdfPage} seleccionada en el visor.
+                <div style={{ fontSize: '0.88rem', color: 'var(--accent)', fontWeight: 700, marginBottom: '0.4rem' }}>
+                  {refPdfPage && refBookPage ? (
+                    <span>
+                      ✓ En la página física N° {refPdfPage} del visor indicaste que ves el número impreso <span className="font-mono" style={{ fontSize: '1rem', color: '#fff', backgroundColor: 'var(--accent)', padding: '2px 8px', borderRadius: '4px' }}>{refBookPage}</span>
+                    </span>
+                  ) : refPdfPage ? (
+                    <span>
+                      ✓ Seleccionaste la página física N° {refPdfPage} en el visor. (Ingresá el número visible en la vista ampliada).
                     </span>
                   ) : (
-                    <span>💡 Hacé clic en cualquier página del visor de arriba para autocompletar la posición.</span>
+                    <span>💡 Hacé clic en cualquier página del visor de arriba para indicar qué número impreso ves.</span>
                   )}
                 </div>
 
-                <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', alignItems: 'flex-end' }}>
-                  <div style={{ flex: 1, minWidth: '160px' }}>
+                {mode === 'fotocopia' && (
+                  <div style={{ marginTop: '0.6rem', paddingTop: '0.6rem', borderTop: '1px dashed var(--border-subtle)' }}>
                     <span style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '0.3rem' }}>
-                      Página física en el PDF N°:
+                      En esta hoja escaneada, ¿de qué lado ves ese número?
                     </span>
-                    <input
-                      type="number"
-                      min={1}
-                      placeholder="ej. 6"
-                      value={refPdfPage}
-                      onChange={(e) => setRefPdfPage(e.target.value)}
-                      className="input font-mono"
-                      style={{ width: '100%', fontSize: '0.85rem' }}
-                    />
-                  </div>
-
-                  <div style={{ flex: 1, minWidth: '160px' }}>
-                    <span style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '0.3rem' }}>
-                      Número impreso en el libro (ej. 1 u 8):
-                    </span>
-                    <input
-                      type="number"
-                      min={1}
-                      placeholder="ej. 8"
-                      value={refBookPage}
-                      onChange={(e) => setRefBookPage(e.target.value)}
-                      className="input font-mono"
-                      style={{ width: '100%', fontSize: '0.85rem' }}
-                    />
-                  </div>
-
-                  {mode === 'fotocopia' && (
-                    <div style={{ flex: 1, minWidth: '160px' }}>
-                      <span style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '0.3rem' }}>
-                        ...y ese número aparece del lado:
-                      </span>
-                      <div style={{ display: 'flex', gap: '0.8rem', flexWrap: 'wrap', height: '38px', alignItems: 'center' }}>
-                        <label style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.8rem', color: 'var(--text-primary)', cursor: 'pointer' }}>
-                          <input type="radio" name="refPageSide" value="derecha" checked={refPageSide === 'derecha'} onChange={() => setRefPageSide('derecha')} style={{ accentColor: 'var(--accent)' }} />
-                          <span>Derecho</span>
-                        </label>
-                        <label style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.8rem', color: 'var(--text-primary)', cursor: 'pointer' }}>
-                          <input type="radio" name="refPageSide" value="izquierda" checked={refPageSide === 'izquierda'} onChange={() => setRefPageSide('izquierda')} style={{ accentColor: 'var(--accent)' }} />
-                          <span>Izquierdo</span>
-                        </label>
-                      </div>
+                    <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', alignItems: 'center' }}>
+                      <label style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.82rem', color: 'var(--text-primary)', cursor: 'pointer' }}>
+                        <input type="radio" name="refPageSide" value="derecha" checked={refPageSide === 'derecha'} onChange={() => setRefPageSide('derecha')} style={{ accentColor: 'var(--accent)' }} />
+                        <span>En la mitad DERECHA</span>
+                      </label>
+                      <label style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.82rem', color: 'var(--text-primary)', cursor: 'pointer' }}>
+                        <input type="radio" name="refPageSide" value="izquierda" checked={refPageSide === 'izquierda'} onChange={() => setRefPageSide('izquierda')} style={{ accentColor: 'var(--accent)' }} />
+                        <span>En la mitad IZQUIERDA</span>
+                      </label>
                     </div>
-                  )}
-                </div>
+                  </div>
+                )}
               </div>
 
             </div>

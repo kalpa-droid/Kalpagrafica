@@ -113,12 +113,12 @@ function LightboxModal({ pdfDoc, pageNum, mode, rotation = 0, onSelect, onClose,
         gap: '0.8rem'
       }}>
         <div style={{ fontSize: '0.88rem', color: 'var(--accent)', fontWeight: 700, textAlign: 'center' }}>
-          ✓ Seleccionaste la Página N° {pageNum} del PDF
+          ✓ Seleccionaste la Página física N° {pageNum} del documento
         </div>
 
-        <div style={{ display: 'flex', gap: '0.8rem', alignItems: 'center' }}>
-          <span style={{ fontSize: '0.8rem', color: 'var(--text-primary)', flex: 1 }}>
-            ¿Qué número impreso ves en esta hoja?
+        <div style={{ display: 'flex', gap: '0.8rem', alignItems: 'center', justifyContent: 'center' }}>
+          <span style={{ fontSize: '0.88rem', color: 'var(--text-primary)', fontWeight: 700 }}>
+            Veo el número:
           </span>
           <input
             type="number"
@@ -127,7 +127,7 @@ function LightboxModal({ pdfDoc, pageNum, mode, rotation = 0, onSelect, onClose,
             value={bookNumberInput}
             onChange={(e) => setBookNumberInput(e.target.value)}
             className="input font-mono"
-            style={{ width: '100px', fontSize: '0.9rem', textAlign: 'center' }}
+            style={{ width: '110px', fontSize: '1rem', textAlign: 'center', fontWeight: 800, color: 'var(--accent)' }}
             autoFocus
           />
         </div>
@@ -139,7 +139,7 @@ function LightboxModal({ pdfDoc, pageNum, mode, rotation = 0, onSelect, onClose,
             style={{ flex: 1, justifyContent: 'center' }}
           >
             <Check size={16} />
-            <span>Confirmar Selección</span>
+            <span>Confirmar Número</span>
           </button>
           <button
             onClick={onClose}
@@ -262,7 +262,7 @@ function ThumbnailCard({ pdfDoc, pageNum, isSelected, onSelect, mode, rotation =
         {loading ? (
           <span style={{ fontSize: '0.65rem', color: 'var(--text-disabled)' }}>Cargando...</span>
         ) : (
-          <img src={thumbUrl} alt={`Página física ${pageNum}`} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+          <img src={thumbUrl} alt={`Página ${pageNum}`} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
         )}
 
         {/* Overlay Botón Lupa Ampliar */}
@@ -419,12 +419,12 @@ export default function PdfPreviewStrip({ file, selectedPdfPage, onSelectPage, m
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.8rem', flexWrap: 'wrap', gap: '0.5rem' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
           <Eye size={16} color="var(--accent)" />
-          <span style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-            Visor de Páginas del Documento ({numPages} páginas)
+          <span style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+            Hacé clic en la página donde veas un número de página del documento ({numPages} páginas)
           </span>
         </div>
         <span style={{ fontSize: '0.72rem', color: 'var(--text-disabled)' }}>
-          Hacé clic en cualquier página para ampliarla en pantalla completa y marcar el número impreso.
+          Hacé clic en cualquier página para ampliarla en pantalla completa e indicar el número impreso.
         </span>
       </div>
 
