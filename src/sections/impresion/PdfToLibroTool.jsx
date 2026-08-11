@@ -479,7 +479,7 @@ export default function PdfToLibroTool() {
             <div style={{ fontSize: '0.88rem', color: 'var(--accent)', fontWeight: 700 }}>
               {refPdfPage && refBookPage ? (
                 <div>
-                  ✓ En la página N° {refPdfPage} indicaste que ves el número impreso <span className="font-mono" style={{ fontSize: '1rem', color: '#fff', backgroundColor: 'var(--accent)', padding: '2px 8px', borderRadius: '4px' }}>{refBookPage}</span>
+                  ✓ En la página N° {refPdfPage} indicaste que ves el número impreso <span className="font-mono" style={{ fontSize: '1rem', color: '#0a0a0c', backgroundColor: 'var(--accent)', padding: '2px 8px', borderRadius: '4px', fontWeight: 800 }}>{refBookPage}</span>
                   <div style={{ fontSize: '0.75rem', color: 'var(--text-disabled)', fontWeight: 400, marginTop: '0.3rem' }}>
                     💡 Si escribiste mal o deseás corregir, hacé clic en cualquier página del visor arriba para cambiarlo.
                   </div>

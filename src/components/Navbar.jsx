@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Menu, X, ArrowUpRight } from 'lucide-react';
+import { Menu, X } from 'lucide-react';
 import { KalpaLogoHorizontal, KalpaLogoIcon } from './KalpaLogos';
 
 export default function Navbar({ activeSection, onNavigate }) {
@@ -106,17 +106,8 @@ export default function Navbar({ activeSection, onNavigate }) {
           </nav>
         </div>
 
-        {/* Action Button CTA (Tech Mint) */}
+        {/* Mobile Menu Toggle */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem' }}>
-          <button
-            className="btn btn-primary btn-sm"
-            onClick={() => handleNavClick('logobook')}
-          >
-            <span>Ver Libro de Logos</span>
-            <ArrowUpRight size={16} />
-          </button>
-
-          {/* Mobile Menu Toggle */}
           <button
             className="mobile-toggle"
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
