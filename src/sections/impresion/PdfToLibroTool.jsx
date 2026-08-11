@@ -592,83 +592,134 @@ export default function PdfToLibroTool() {
           </div>
 
           <div style={{ backgroundColor: 'var(--bg-surface)', padding: '1rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-subtle)', marginBottom: '1rem' }}>
-            {mode === 'normal' ? (
-              <label style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', fontSize: '0.85rem', color: 'var(--text-primary)', cursor: 'pointer', fontWeight: 600 }}>
-                <input type="checkbox" checked={hasCover} onChange={(e) => setHasCover(e.target.checked)} style={{ accentColor: 'var(--accent)', width: '16px', height: '16px' }} />
-                <span>¿El PDF subido YA incluye Tapa / Carátula en la Página 1?</span>
-              </label>
-            ) : (
-              <div>
-                <span style={{ fontSize: '0.85rem', color: 'var(--accent)', fontWeight: 700, display: 'block', marginBottom: '0.6rem', textAlign: 'center' }}>
-                  👉 Tocá del lado donde está la Tapa / Portada en la 1ª hoja escaneada:
-                </span>
-                
-                {/* Single divided page graphic for Cover */}
-                <div style={{
-                  maxWidth: '380px',
-                  margin: '0 auto',
-                  height: '80px',
-                  border: '2px solid var(--border-strong)',
-                  borderRadius: 'var(--radius-md)',
-                  display: 'flex',
-                  overflow: 'hidden',
-                  backgroundColor: '#141418',
-                  boxShadow: '0 4px 15px rgba(0,0,0,0.3)',
-                  cursor: 'pointer'
-                }}>
-                  {/* MITAD IZQUIERDA */}
-                  <div
-                    onClick={() => setCoverSide('izquierda')}
-                    style={{
-                      flex: 1,
-                      borderRight: '2px dashed var(--border-subtle)',
-                      backgroundColor: coverSide === 'izquierda' ? 'var(--accent)' : 'transparent',
-                      color: coverSide === 'izquierda' ? '#0a0a0c' : 'var(--text-secondary)',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      fontWeight: 800,
-                      fontSize: '0.88rem',
-                      transition: 'all 0.2s ease',
-                      userSelect: 'none'
-                    }}
-                  >
-                    <span>◄ IZQUIERDA</span>
-                    {coverSide === 'izquierda' && (
-                      <span style={{ fontSize: '0.75rem', marginTop: '3px', fontWeight: 900, backgroundColor: '#0a0a0c', color: 'var(--accent)', padding: '2px 8px', borderRadius: '4px' }}>
-                        ✓ TAPA
-                      </span>
-                    )}
-                  </div>
+            <div style={{ marginBottom: '1rem' }}>
+              <span style={{ fontSize: '0.85rem', color: 'var(--text-primary)', fontWeight: 700, display: 'block', marginBottom: '0.6rem' }}>
+                ¿Tu documento incluye la Tapa / Portada Exterior?
+              </span>
 
-                  {/* MITAD DERECHA */}
-                  <div
-                    onClick={() => setCoverSide('derecha')}
-                    style={{
-                      flex: 1,
-                      backgroundColor: coverSide === 'derecha' ? 'var(--accent)' : 'transparent',
-                      color: coverSide === 'derecha' ? '#0a0a0c' : 'var(--text-secondary)',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      fontWeight: 800,
-                      fontSize: '0.88rem',
-                      transition: 'all 0.2s ease',
-                      userSelect: 'none'
-                    }}
-                  >
-                    <span>DERECHA ►</span>
-                    {coverSide === 'derecha' && (
-                      <span style={{ fontSize: '0.75rem', marginTop: '3px', fontWeight: 900, backgroundColor: '#0a0a0c', color: 'var(--accent)', padding: '2px 8px', borderRadius: '4px' }}>
-                        ✓ TAPA
-                      </span>
-                    )}
+              <div style={{ display: 'flex', gap: '0.8rem', flexWrap: 'wrap' }}>
+                {/* OPCIÓN 1: YA INCLUYE TAPA */}
+                <button
+                  type="button"
+                  onClick={() => setHasCover(true)}
+                  style={{
+                    flex: '1 1 200px',
+                    padding: '0.7rem 0.9rem',
+                    borderRadius: 'var(--radius-sm)',
+                    backgroundColor: hasCover ? 'rgba(186,253,193,0.15)' : 'var(--bg-surface-2)',
+                    border: `1.5px solid ${hasCover ? 'var(--accent)' : 'var(--border-subtle)'}`,
+                    color: hasCover ? 'var(--accent)' : 'var(--text-primary)',
+                    cursor: 'pointer',
+                    fontWeight: 700,
+                    fontSize: '0.82rem',
+                    textAlign: 'left',
+                    transition: 'all 0.2s ease'
+                  }}
+                >
+                  ✓ El documento YA incluye Tapa / Carátula
+                </button>
+
+                {/* OPCIÓN 2: NO TIENE TAPA (CREAR / SUBIR) */}
+                <button
+                  type="button"
+                  onClick={() => setHasCover(false)}
+                  style={{
+                    flex: '1 1 200px',
+                    padding: '0.7rem 0.9rem',
+                    borderRadius: 'var(--radius-sm)',
+                    backgroundColor: !hasCover ? 'rgba(186,253,193,0.15)' : 'var(--bg-surface-2)',
+                    border: `1.5px solid ${!hasCover ? 'var(--accent)' : 'var(--border-subtle)'}`,
+                    color: !hasCover ? 'var(--accent)' : 'var(--text-primary)',
+                    cursor: 'pointer',
+                    fontWeight: 700,
+                    fontSize: '0.82rem',
+                    textAlign: 'left',
+                    transition: 'all 0.2s ease'
+                  }}
+                >
+                  🎨 No tiene Tapa — Subir Imagen o Crear Tapa nueva
+                </button>
+              </div>
+            </div>
+
+            {hasCover ? (
+              mode === 'normal' ? (
+                <div style={{ padding: '0.6rem 0.8rem', backgroundColor: 'var(--bg-surface-2)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-subtle)', color: 'var(--text-secondary)', fontSize: '0.8rem' }}>
+                  💡 Se utilizará la <strong>Página 1</strong> del PDF subido como la Tapa Exterior del libro.
+                </div>
+              ) : (
+                <div>
+                  <span style={{ fontSize: '0.85rem', color: 'var(--accent)', fontWeight: 700, display: 'block', marginBottom: '0.6rem', textAlign: 'center' }}>
+                    👉 Tocá del lado donde está la Tapa / Portada en la 1ª hoja escaneada:
+                  </span>
+                  
+                  {/* Single divided page graphic for Cover */}
+                  <div style={{
+                    maxWidth: '380px',
+                    margin: '0 auto',
+                    height: '80px',
+                    border: '2px solid var(--border-strong)',
+                    borderRadius: 'var(--radius-md)',
+                    display: 'flex',
+                    overflow: 'hidden',
+                    backgroundColor: '#141418',
+                    boxShadow: '0 4px 15px rgba(0,0,0,0.3)',
+                    cursor: 'pointer'
+                  }}>
+                    {/* MITAD IZQUIERDA */}
+                    <div
+                      onClick={() => setCoverSide('izquierda')}
+                      style={{
+                        flex: 1,
+                        borderRight: '2px dashed var(--border-subtle)',
+                        backgroundColor: coverSide === 'izquierda' ? 'var(--accent)' : 'transparent',
+                        color: coverSide === 'izquierda' ? '#0a0a0c' : 'var(--text-secondary)',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontWeight: 800,
+                        fontSize: '0.88rem',
+                        transition: 'all 0.2s ease',
+                        userSelect: 'none'
+                      }}
+                    >
+                      <span>◄ IZQUIERDA</span>
+                      {coverSide === 'izquierda' && (
+                        <span style={{ fontSize: '0.75rem', marginTop: '3px', fontWeight: 900, backgroundColor: '#0a0a0c', color: 'var(--accent)', padding: '2px 8px', borderRadius: '4px' }}>
+                          ✓ TAPA
+                        </span>
+                      )}
+                    </div>
+
+                    {/* MITAD DERECHA */}
+                    <div
+                      onClick={() => setCoverSide('derecha')}
+                      style={{
+                        flex: 1,
+                        backgroundColor: coverSide === 'derecha' ? 'var(--accent)' : 'transparent',
+                        color: coverSide === 'derecha' ? '#0a0a0c' : 'var(--text-secondary)',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontWeight: 800,
+                        fontSize: '0.88rem',
+                        transition: 'all 0.2s ease',
+                        userSelect: 'none'
+                      }}
+                    >
+                      <span>DERECHA ►</span>
+                      {coverSide === 'derecha' && (
+                        <span style={{ fontSize: '0.75rem', marginTop: '3px', fontWeight: 900, backgroundColor: '#0a0a0c', color: 'var(--accent)', padding: '2px 8px', borderRadius: '4px' }}>
+                          ✓ TAPA
+                        </span>
+                      )}
+                    </div>
                   </div>
                 </div>
-              </div>
-            )}
+              )
+            ) : null}
 
             {/* SUITE DE CREACIÓN DE TAPA SI NO VIENE INCORPORADA */}
             {!hasCover && (
