@@ -1,7 +1,7 @@
 // =============================================================================
 // KALPAGRÁFICA — Utilidades de Imagen (Canvas nativo, sin dependencias)
 // Equivalente a: favicon-genny, image-converter, palette-genny, watermarker,
-// matte-generator, social-cropper, colorblind-sim (sobre imagen)
+// matte-generator, social-cropper, colorblind-sim (sobre imagen), SVGO seguro
 // =============================================================================
 
 import { simulateColorblind, rgbToHex, rgbToHsl, rgbToCmyk, findClosestPantone } from './color';
@@ -37,7 +37,6 @@ export function svgToImage(svgText) {
 }
 
 export function recolorSvgText(svgText, targetColor) {
-  // Check if SVG has multiple color fills or strokes
   const fills = (svgText.match(/fill=[\"\']([^\"\']+)[\"\']/gi) || []);
   const strokes = (svgText.match(/stroke=[\"\']([^\"\']+)[\"\']/gi) || []);
   const isMultiColor = (new Set([...fills, ...strokes])).size > 1;
@@ -61,6 +60,56 @@ export function downloadCanvas(canvas, filename, type = 'image/png', quality) {
     a.remove();
     setTimeout(() => URL.revokeObjectURL(url), 2000);
   }, type, quality);
+}
+
+export function downloadTextFile(content, filename, mimeType = 'image/svg+xml;charset=utf-8') {
+  const blob = new Blob([content], { type: mimeType });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 2000);
+}
+
+// Algoritmo SVGO Seguro: Elimina comentarios, títulos, metadata basura e IDs no referenciados.
+// PRESERVA estrictamente los ID que son referenciados por <use href="#id">, url(#id), mask, etc., para NO mutilar el diseño.
+export function optimizeSvgCode(rawSvg) {
+  if (!rawSvg || typeof rawSvg !== 'string') return '';
+  let clean = rawSvg;
+
+  // 1. Elimina comentarios, title y desc
+  clean = clean.replace(/<!--[\s\S]*?-->/g, '');
+  clean = clean.replace(/<title>[\s\S]*?<\/title>/gi, '');
+  clean = clean.replace(/<desc>[\s\S]*?<\/desc>/gi, '');
+
+  // 2. Detecta todos los IDs que son referenciados en el documento (use, href, url)
+  const referencedIds = new Set();
+  const refMatches = clean.matchAll(/(?:href|url)\s*=\s*["']?#([a-zA-Z0-9_\-]+)["']?/gi);
+  for (const match of refMatches) {
+    if (match[1]) referencedIds.add(match[1]);
+  }
+  const urlMatches = clean.matchAll(/url\s*\(\s*#([a-zA-Z0-9_\-]+)\s*\)/gi);
+  for (const match of urlMatches) {
+    if (match[1]) referencedIds.add(match[1]);
+  }
+
+  // 3. Elimina SOLAMENTE los id="..." que NO están referenciados por ningún elemento
+  clean = clean.replace(/\s+id=["']([^"']+)["']/gi, (fullMatch, idValue) => {
+    if (referencedIds.has(idValue)) {
+      return fullMatch; // PRESERVA el ID referenciado
+    }
+    return ''; // Elimina ID huérfano / no referenciado
+  });
+
+  clean = clean.replace(/\s+data-name=["'][^"']+["']/gi, '');
+
+  // 4. Comprime espacios múltiples y espacio entre etiquetas
+  clean = clean.replace(/\s+/g, ' ').replace(/>\s+</g, '><').trim();
+
+  return clean;
 }
 
 export function drawCover(ctx, img, w, h, offsetXPct = 0, offsetYPct = 0, bgColor = null) {
@@ -193,7 +242,6 @@ export function drawWatermark(ctx, w, h, opts) {
   ctx.globalAlpha = opacity;
 
   if (watermarkImg) {
-    // Render SVG or PNG graphic watermark
     const wmScale = (fontSize * 3) / Math.max(watermarkImg.width, watermarkImg.height);
     const wmW = Math.round(watermarkImg.width * wmScale);
     const wmH = Math.round(watermarkImg.height * wmScale);
@@ -221,7 +269,6 @@ export function drawWatermark(ctx, w, h, opts) {
       ctx.drawImage(watermarkImg, x, y, wmW, wmH);
     }
   } else {
-    // Render text watermark
     ctx.fillStyle = color;
     ctx.font = `700 ${fontSize}px "Space Grotesk", sans-serif`;
     ctx.textBaseline = 'middle';

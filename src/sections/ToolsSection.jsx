@@ -10,7 +10,7 @@ import {
   parseAnyColorInput, findClosestPantone
 } from '../utils/color';
 import {
-  loadImageFromFile, loadSvgTextFromFile, svgToImage, recolorSvgText, downloadCanvas, drawCover, drawContain,
+  loadImageFromFile, loadSvgTextFromFile, svgToImage, recolorSvgText, downloadCanvas, downloadTextFile, optimizeSvgCode, drawCover, drawContain,
   extractPalette, applyColorblindToImage, FAVICON_SIZES, drawWatermark
 } from '../utils/image';
 
@@ -207,7 +207,7 @@ export default function ToolsSection() {
   const bulkJson = useMemo(() => JSON.stringify(palette, null, 2), [palette]);
 
   // ---------------------------------------------------------------------
-  // TAB 3 — SVG OPTIMIZER CON CARGA DE ARCHIVOS .SVG Y VISTA PREVIA VISUAL EN TIEMPO REAL
+  // TAB 3 — SVG OPTIMIZER SEGURO CON CARGA Y DESCARGA .SVG DEDIADA
   // ---------------------------------------------------------------------
   const [svgFileName, setSvgFileName] = useState('');
   const [rawSvg, setRawSvg] = useState(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="120" height="120">
@@ -224,15 +224,15 @@ export default function ToolsSection() {
     setRawSvg(text);
   };
 
+  // Algoritmo SVGO Seguro: Preserva IDs que son referenciados por <use> o url(#id)
   const optimizedSvg = useMemo(() => {
-    let clean = rawSvg;
-    clean = clean.replace(/<!--[\s\S]*?-->/g, '');
-    clean = clean.replace(/<title>[\s\S]*?<\/title>/gi, '');
-    clean = clean.replace(/<desc>[\s\S]*?<\/desc>/gi, '');
-    clean = clean.replace(/\s+(id|data-name)="[^"]*"/gi, '');
-    clean = clean.replace(/\s+/g, ' ').replace(/> </g, '><').trim();
-    return clean;
+    return optimizeSvgCode(rawSvg);
   }, [rawSvg]);
+
+  const downloadOptimizedSvg = () => {
+    const filename = svgFileName ? svgFileName.replace(/\.svg$/i, '-optimizado.svg') : 'kalpa-vector-optimizado.svg';
+    downloadTextFile(optimizedSvg, filename, 'image/svg+xml;charset=utf-8');
+  };
 
   // ---------------------------------------------------------------------
   // TAB 4 — SOCIAL CROPPER MULTI-PRESETS Y WEBP / CALIDAD DE COMPRESIÓN
@@ -956,9 +956,9 @@ export default function ToolsSection() {
         </div>
       )}
 
-      {/* TAB 3: SVG OPTIMIZER CON CARGA DE ARCHIVOS .SVG Y VISTA PREVIA VISUAL EN TIEMPO REAL ---------------- */}
+      {/* TAB 3: SVG OPTIMIZER CON CARGA Y DESCARGA .SVG DEDICADA ---------------- */}
       {activeTab === 'svg' && (
-        <ToolCard icon={Code} title="Optimizador & Limpiador SVG (SVGO)" description={<>Limpia metadata y comprime el código vectorial de cualquier archivo .svg con vista previa gráfica en vivo.</>}>
+        <ToolCard icon={Code} title="Optimizador & Limpiador SVG (SVGO)" description={<>Limpia metadata y comprime el código vectorial de cualquier archivo .svg preservando las referencias id internas para no deformar el diseño.</>}>
           <div style={{ marginBottom: '1.5rem' }}>
             <FieldLabel accent>Subí un archivo SVG (Logo, Marca o Ilustración Vectorial)</FieldLabel>
             <UploadZone
@@ -1006,10 +1006,16 @@ export default function ToolsSection() {
                 dangerouslySetInnerHTML={{ __html: optimizedSvg }}
               />
 
-              <button className="btn btn-primary btn-sm" onClick={() => copyToClipboard(optimizedSvg, 'svg-opt')} style={{ width: '100%', justifyContent: 'center' }}>
-                {copiedCode === 'svg-opt' ? <Check size={16} /> : <Copy size={16} />}
-                <span>{copiedCode === 'svg-opt' ? '¡Código SVG Copiado!' : 'Copiar SVG Optimizado'}</span>
-              </button>
+              <div style={{ display: 'flex', gap: '0.8rem' }}>
+                <button className="btn btn-primary btn-sm" onClick={() => copyToClipboard(optimizedSvg, 'svg-opt')} style={{ flex: 1, justifyContent: 'center' }}>
+                  {copiedCode === 'svg-opt' ? <Check size={16} /> : <Copy size={16} />}
+                  <span>{copiedCode === 'svg-opt' ? '¡Código Copiado!' : 'Copiar SVG'}</span>
+                </button>
+                <button className="btn btn-ghost btn-sm" onClick={downloadOptimizedSvg} style={{ flex: 1, justifyContent: 'center', border: '1px solid var(--accent)', color: 'var(--accent)' }}>
+                  <Download size={16} />
+                  <span>Descargar .SVG</span>
+                </button>
+              </div>
             </div>
           </div>
         </ToolCard>
