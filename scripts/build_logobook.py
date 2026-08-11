@@ -26,6 +26,12 @@ clean_patterns = [
     r'_\d+$'
 ]
 
+locations_and_stops = {
+    'venice', 'venezia', 'chicago', 'york', 'tokyo', 'paris', 'london', 'madrid', 'barcelona', 
+    'japan', 'usa', 'canada', 'italy', 'italia', 'germany', 'france', 'spain', 'espana', 'milano', 'milan',
+    'the', 'and', 'und', 'del', 'los', 'les', 'for', 'von', 'of', 'co', 'ltd', 'inc', 'corp', 'de', 'la', 'le', 'di', 'rio'
+}
+
 def get_canonical_letter(company_name):
     clean_name = company_name.strip()
     if not clean_name:
@@ -51,10 +57,6 @@ def count_accents(text):
     nfkd = unicodedata.normalize('NFKD', text)
     return sum(1 for c in nfkd if unicodedata.combining(c))
 
-def normalize_company(company):
-    clean = remove_accents(company).lower()
-    return re.sub(r'[^a-z0-9]', '', clean)
-
 def extract_normalized_svg_paths(filepath):
     with open(filepath, 'r', encoding='utf-8', errors='ignore') as f:
         content = f.read()
@@ -66,8 +68,33 @@ def extract_normalized_svg_paths(filepath):
         cleaned_d.append(nums)
     return ''.join(cleaned_d)
 
+def normalize_key_canonical(comp, auth):
+    c = remove_accents(comp).lower()
+    a = remove_accents(auth).lower()
+    
+    # Canonicalize common language & spelling variants
+    c = re.sub(r'biennal(e|a)?', 'biennale', c)
+    c = re.sub(r'd\s*art(e)?', 'art', c)
+    c = re.sub(r'international(e|en|o)?', 'international', c)
+    c = re.sub(r'g%C3%A9n%C3%A9ralisation|generalisation', 'generalisation', c)
+    
+    tokens = re.findall(r'[a-z0-9]+', c)
+    meaningful = [t for t in tokens if len(t) > 2 and t not in locations_and_stops]
+    
+    c_clean = re.sub(r'[^a-z0-9]', '', c)
+    a_clean = re.sub(r'[^a-z0-9]', '', a)
+    
+    # Author normalization to catch variant spellings/order
+    if a_clean and a_clean not in ['disenadorkalpagrafica', 'unknown', 'desconocido']:
+        auth_tokens = sorted(re.findall(r'[a-z0-9]+', a_clean))
+        auth_key = ''.join(auth_tokens)
+        token_key = ''.join(sorted(meaningful[:3])) if meaningful else c_clean
+        return f'{token_key}||{auth_key}'
+    else:
+        token_key = ''.join(sorted(meaningful[:4])) if meaningful else c_clean
+        return f'{token_key}'
+
 def score_item(item):
-    # Higher score = better entry to keep!
     author = item['author']
     company = item['company']
     score = 0
@@ -76,7 +103,8 @@ def score_item(item):
         score += 100
     # Rule B: Prefer accents & proper spelling
     score += count_accents(company) * 5 + count_accents(author) * 2
-    # Rule C: Penalty for filenames ending in _2 or _copy
+    # Rule C: Prefer longer, properly formatted titles
+    score += len(company)
     if '_2' in item['fname'] or '_copy' in item['fname']:
         score -= 50
     return score
@@ -137,7 +165,7 @@ for folder in folder_order:
         if not author or author.lower() in ['unknown', 'desconocido']:
             author = "Diseñador Kalpagráfica"
 
-        comp_key = normalize_company(company)
+        comp_key = normalize_key_canonical(company, author)
         vec_key = extract_normalized_svg_paths(src_file)
 
         item = {
@@ -151,7 +179,7 @@ for folder in folder_order:
         
         company_groups[comp_key].append(item)
 
-# First Pass: Select best logo for each company name
+# First Pass: Select best logo for each canonical key group
 selected_logos = []
 
 for comp_key, items in company_groups.items():
