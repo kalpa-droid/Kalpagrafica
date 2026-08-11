@@ -14,37 +14,8 @@ async function inyectarPDFjs() {
   });
 }
 
-// Función auxiliar para interpretar rangos de páginas/hojas a excluir (ej. "1, 4-6, 12")
-export function parseExcludedPages(inputStr, maxCount) {
-  if (!inputStr || !inputStr.trim()) return new Set();
-  const excluded = new Set();
-  const parts = inputStr.split(',');
-
-  for (const part of parts) {
-    const trimmed = part.trim();
-    if (!trimmed) continue;
-    if (trimmed.includes('-')) {
-      const [startStr, endStr] = trimmed.split('-').map(s => parseInt(s.trim(), 10));
-      if (!isNaN(startStr) && !isNaN(endStr)) {
-        const min = Math.min(startStr, endStr);
-        const max = Math.max(startStr, endStr);
-        for (let p = min; p <= max; p++) {
-          if (p >= 1 && p <= maxCount) excluded.add(p);
-        }
-      }
-    } else {
-      const p = parseInt(trimmed, 10);
-      if (!isNaN(p) && p >= 1 && p <= maxCount) {
-        excluded.add(p);
-      }
-    }
-  }
-  return excluded;
-}
-
 async function procesarComoImagenes(file, mode, options = {}, onProgress) {
   const {
-    excludeStr = '',
     fotocopiaStart = 'derecha',
     hasCover = false,
     coverSide = 'derecha',
@@ -62,7 +33,6 @@ async function procesarComoImagenes(file, mode, options = {}, onProgress) {
     cMapPacked: true,
   }).promise;
 
-  const excludedSet = parseExcludedPages(excludeStr, pdf.numPages);
   let isFirstProcessedSheet = true;
 
   // Evaluar si se requiere una página en blanco de ajuste justo detrás de la tapa
@@ -76,11 +46,6 @@ async function procesarComoImagenes(file, mode, options = {}, onProgress) {
   }
 
   for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
-    // Omitir páginas indicadas en la exclusión
-    if (excludedSet.has(pageNum)) {
-      continue;
-    }
-
     if (onProgress) {
       const avance = 10 + Math.floor((pageNum / pdf.numPages) * 45);
       onProgress(`Procesando página ${pageNum} de ${pdf.numPages}...`, avance);

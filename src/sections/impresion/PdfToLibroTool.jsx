@@ -1,11 +1,40 @@
 import React, { useState } from 'react';
-import { BookOpen, Download, AlertCircle, CheckCircle, HelpCircle, Layers, FileCheck } from 'lucide-react';
+import { BookOpen, Download, AlertCircle, CheckCircle, FileCheck } from 'lucide-react';
 import { pdfToLibro } from './pdfToLibro';
 
-function BookletDiagram({ mode, fotocopiaStart, excludeStr, hasCover, coverSide, hasRefPage, refPdfPage, refBookPage, refPageSide }) {
+function PageSlot({ label, sub, side, highlight }) {
+  // Representa una hoja de 2 caras (izquierda/derecha). `side` indica dónde va el contenido marcado.
+  const isRight = side === 'derecha';
+  return (
+    <div style={{ width: '130px', height: '85px', backgroundColor: 'rgba(186, 253, 193, 0.05)', border: `1.5px solid ${highlight ? 'var(--accent)' : 'var(--border-subtle)'}`, borderRadius: '3px', display: 'flex', position: 'relative' }}>
+      <div style={{ position: 'absolute', left: '50%', top: 0, bottom: 0, borderLeft: '1px dashed var(--border-strong)' }} />
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', ...(isRight ? {} : { backgroundColor: highlight ? 'rgba(186,253,193,0.2)' : 'transparent' }) }}>
+        {!isRight && (
+          <>
+            <span className="font-mono" style={{ fontSize: '0.7rem', color: highlight ? 'var(--accent)' : 'var(--text-disabled)', fontWeight: highlight ? 800 : 400 }}>{label}</span>
+            {sub && <span style={{ fontSize: '0.55rem', color: highlight ? 'var(--accent)' : 'var(--text-disabled)' }}>{sub}</span>}
+          </>
+        )}
+      </div>
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', ...(isRight ? { backgroundColor: highlight ? 'rgba(186,253,193,0.2)' : 'transparent' } : {}) }}>
+        {isRight && (
+          <>
+            <span className="font-mono" style={{ fontSize: '0.7rem', color: highlight ? 'var(--accent)' : 'var(--text-disabled)', fontWeight: highlight ? 800 : 400 }}>{label}</span>
+            {sub && <span style={{ fontSize: '0.55rem', color: highlight ? 'var(--accent)' : 'var(--text-disabled)' }}>{sub}</span>}
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function BookletDiagram({ mode, hasCover, coverSide, hasRefPage, refPdfPage, refBookPage, refPageSide }) {
+  const isFotocopia = mode === 'fotocopia';
+
   const isBookPageOdd = refBookPage > 0 ? refBookPage % 2 !== 0 : true;
   const expectedSide = isBookPageOdd ? 'derecha' : 'izquierda';
-  const needAdjustment = hasRefPage && refPdfPage > 0 && refBookPage > 0 && refPageSide !== expectedSide;
+  const hasValidRef = hasRefPage && refPdfPage > 0 && refBookPage > 0;
+  const needAdjustment = hasValidRef && refPageSide !== expectedSide;
 
   return (
     <div style={{
@@ -24,42 +53,26 @@ function BookletDiagram({ mode, fotocopiaStart, excludeStr, hasCover, coverSide,
 
         {/* LADO IZQUIERDO: ESTADO DEL PDF ORIGINAL */}
         <div style={{ backgroundColor: 'var(--bg-surface)', padding: '1rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-subtle)' }}>
-          <span style={{ fontSize: '0.78rem', color: 'var(--accent)', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.6rem' }}>
-            <BookOpen size={14} /> 1. Tu PDF / Escaneo Original
+          <span style={{ fontSize: '0.78rem', color: 'var(--accent)', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.8rem' }}>
+            <BookOpen size={14} /> 1. Tu {isFotocopia ? 'Fotocopia' : 'PDF'} Original
           </span>
 
-          <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-            <div>
-              <span style={{ color: 'var(--text-disabled)' }}>Estructura de Tapa: </span>
-              <strong>{hasCover ? `Tapa aislada (lado ${coverSide})` : 'Sin tapa aislada'}</strong>
-            </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
+            {hasCover ? (
+              <div style={{ textAlign: 'center' }}>
+                <span style={{ fontSize: '0.68rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '0.2rem' }}>Primera hoja</span>
+                <PageSlot label="TAPA ★" sub={`Lado ${coverSide}`} side={coverSide} highlight />
+              </div>
+            ) : (
+              <div style={{ fontSize: '0.75rem', color: 'var(--text-disabled)' }}>Sin tapa aislada — arranca directo en contenido.</div>
+            )}
 
-            {hasRefPage && refPdfPage > 0 && refBookPage > 0 && (
-              <div style={{ backgroundColor: 'var(--bg-surface-2)', padding: '0.5rem', borderRadius: '4px', border: '1px solid var(--border-subtle)', marginTop: '0.2rem' }}>
-                <span style={{ display: 'block', color: 'var(--accent)', fontWeight: 700 }}>
-                  Pág PDF {refPdfPage} ➔ N° {refBookPage} del Libro ({refPageSide})
+            {hasValidRef && (
+              <div style={{ textAlign: 'center' }}>
+                <span style={{ fontSize: '0.68rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '0.2rem' }}>
+                  {isFotocopia ? 'Hoja escaneada' : 'Página del PDF'} N° {refPdfPage}
                 </span>
-                {needAdjustment ? (
-                  <span style={{ color: '#FBBF24', fontSize: '0.7rem', display: 'block', marginTop: '0.2rem' }}>
-                    ⚠ Desfase detectado: N° {refBookPage} ({isBookPageOdd ? 'Impar' : 'Par'}) requiere estar a la {expectedSide}.
-                  </span>
-                ) : (
-                  <span style={{ color: 'var(--accent)', fontSize: '0.7rem', display: 'block', marginTop: '0.2rem' }}>
-                    ✓ Alineación correcta: N° {refBookPage} ({isBookPageOdd ? 'Impar' : 'Par'}) queda a la {expectedSide}.
-                  </span>
-                )}
-              </div>
-            )}
-
-            {needAdjustment && (
-              <div style={{ backgroundColor: 'rgba(251,191,36,0.15)', color: '#FBBF24', padding: '0.5rem', borderRadius: '4px', border: '1px solid #FBBF24', fontSize: '0.72rem', fontWeight: 600 }}>
-                + 1 Hoja en Blanco insertada limpia JUSTO DETRÁS DE LA TAPA para alinear sin romper el texto.
-              </div>
-            )}
-
-            {excludeStr && (
-              <div style={{ fontSize: '0.72rem', color: '#F87171' }}>
-                Páginas a excluir: <strong>{excludeStr}</strong>
+                <PageSlot label={`N° ${refBookPage}`} sub={`Lado ${refPageSide}`} side={refPageSide} highlight />
               </div>
             )}
           </div>
@@ -67,11 +80,11 @@ function BookletDiagram({ mode, fotocopiaStart, excludeStr, hasCover, coverSide,
 
         {/* LADO DERECHO: RESULTADO FINAL A4 IMPRESO A DOBLE CARA */}
         <div style={{ backgroundColor: 'var(--bg-surface)', padding: '1rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-subtle)' }}>
-          <span style={{ fontSize: '0.78rem', color: 'var(--accent)', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.6rem' }}>
+          <span style={{ fontSize: '0.78rem', color: needAdjustment ? '#FBBF24' : 'var(--accent)', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.6rem' }}>
             <FileCheck size={14} /> 2. Imposición Final (A4 Doble Cara ➔ A5 Cosido)
           </span>
 
-          <div style={{ display: 'flex', gap: '0.8rem', justifyContent: 'center', alignItems: 'center', flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', gap: '0.8rem', justifyContent: 'center', alignItems: 'center', flexWrap: 'wrap', marginBottom: hasValidRef ? '0.8rem' : 0 }}>
             {/* Pliego 1 Frente */}
             <div style={{ textAlign: 'center' }}>
               <span style={{ fontSize: '0.68rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '0.2rem' }}>
@@ -106,17 +119,25 @@ function BookletDiagram({ mode, fotocopiaStart, excludeStr, hasCover, coverSide,
               </div>
             </div>
           </div>
+
+          {hasValidRef && (
+            needAdjustment ? (
+              <div style={{ backgroundColor: 'rgba(251,191,36,0.15)', color: '#FBBF24', padding: '0.5rem', borderRadius: '4px', border: '1px solid #FBBF24', fontSize: '0.72rem', fontWeight: 600 }}>
+                ⚠ Imposición requiere ajuste: el N° {refBookPage} ({isBookPageOdd ? 'impar' : 'par'}) debería quedar del lado {expectedSide}, pero en tu original está del lado {refPageSide}. Se insertará 1 hoja en blanco justo detrás de la tapa para corregirlo.
+              </div>
+            ) : (
+              <div style={{ backgroundColor: 'var(--accent-muted)', color: 'var(--accent)', padding: '0.5rem', borderRadius: '4px', border: '1px solid var(--accent)', fontSize: '0.72rem', fontWeight: 600 }}>
+                ✓ Imposición correcta: el N° {refBookPage} ({isBookPageOdd ? 'impar' : 'par'}) ya queda del lado {expectedSide} tal cual está en tu original. No hace falta insertar hojas.
+              </div>
+            )
+          )}
         </div>
 
-      </div>
-
-      {/* Regla Editorial */}
-      <div style={{ marginTop: '1rem', paddingTop: '0.8rem', borderTop: '1px dashed var(--border-subtle)', textAlign: 'center', fontSize: '0.73rem', color: 'var(--text-secondary)' }}>
-        📖 <strong style={{ color: 'var(--accent)' }}>Regla Editorial Universal:</strong> Páginas <strong>IMPARES (1, 3, 5...) siempre a la DERECHA</strong> | Páginas <strong>PARES (2, 4, 6...) siempre a la IZQUIERDA</strong>.
       </div>
     </div>
   );
 }
+
 
 export default function PdfToLibroTool() {
   const [file, setFile] = useState(null);
@@ -129,9 +150,6 @@ export default function PdfToLibroTool() {
   const [refPdfPage, setRefPdfPage] = useState('');
   const [refBookPage, setRefBookPage] = useState('');
   const [refPageSide, setRefPageSide] = useState('derecha'); // 'derecha' | 'izquierda'
-
-  const [excludeStr, setExcludeStr] = useState('');
-  const [fotocopiaStart, setFotocopiaStart] = useState('derecha');
 
   const [loading, setLoading] = useState(false);
   const [progressMsg, setProgressMsg] = useState('');
@@ -161,8 +179,6 @@ export default function PdfToLibroTool() {
       setProgressMsg('Preparando motor PDF...');
 
       const options = {
-        excludeStr,
-        fotocopiaStart,
         hasCover,
         coverSide,
         refPdfPage: Number(refPdfPage) || 0,
@@ -245,17 +261,17 @@ export default function PdfToLibroTool() {
         )}
       </div>
 
-      {/* 3. Pregunta de Sincronización del Foliado (Libro vs PDF) */}
+      {/* 3. Pregunta de Sincronización del Foliado (Libro vs PDF/Fotocopia) */}
       <div style={{ marginBottom: '1.2rem', backgroundColor: 'var(--bg-surface-2)', padding: '1rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-subtle)' }}>
         <label style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', fontSize: '0.85rem', color: 'var(--accent)', fontWeight: 700, cursor: 'pointer', marginBottom: hasRefPage ? '0.8rem' : 0 }}>
           <input type="checkbox" checked={hasRefPage} onChange={(e) => setHasRefPage(e.target.checked)} style={{ accentColor: 'var(--accent)', width: '16px', height: '16px' }} />
-          <span>Sincronizar número de página impreso en el libro con la página del PDF</span>
+          <span>Sincronizar número de página impreso en el libro con {mode === 'fotocopia' ? 'la hoja escaneada' : 'la página del PDF'}</span>
         </label>
 
         {hasRefPage && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem', paddingLeft: '1.6rem', marginTop: '0.4rem' }}>
-            <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', alignItems: 'center' }}>
-              <div style={{ flex: 1, minWidth: '180px' }}>
+            <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', alignItems: 'flex-end' }}>
+              <div style={{ flex: 1, minWidth: '160px' }}>
                 <span style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '0.3rem' }}>
                   El primer número de tu documento/libro que aparece es el:
                 </span>
@@ -270,9 +286,9 @@ export default function PdfToLibroTool() {
                 />
               </div>
 
-              <div style={{ flex: 1, minWidth: '180px' }}>
+              <div style={{ flex: 1, minWidth: '160px' }}>
                 <span style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '0.3rem' }}>
-                  y se encuentra en el PDF en la página número:
+                  y se encuentra en {mode === 'fotocopia' ? 'la hoja escaneada número' : 'el PDF en la página número'}:
                 </span>
                 <input
                   type="number"
@@ -284,47 +300,30 @@ export default function PdfToLibroTool() {
                   style={{ width: '100%', fontSize: '0.85rem' }}
                 />
               </div>
-            </div>
 
-            <div>
-              <span style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '0.4rem' }}>
-                ¿De qué lado se encuentra dicho número en esa hoja del PDF/fotocopia?
-              </span>
-              <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
-                <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.82rem', color: 'var(--text-primary)', cursor: 'pointer' }}>
-                  <input type="radio" name="refPageSide" value="derecha" checked={refPageSide === 'derecha'} onChange={() => setRefPageSide('derecha')} style={{ accentColor: 'var(--accent)' }} />
-                  <span>Del lado DERECHO</span>
-                </label>
-                <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.82rem', color: 'var(--text-primary)', cursor: 'pointer' }}>
-                  <input type="radio" name="refPageSide" value="izquierda" checked={refPageSide === 'izquierda'} onChange={() => setRefPageSide('izquierda')} style={{ accentColor: 'var(--accent)' }} />
-                  <span>Del lado IZQUIERDO</span>
-                </label>
+              <div style={{ flex: 1, minWidth: '160px' }}>
+                <span style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '0.3rem' }}>
+                  ...y ese número aparece del lado:
+                </span>
+                <div style={{ display: 'flex', gap: '0.8rem', flexWrap: 'wrap', height: '38px', alignItems: 'center' }}>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.8rem', color: 'var(--text-primary)', cursor: 'pointer' }}>
+                    <input type="radio" name="refPageSide" value="derecha" checked={refPageSide === 'derecha'} onChange={() => setRefPageSide('derecha')} style={{ accentColor: 'var(--accent)' }} />
+                    <span>Derecho</span>
+                  </label>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.8rem', color: 'var(--text-primary)', cursor: 'pointer' }}>
+                    <input type="radio" name="refPageSide" value="izquierda" checked={refPageSide === 'izquierda'} onChange={() => setRefPageSide('izquierda')} style={{ accentColor: 'var(--accent)' }} />
+                    <span>Izquierdo</span>
+                  </label>
+                </div>
               </div>
             </div>
           </div>
         )}
       </div>
 
-      {/* 4. Rango de páginas a eliminar */}
-      <div style={{ marginBottom: '1.5rem', backgroundColor: 'var(--bg-surface-2)', padding: '1rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-subtle)' }}>
-        <label style={{ fontSize: '0.85rem', color: 'var(--accent)', fontWeight: 700, display: 'block', marginBottom: '0.4rem' }}>
-          {mode === 'fotocopia' ? 'Hojas Escaneadas a Eliminar (Opcional):' : 'Páginas a Eliminar (Opcional):'}
-        </label>
-        <input
-          type="text"
-          placeholder={mode === 'fotocopia' ? 'ej. 1, 4-6, 12' : 'ej. 1, 3-5, 8'}
-          value={excludeStr}
-          onChange={(e) => setExcludeStr(e.target.value)}
-          className="input font-mono"
-          style={{ width: '100%', fontSize: '0.85rem' }}
-        />
-      </div>
-
       {/* DIAGRAMA TÉCNICO INTERACTIVO COMPARATIVO ANTES / DESPUÉS */}
       <BookletDiagram
         mode={mode}
-        fotocopiaStart={fotocopiaStart}
-        excludeStr={excludeStr}
         hasCover={hasCover}
         coverSide={coverSide}
         hasRefPage={hasRefPage}
