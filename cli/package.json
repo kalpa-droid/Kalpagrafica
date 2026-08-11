@@ -1,0 +1,34 @@
+{
+  "name": "@kalpa-droid/delphitools",
+  "version": "1.0.0",
+  "description": "Suite CLI de colorimetría para diseñadores gráficos: conversión HEX/RGB/HSL/CMYK/OKLCH, coincidencia Pantone PMS Coated (brillante) y Uncoated (mate), sombras Tailwind CSS 50-950, armonías cromáticas y contraste WCAG 2.1.",
+  "type": "module",
+  "bin": {
+    "dt": "./bin/dt.js",
+    "delphitools": "./bin/dt.js"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "scripts": {
+    "sync": "bash scripts/sync-utils.sh"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kalpa-droid/Kalpagrafica.git"
+  },
+  "keywords": [
+    "pantone",
+    "color",
+    "cmyk",
+    "rgb",
+    "hsl",
+    "oklch",
+    "tailwind",
+    "color-converter",
+    "design-tools",
+    "cli"
+  ],
+  "author": "Kalpagráfica <kalpagrafica@gmail.com>",
+  "license": "MIT"
+}
