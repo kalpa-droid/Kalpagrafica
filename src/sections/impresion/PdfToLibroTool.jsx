@@ -1,10 +1,9 @@
 import React, { useState } from 'react';
-import { BookOpen, Download, AlertCircle, CheckCircle, FileCheck } from 'lucide-react';
+import { BookOpen, Download, AlertCircle, CheckCircle, FileCheck, Info } from 'lucide-react';
 import { pdfToLibro } from './pdfToLibro';
 import PdfPreviewStrip from './PdfPreviewStrip';
 
 function PageSlot({ label, sub, side, highlight }) {
-  // Representa una hoja de 2 caras (izquierda/derecha). `side` indica dónde va el contenido marcado.
   const isRight = side === 'derecha';
   return (
     <div style={{ width: '130px', height: '85px', backgroundColor: 'rgba(186, 253, 193, 0.05)', border: `1.5px solid ${highlight ? 'var(--accent)' : 'var(--border-subtle)'}`, borderRadius: '3px', display: 'flex', position: 'relative' }}>
@@ -153,7 +152,6 @@ export default function PdfToLibroTool() {
   const [pageRotations, setPageRotations] = useState({}); // { [pageNum]: degrees }
   const [pageSplitOffsets, setPageSplitOffsets] = useState({}); // { [pageNum]: percentage }
 
-  // En modo Normal el lado no se mira, se calcula: página impar del PDF = derecha, par = izquierda.
   const autoRefPageSide = Number(refPdfPage) % 2 !== 0 ? 'derecha' : 'izquierda';
   const effectiveRefPageSide = mode === 'fotocopia' ? refPageSide : autoRefPageSide;
 
@@ -252,48 +250,36 @@ export default function PdfToLibroTool() {
         Asistente inteligente de preimpresión para maquetar folletos A4 listos para imprimir a doble cara y coser/abrochar al centro en tamaño A5. Sincroniza automáticamente los números de página del libro con la regla editorial Par (Izquierda) / Impar (Derecha).
       </p>
 
-      {/* Carga de archivo */}
-      <div
-        onClick={() => document.getElementById('pdf-libro-input')?.click()}
-        style={{
-          border: '1.5px dashed var(--border-strong)',
-          borderRadius: 'var(--radius-md)',
-          padding: '1.5rem',
-          textAlign: 'center',
-          cursor: 'pointer',
-          backgroundColor: 'var(--bg-surface-2)',
-          marginBottom: '1.5rem'
-        }}
-      >
-        <input id="pdf-libro-input" type="file" accept="application/pdf" onChange={handleFileChange} style={{ display: 'none' }} />
-        <BookOpen size={28} color="var(--accent)" style={{ marginBottom: '0.5rem' }} />
-        <div style={{ fontSize: '0.9rem', color: 'var(--text-primary)', fontWeight: 600 }}>
-          {file ? file.name : 'Arrastrá tu PDF o hacé clic para seleccionar'}
-        </div>
-        <div style={{ fontSize: '0.75rem', color: 'var(--text-disabled)', marginTop: '0.3rem' }}>
-          {file ? `${(file.size / (1024 * 1024)).toFixed(2)} MB` : 'Soporta PDFs de cualquier número de páginas'}
-        </div>
-      </div>
-
-      {/* VISOR INTERACTIVO DE PÁGINAS FÍSICAS (FILMSTRIP / THUMBNAILS WITH ROTATION & SPLIT CROP ADJUSTMENT) */}
-      {file && (
-        <PdfPreviewStrip
-          file={file}
-          selectedPdfPage={Number(refPdfPage) || 0}
-          onSelectPage={handleSelectPageFromViewer}
-          mode={mode}
-          pageRotations={pageRotations}
-          onRotatePage={handleRotatePage}
-          pageSplitOffsets={pageSplitOffsets}
-          onAdjustSplitPage={handleAdjustSplitPage}
-        />
-      )}
-
-      {/* 1. Selector de formato de origen */}
-      <div style={{ marginBottom: '1.2rem', backgroundColor: 'var(--bg-surface-2)', padding: '1rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-subtle)' }}>
-        <label style={{ fontSize: '0.85rem', color: 'var(--accent)', fontWeight: 700, display: 'block', marginBottom: '0.6rem' }}>
-          1. Formato de origen del PDF:
+      {/* PASO 1: CARGA DE ARCHIVO Y SELECTOR DE FORMATO */}
+      <div style={{ marginBottom: '1.5rem', backgroundColor: 'var(--bg-surface-2)', padding: '1.2rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-subtle)' }}>
+        <label style={{ fontSize: '0.88rem', color: 'var(--accent)', fontWeight: 700, display: 'block', marginBottom: '0.8rem' }}>
+          1. Subir archivo PDF y elegir formato de origen:
         </label>
+
+        {/* Zone de Carga */}
+        <div
+          onClick={() => document.getElementById('pdf-libro-input')?.click()}
+          style={{
+            border: '1.5px dashed var(--border-strong)',
+            borderRadius: 'var(--radius-md)',
+            padding: '1.5rem',
+            textAlign: 'center',
+            cursor: 'pointer',
+            backgroundColor: 'var(--bg-surface)',
+            marginBottom: '1rem'
+          }}
+        >
+          <input id="pdf-libro-input" type="file" accept="application/pdf" onChange={handleFileChange} style={{ display: 'none' }} />
+          <BookOpen size={28} color="var(--accent)" style={{ marginBottom: '0.5rem' }} />
+          <div style={{ fontSize: '0.9rem', color: 'var(--text-primary)', fontWeight: 600 }}>
+            {file ? file.name : 'Arrastrá tu PDF o hacé clic para seleccionar'}
+          </div>
+          <div style={{ fontSize: '0.75rem', color: 'var(--text-disabled)', marginTop: '0.3rem' }}>
+            {file ? `${(file.size / (1024 * 1024)).toFixed(2)} MB` : 'Soporta PDFs de cualquier número de páginas'}
+          </div>
+        </div>
+
+        {/* Radio botones de formato */}
         <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
           <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem', color: 'var(--text-primary)', cursor: 'pointer' }}>
             <input type="radio" name="mode" value="normal" checked={mode === 'normal'} onChange={() => setMode('normal')} style={{ accentColor: 'var(--accent)' }} />
@@ -306,141 +292,146 @@ export default function PdfToLibroTool() {
         </div>
       </div>
 
-      {/* 2. Pregunta de Tapa aislada (Diferenciada Normal vs Fotocopia) */}
-      <div style={{ marginBottom: '1.2rem', backgroundColor: 'var(--bg-surface-2)', padding: '1rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-subtle)' }}>
-        {mode === 'normal' ? (
-          <label style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', fontSize: '0.85rem', color: 'var(--accent)', fontWeight: 700, cursor: 'pointer' }}>
-            <input type="checkbox" checked={hasCover} onChange={(e) => setHasCover(e.target.checked)} style={{ accentColor: 'var(--accent)', width: '16px', height: '16px' }} />
-            <span>2. Diagnóstico: ¿La Página 1 de tu PDF es la Tapa / Carátula principal del libro?</span>
-          </label>
-        ) : (
-          <div>
-            <label style={{ fontSize: '0.85rem', color: 'var(--accent)', fontWeight: 700, display: 'block', marginBottom: '0.6rem' }}>
-              2. Diagnóstico de Tapa: En la 1ª hoja escaneada de tu fotocopia, ¿de qué lado está la Tapa / Portada?
-            </label>
-            <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
-              <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.82rem', color: 'var(--text-primary)', cursor: 'pointer' }}>
-                <input type="radio" name="coverSide" value="derecha" checked={coverSide === 'derecha'} onChange={() => setCoverSide('derecha')} style={{ accentColor: 'var(--accent)' }} />
-                <span>En la mitad DERECHA (Portada exterior estándar)</span>
-              </label>
-              <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.82rem', color: 'var(--text-primary)', cursor: 'pointer' }}>
-                <input type="radio" name="coverSide" value="izquierda" checked={coverSide === 'izquierda'} onChange={() => setCoverSide('izquierda')} style={{ accentColor: 'var(--accent)' }} />
-                <span>En la mitad IZQUIERDA (Página 1 a la izquierda)</span>
-              </label>
-            </div>
+      {/* MENSAJE INSTRUCTIVO CUANDO AÚN NO SE CARGÓ NINGÚN ARCHIVO */}
+      {!file && (
+        <div style={{ backgroundColor: 'var(--bg-surface-2)', padding: '1.5rem', borderRadius: 'var(--radius-md)', border: '1px dashed var(--border-subtle)', textAlign: 'center', marginBottom: '1.5rem' }}>
+          <Info size={24} color="var(--accent)" style={{ marginBottom: '0.5rem' }} />
+          <div style={{ fontSize: '0.88rem', color: 'var(--text-primary)', fontWeight: 600 }}>
+            Subí tu archivo PDF arriba para habilitar el Visor Interactivo y Diagnóstico del Libro
           </div>
-        )}
-      </div>
+          <div style={{ fontSize: '0.78rem', color: 'var(--text-disabled)', marginTop: '0.3rem' }}>
+            Podrás navegar por las páginas, rotar hojas desorientadas, ajustar líneas de corte y sincronizar la foliación directamente en el visor.
+          </div>
+        </div>
+      )}
 
-      {/* 3. Pregunta de Sincronización del Foliado (Libro vs PDF/Fotocopia) */}
-      <div style={{ marginBottom: '1.2rem', backgroundColor: 'var(--bg-surface-2)', padding: '1rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-subtle)' }}>
-        <label style={{ fontSize: '0.85rem', color: 'var(--accent)', fontWeight: 700, display: 'block', marginBottom: '0.8rem' }}>
-          3. Diagnóstico del Foliado: Sincronizar número impreso con {mode === 'fotocopia' ? 'la hoja escaneada' : 'la página del PDF'}:
-        </label>
+      {/* PASO 2: VISOR INTERACTIVO Y DIAGNÓSTICO UNIFICADO (CUANDO HAY UN ARCHIVO CARGADO) */}
+      {file && (
+        <>
+          {/* VISOR DE MINIATURAS INTERACTIVO */}
+          <PdfPreviewStrip
+            file={file}
+            selectedPdfPage={Number(refPdfPage) || 0}
+            onSelectPage={handleSelectPageFromViewer}
+            mode={mode}
+            pageRotations={pageRotations}
+            onRotatePage={handleRotatePage}
+            pageSplitOffsets={pageSplitOffsets}
+            onAdjustSplitPage={handleAdjustSplitPage}
+          />
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
-          <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', alignItems: 'flex-end' }}>
-            <div style={{ flex: 1, minWidth: '160px' }}>
-              <span style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '0.3rem' }}>
-                El primer número de tu documento/libro que aparece es el:
-              </span>
-              <input
-                type="number"
-                min={1}
-                placeholder="ej. 8"
-                value={refBookPage}
-                onChange={(e) => setRefBookPage(e.target.value)}
-                className="input font-mono"
-                style={{ width: '100%', fontSize: '0.85rem' }}
-              />
+          {/* PANEL DE DIAGNÓSTICO CONECTADO DIRECTAMENTE AL VISOR */}
+          <div style={{ marginBottom: '1.5rem', backgroundColor: 'var(--bg-surface-2)', padding: '1.2rem', borderRadius: 'var(--radius-md)', border: '1.5px solid var(--accent)' }}>
+            <div style={{ fontSize: '0.88rem', color: 'var(--accent)', fontWeight: 700, marginBottom: '0.8rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+              <CheckCircle size={16} /> 2. Diagnóstico de Foliado y Tapa (Integrado con el Visor)
             </div>
 
-            <div style={{ flex: 1, minWidth: '160px' }}>
-              <span style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '0.3rem' }}>
-                y se encuentra en {mode === 'fotocopia' ? 'la hoja escaneada número' : 'el PDF en la página número'}:
-              </span>
-              <input
-                type="number"
-                min={1}
-                placeholder="ej. 6"
-                value={refPdfPage}
-                onChange={(e) => setRefPdfPage(e.target.value)}
-                className="input font-mono"
-                style={{ width: '100%', fontSize: '0.85rem' }}
-              />
-            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
 
-            <div style={{ flex: 1, minWidth: '160px' }}>
-              <span style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '0.3rem' }}>
-                ...y ese número aparece del lado:
-              </span>
-              {mode === 'fotocopia' ? (
-                <div style={{ display: 'flex', gap: '0.8rem', flexWrap: 'wrap', height: '38px', alignItems: 'center' }}>
-                  <label style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.8rem', color: 'var(--text-primary)', cursor: 'pointer' }}>
-                    <input type="radio" name="refPageSide" value="derecha" checked={refPageSide === 'derecha'} onChange={() => setRefPageSide('derecha')} style={{ accentColor: 'var(--accent)' }} />
-                    <span>Derecho</span>
-                  </label>
-                  <label style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.8rem', color: 'var(--text-primary)', cursor: 'pointer' }}>
-                    <input type="radio" name="refPageSide" value="izquierda" checked={refPageSide === 'izquierda'} onChange={() => setRefPageSide('izquierda')} style={{ accentColor: 'var(--accent)' }} />
-                    <span>Izquierdo</span>
-                  </label>
-                </div>
+              {/* Tapa / Portada */}
+              {mode === 'normal' ? (
+                <label style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', fontSize: '0.85rem', color: 'var(--text-primary)', cursor: 'pointer', backgroundColor: 'var(--bg-surface)', padding: '0.7rem 1rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-subtle)' }}>
+                  <input type="checkbox" checked={hasCover} onChange={(e) => setHasCover(e.target.checked)} style={{ accentColor: 'var(--accent)', width: '16px', height: '16px' }} />
+                  <span>¿La Página 1 de tu PDF es la Tapa / Carátula principal del libro?</span>
+                </label>
               ) : (
-                <div className="input font-mono" style={{ height: '38px', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: 'var(--bg-surface-2)', fontWeight: 700, color: 'var(--accent)', fontSize: '0.85rem' }}>
-                  {Number(refPdfPage) > 0 ? (effectiveRefPageSide === 'derecha' ? 'Derecho (auto)' : 'Izquierdo (auto)') : '—'}
+                <div style={{ backgroundColor: 'var(--bg-surface)', padding: '0.7rem 1rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-subtle)' }}>
+                  <span style={{ fontSize: '0.82rem', color: 'var(--accent)', fontWeight: 700, display: 'block', marginBottom: '0.4rem' }}>
+                    En la 1ª hoja escaneada de tu fotocopia, ¿de qué lado está la Tapa / Portada?
+                  </span>
+                  <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.82rem', color: 'var(--text-primary)', cursor: 'pointer' }}>
+                      <input type="radio" name="coverSide" value="derecha" checked={coverSide === 'derecha'} onChange={() => setCoverSide('derecha')} style={{ accentColor: 'var(--accent)' }} />
+                      <span>En la mitad DERECHA (Portada exterior estándar)</span>
+                    </label>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.82rem', color: 'var(--text-primary)', cursor: 'pointer' }}>
+                      <input type="radio" name="coverSide" value="izquierda" checked={coverSide === 'izquierda'} onChange={() => setCoverSide('izquierda')} style={{ accentColor: 'var(--accent)' }} />
+                      <span>En la mitad IZQUIERDA</span>
+                    </label>
+                  </div>
                 </div>
               )}
+
+              {/* Sincronización de Foliado desde la Selección del Visor */}
+              <div style={{ backgroundColor: 'var(--bg-surface)', padding: '0.8rem 1rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-subtle)' }}>
+                <div style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', marginBottom: '0.6rem' }}>
+                  {refPdfPage ? (
+                    <span style={{ color: 'var(--accent)', fontWeight: 700 }}>
+                      ✓ Página física N° {refPdfPage} seleccionada en el visor.
+                    </span>
+                  ) : (
+                    <span>💡 Hacé clic en cualquier página del visor de arriba para autocompletar la posición.</span>
+                  )}
+                </div>
+
+                <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', alignItems: 'flex-end' }}>
+                  <div style={{ flex: 1, minWidth: '160px' }}>
+                    <span style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '0.3rem' }}>
+                      Página física en el PDF N°:
+                    </span>
+                    <input
+                      type="number"
+                      min={1}
+                      placeholder="ej. 6"
+                      value={refPdfPage}
+                      onChange={(e) => setRefPdfPage(e.target.value)}
+                      className="input font-mono"
+                      style={{ width: '100%', fontSize: '0.85rem' }}
+                    />
+                  </div>
+
+                  <div style={{ flex: 1, minWidth: '160px' }}>
+                    <span style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '0.3rem' }}>
+                      Número impreso en el libro (ej. 1 u 8):
+                    </span>
+                    <input
+                      type="number"
+                      min={1}
+                      placeholder="ej. 8"
+                      value={refBookPage}
+                      onChange={(e) => setRefBookPage(e.target.value)}
+                      className="input font-mono"
+                      style={{ width: '100%', fontSize: '0.85rem' }}
+                    />
+                  </div>
+
+                  {mode === 'fotocopia' && (
+                    <div style={{ flex: 1, minWidth: '160px' }}>
+                      <span style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '0.3rem' }}>
+                        ...y ese número aparece del lado:
+                      </span>
+                      <div style={{ display: 'flex', gap: '0.8rem', flexWrap: 'wrap', height: '38px', alignItems: 'center' }}>
+                        <label style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.8rem', color: 'var(--text-primary)', cursor: 'pointer' }}>
+                          <input type="radio" name="refPageSide" value="derecha" checked={refPageSide === 'derecha'} onChange={() => setRefPageSide('derecha')} style={{ accentColor: 'var(--accent)' }} />
+                          <span>Derecho</span>
+                        </label>
+                        <label style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.8rem', color: 'var(--text-primary)', cursor: 'pointer' }}>
+                          <input type="radio" name="refPageSide" value="izquierda" checked={refPageSide === 'izquierda'} onChange={() => setRefPageSide('izquierda')} style={{ accentColor: 'var(--accent)' }} />
+                          <span>Izquierdo</span>
+                        </label>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+
             </div>
           </div>
-
-          {mode === 'normal' ? (
-            <p style={{ fontSize: '0.74rem', color: 'var(--text-disabled)', margin: 0, lineHeight: 1.5 }}>
-              No hace falta que lo mires vos: en un PDF normal ves una página a la vez, así que no hay "lado" visible en la hoja.
-              El lado se calcula solo a partir de la posición de esa página dentro del PDF — página <strong>impar</strong> de tu PDF ={' '}
-              <strong>derecha</strong>, página <strong>par</strong> = <strong>izquierda</strong> (así es como va a quedar una vez impreso).
-            </p>
-          ) : (
-            <p style={{ fontSize: '0.74rem', color: 'var(--text-disabled)', margin: 0, lineHeight: 1.5 }}>
-              Acá sí lo tenés que mirar vos: en una fotocopia de libro abierto, cada hoja escaneada ya muestra <strong>dos páginas juntas en una sola imagen</strong>.
-              Fijate en cuál de las dos mitades de esa imagen aparece el número que escribiste arriba.
-            </p>
-          )}
-        </div>
-      </div>
+        </>
+      )}
 
       {/* DIAGRAMA TÉCNICO INTERACTIVO COMPARATIVO ANTES / DESPUÉS */}
-      <BookletDiagram
-        mode={mode}
-        hasCover={hasCover}
-        coverSide={coverSide}
-        hasRefPage={hasRefPage}
-        refPdfPage={Number(refPdfPage) || 0}
-        refBookPage={Number(refBookPage) || 0}
-        refPageSide={effectiveRefPageSide}
-      />
-
-      {/* Carga de archivo */}
-      <div
-        onClick={() => document.getElementById('pdf-libro-input')?.click()}
-        style={{
-          border: '1.5px dashed var(--border-strong)',
-          borderRadius: 'var(--radius-md)',
-          padding: '2rem',
-          textAlign: 'center',
-          cursor: 'pointer',
-          backgroundColor: 'var(--bg-surface-2)',
-          marginBottom: '1.5rem'
-        }}
-      >
-        <input id="pdf-libro-input" type="file" accept="application/pdf" onChange={handleFileChange} style={{ display: 'none' }} />
-        <BookOpen size={28} color="var(--accent)" style={{ marginBottom: '0.5rem' }} />
-        <div style={{ fontSize: '0.9rem', color: 'var(--text-primary)', fontWeight: 600 }}>
-          {file ? file.name : 'Arrastrá tu PDF o hacé clic para seleccionar'}
-        </div>
-        <div style={{ fontSize: '0.75rem', color: 'var(--text-disabled)', marginTop: '0.3rem' }}>
-          {file ? `${(file.size / (1024 * 1024)).toFixed(2)} MB` : 'Soporta PDFs de cualquier número de páginas'}
-        </div>
-      </div>
+      {file && (
+        <BookletDiagram
+          mode={mode}
+          hasCover={hasCover}
+          coverSide={coverSide}
+          hasRefPage={hasRefPage}
+          refPdfPage={Number(refPdfPage) || 0}
+          refBookPage={Number(refBookPage) || 0}
+          refPageSide={effectiveRefPageSide}
+        />
+      )}
 
       {errorMsg && (
         <div style={{ backgroundColor: 'rgba(248,113,113,0.15)', border: '1px solid #F87171', color: '#F87171', padding: '0.75rem 1rem', borderRadius: 'var(--radius-sm)', fontSize: '0.82rem', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
