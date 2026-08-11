@@ -182,8 +182,8 @@ export default function ColourTab({ copiedCode, copyToClipboard }) {
           </button>
         </ToolCard>
 
-        {/* COLUMN 3: Coincidencia Pantone PMS Coated (C) & Uncoated (U) */}
-        <ToolCard icon={Printer} title="Coincidencia Pantone PMS (Aproximación)" description="Comparativa del color activo según el soporte: Coated (brillante) vs Uncoated (mate). Algoritmo de aproximación no oficial.">
+        {/* COLUMN 3: Conversión Pantone® (Aproximación) */}
+        <ToolCard icon={Printer} title="Conversión Pantone® (Aproximación)" description="Comparativa del color activo según el soporte: Coated (brillante) vs Uncoated (mate). Algoritmo de aproximación independiente y no oficial.">
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
             {/* Coated C */}
             <div
@@ -200,7 +200,9 @@ export default function ColourTab({ copiedCode, copyToClipboard }) {
               >
                 <div style={{ width: '44px', height: '44px', borderRadius: 'var(--radius-sm)', backgroundColor: colorData.pantone.coated.hex, border: '1px solid rgba(255,255,255,0.2)', flexShrink: 0 }} />
                 <div style={{ textOverflow: 'ellipsis', overflow: 'hidden' }}>
-                  <strong className="font-headline" style={{ fontSize: '0.95rem', color: 'var(--accent)', display: 'block' }}>{colorData.pantone.coated.code}</strong>
+                  <strong className="font-headline" style={{ fontSize: '0.95rem', color: 'var(--accent)', display: 'block' }}>
+                    Pantone® {colorData.pantone.coated.code.replace('PANTONE ', '')}
+                  </strong>
                   <span style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '0.1rem' }}>Papel Estucado / Brillante</span>
                   <span className="font-mono" style={{ fontSize: '0.72rem', color: 'var(--text-disabled)' }}>HEX {colorData.pantone.coated.hex} | {colorData.pantone.coated.similarity}</span>
                 </div>
@@ -208,7 +210,7 @@ export default function ColourTab({ copiedCode, copyToClipboard }) {
 
               <button
                 className="btn btn-ghost btn-sm"
-                onClick={() => copyToClipboard(`${colorData.pantone.coated.code} (${colorData.pantone.coated.hex})`, 'p-c-single')}
+                onClick={() => copyToClipboard(`Pantone® ${colorData.pantone.coated.code.replace('PANTONE ', '')} (${colorData.pantone.coated.hex})`, 'p-c-single')}
                 title="Copiar Pantone Coated"
               >
                 {copiedCode === 'p-c-single' ? <Check size={14} color="var(--accent)" /> : <Copy size={14} />}
@@ -230,7 +232,9 @@ export default function ColourTab({ copiedCode, copyToClipboard }) {
               >
                 <div style={{ width: '44px', height: '44px', borderRadius: 'var(--radius-sm)', backgroundColor: colorData.pantone.uncoated.hex, border: '1px solid rgba(255,255,255,0.2)', flexShrink: 0 }} />
                 <div style={{ textOverflow: 'ellipsis', overflow: 'hidden' }}>
-                  <strong className="font-headline" style={{ fontSize: '0.95rem', color: 'var(--accent)', display: 'block' }}>{colorData.pantone.uncoated.code}</strong>
+                  <strong className="font-headline" style={{ fontSize: '0.95rem', color: 'var(--accent)', display: 'block' }}>
+                    Pantone® {colorData.pantone.uncoated.code.replace('PANTONE ', '')}
+                  </strong>
                   <span style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '0.1rem' }}>Papel Obra / Mate</span>
                   <span className="font-mono" style={{ fontSize: '0.72rem', color: 'var(--text-disabled)' }}>HEX {colorData.pantone.uncoated.hex} | {colorData.pantone.uncoated.similarity}</span>
                 </div>
@@ -238,7 +242,7 @@ export default function ColourTab({ copiedCode, copyToClipboard }) {
 
               <button
                 className="btn btn-ghost btn-sm"
-                onClick={() => copyToClipboard(`${colorData.pantone.uncoated.code} (${colorData.pantone.uncoated.hex})`, 'p-u-single')}
+                onClick={() => copyToClipboard(`Pantone® ${colorData.pantone.uncoated.code.replace('PANTONE ', '')} (${colorData.pantone.uncoated.hex})`, 'p-u-single')}
                 title="Copiar Pantone Uncoated"
               >
                 {copiedCode === 'p-u-single' ? <Check size={14} color="var(--accent)" /> : <Copy size={14} />}
@@ -252,7 +256,7 @@ export default function ColourTab({ copiedCode, copyToClipboard }) {
             style={{ marginTop: '1rem', width: '100%', justifyContent: 'center', border: '1px dashed var(--border-strong)' }}
           >
             {copiedCode === 'bulk-pantones' ? <Check size={14} color="var(--accent)" /> : <Copy size={14} />}
-            <span>{copiedCode === 'bulk-pantones' ? '¡Ambos Pantones Copiados!' : 'Copiar Ambos Pantones (C & U)'}</span>
+            <span>{copiedCode === 'bulk-pantones' ? '¡Ambos Colores Copiados!' : 'Copiar Ambos Colores'}</span>
           </button>
         </ToolCard>
       </div>

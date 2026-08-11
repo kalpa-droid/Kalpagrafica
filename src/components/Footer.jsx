@@ -131,6 +131,18 @@ export default function Footer({ onNavigate }) {
           "Kalpa": El inmenso ciclo de creación y evolución atemporal.
         </div>
       </div>
+
+      <div style={{
+        marginTop: '1.2rem',
+        paddingTop: '0.8rem',
+        borderTop: '1px solid rgba(255,255,255,0.05)',
+        textAlign: 'center',
+        fontSize: '0.74rem',
+        color: 'var(--text-disabled)',
+        lineHeight: 1.4
+      }}>
+        Pantone® es una marca registrada de Pantone LLC. Esta herramienta web ofrece aproximaciones informáticas con fines educativos y de diseño, y no está afiliada, respaldada ni patrocinada por Pantone LLC.
+      </div>
     </footer>
   );
 }

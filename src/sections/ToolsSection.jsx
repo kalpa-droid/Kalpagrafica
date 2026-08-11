@@ -49,7 +49,7 @@ export default function ToolsSection() {
 
         <p style={{ color: 'var(--text-secondary)', fontSize: '1.05rem', lineHeight: 1.6 }}>
           Suite utilitaria 100% nativa para diseñadores y desarrolladores:
-          colorimetría OKLCH, coincidencia Pantone PMS Coated (brillante) y Uncoated (mate), paletas, daltonismo descargable, recorte social WebP, favicons vectoriales, marca de agua SVG,
+          colorimetría OKLCH, conversión Pantone® (brillante Coated y mate Uncoated), paletas, daltonismo descargable, recorte social WebP, favicons vectoriales, marca de agua SVG,
           escala tipográfica visual interactiva con 15 presets reales y el paquete ejecutable <strong style={{ color: 'var(--accent)' }}>@kalpa-droid/delphitools</strong> en la terminal.
         </p>
 
@@ -60,7 +60,7 @@ export default function ToolsSection() {
           <a href="https://github.com/1612elphi/delphitools" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--text-primary)', textDecoration: 'none', fontWeight: 600 }}>@1612elphi</a>
         </div>
         <div style={{ marginTop: '0.6rem', fontSize: '0.75rem', color: 'var(--text-disabled)' }}>
-          * Las referencias a colores Pantone PMS (C/U) son algoritmos de coincidencia cromática aproximada no oficiales. No afiliado, licenciado ni avalado por Pantone LLC.
+          * Pantone® es una marca registrada de Pantone LLC. Esta herramienta web ofrece aproximaciones informáticas independientes y no oficiales con fines educativos y de diseño, y no está afiliada, respaldada ni patrocinada por Pantone LLC.
         </div>
       </div>
 

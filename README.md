@@ -9,7 +9,7 @@
 - **Catálogo Visual de Marcas (Libro de Logos)**: Colección didáctica y de referencia técnica ordenada alfabéticamente de la `Num` a la `Z`, con visor de estructura geométrica, paletas cromáticas extraídas y atribución a diseñadores originales.
 - **Suite de Herramientas (KalpaTools)**:
   - **Colorimetría OKLCH & Conversor**: Soporta HEX 6d, HEX 8d con alfa, RGB, HSL, CMYK, OKLCH y Pantone.
-  - **Coincidencia Pantone PMS (C & U)**: Algoritmo no oficial de aproximación cromática para papel brillante (Coated) y mate (Uncoated).
+  - **Conversión Pantone® (C & U)**: Algoritmo independiente y no oficial de aproximación cromática para papel brillante (Coated) y mate (Uncoated).
   - **Generador de Sombras Tailwind CSS**: Escala de 50 a 950 interactiva.
   - **Armonías Cromáticas**: Complementario, análogo, triádico y tetrádico.
   - **Extractor de Paletas desde Imagen**: Con exportación en bloque (HEX, RGB, CMYK, Pantone, JSON).
@@ -73,5 +73,5 @@ dt contrast #BAFDC1 #111114
 ## 📄 Licencia & Créditos
 
 - **Inspiración Open Source**: Herramientas inspiradas en la suite de software libre [delphi.tools](https://delphi.tools/) por [@1612elphi](https://github.com/1612elphi/delphitools).
-- **Aviso Legal de Pantone**: Las marcas y colores Pantone PMS (Coated / Uncoated) corresponden a un algoritmo de aproximación cromática no oficial. Este proyecto no está afiliado, licenciado ni avalado por Pantone LLC.
+- **Aviso Legal de Pantone®**: Pantone® es una marca registrada de Pantone LLC. Esta herramienta web ofrece aproximaciones informáticas con fines educativos y de diseño, y no está afiliada, respaldada ni patrocinada por Pantone LLC.
 - **Aviso del Libro de Logos**: Las marcas y logotipos expuestos en el catálogo visual tienen un fin exclusivamente educativo, didáctico y de referencia técnica de diseño. Todos los derechos pertenecen a sus respectivos titulares.

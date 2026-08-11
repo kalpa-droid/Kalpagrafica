@@ -2,7 +2,7 @@
 
 > Suite CLI utilitaria para diseñadores gráficos y desarrolladores web.
 
-Colorimetría OKLCH, coincidencia perceptualmente ponderada con las 2,682 muestras de **Pantone PMS Coated (C)** y **Uncoated (U)** (algoritmo de aproximación no oficial, no afiliado a Pantone LLC), generación de sombras Tailwind CSS 50–950, esquemas cromáticos armónicos y evaluación de accesibilidad WCAG 2.1.
+Colorimetría OKLCH, conversión perceptualmente ponderada con las 2,682 muestras de **Pantone® Coated (C)** y **Uncoated (U)** (algoritmo de aproximación independiente y no oficial), generación de sombras Tailwind CSS 50–950, esquemas cromáticos armónicos y evaluación de accesibilidad WCAG 2.1.
 
 ---
 
