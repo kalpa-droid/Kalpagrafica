@@ -41,6 +41,36 @@ export async function generarMosaico(files, config, onProgress) {
   const doc = await PDFDocument.create();
 
   const cargarImagenSegura = async (file) => {
+    // 1. Decodificación ultra rápida por GPU (WebP, HEIC/AVIF en navegadores con soporte, PNG, JPG)
+    try {
+      if ('createImageBitmap' in window) {
+        const bitmap = await createImageBitmap(file);
+        const MAX_SIZE = 3508;
+        let w = bitmap.width;
+        let h = bitmap.height;
+        if (w > MAX_SIZE || h > MAX_SIZE) {
+          const ratio = Math.min(MAX_SIZE / w, MAX_SIZE / h);
+          w = Math.round(w * ratio);
+          h = Math.round(h * ratio);
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = w;
+        canvas.height = h;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(bitmap, 0, 0, w, h);
+        bitmap.close(); // Liberación inmediata de RAM de la GPU
+
+        const base64 = canvas.toDataURL('image/jpeg', 0.95);
+        canvas.width = 0; canvas.height = 0; // Liberación de VRAM
+
+        const pdfImg = await doc.embedJpg(base64);
+        return { img: pdfImg, originalW: w, originalH: h };
+      }
+    } catch (e) {
+      // Fallback a HTML5 Image si el formato requiere elemento Image
+    }
+
+    // 2. Fallback estándar HTML5 Image
     return new Promise((resolve, reject) => {
       const url = URL.createObjectURL(file);
       const img = new Image();
@@ -53,8 +83,8 @@ export async function generarMosaico(files, config, onProgress) {
           let h = img.height;
           if (w > MAX_SIZE || h > MAX_SIZE) {
             const ratio = Math.min(MAX_SIZE / w, MAX_SIZE / h);
-            w *= ratio;
-            h *= ratio;
+            w = Math.round(w * ratio);
+            h = Math.round(h * ratio);
           }
 
           const canvas = document.createElement('canvas');
@@ -68,8 +98,8 @@ export async function generarMosaico(files, config, onProgress) {
 
           const pdfImg = await doc.embedJpg(base64);
           resolve({ img: pdfImg, originalW: w, originalH: h });
-        } catch (e) {
-          reject(e);
+        } catch (err) {
+          reject(err);
         }
       };
 

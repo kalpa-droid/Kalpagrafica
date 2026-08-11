@@ -70,8 +70,8 @@ async function procesarComoImagenes(file, mode, onProgress) {
       rightCanvas.width = halfW; rightCanvas.height = fullH;
       rightCanvas.getContext('2d').drawImage(finalCanvas, halfW, 0, halfW, fullH, 0, 0, halfW, fullH);
 
-      const leftImg = await newPdf.embedJpg(leftCanvas.toDataURL('image/jpeg', 0.85));
-      const rightImg = await newPdf.embedJpg(rightCanvas.toDataURL('image/jpeg', 0.85));
+      const leftImg = await newPdf.embedJpg(leftCanvas.toDataURL('image/jpeg', 0.92));
+      const rightImg = await newPdf.embedJpg(rightCanvas.toDataURL('image/jpeg', 0.92));
 
       const pageL = newPdf.addPage([halfW, fullH]);
       pageL.drawImage(leftImg, { x: 0, y: 0, width: halfW, height: fullH });
@@ -79,16 +79,18 @@ async function procesarComoImagenes(file, mode, onProgress) {
       const pageR = newPdf.addPage([halfW, fullH]);
       pageR.drawImage(rightImg, { x: 0, y: 0, width: halfW, height: fullH });
 
-      leftCanvas.width = 0; rightCanvas.width = 0;
-      if (finalCanvas !== tempCanvas) finalCanvas.width = 0;
+      leftCanvas.width = 0; leftCanvas.height = 0;
+      rightCanvas.width = 0; rightCanvas.height = 0;
+      if (finalCanvas !== tempCanvas) { finalCanvas.width = 0; finalCanvas.height = 0; }
     } else {
-      const imgData = tempCanvas.toDataURL('image/jpeg', 0.85);
+      const imgData = tempCanvas.toDataURL('image/jpeg', 0.92);
       const jpgImage = await newPdf.embedJpg(imgData);
       const newPage = newPdf.addPage([tempCanvas.width, tempCanvas.height]);
       newPage.drawImage(jpgImage, { x: 0, y: 0, width: tempCanvas.width, height: tempCanvas.height });
     }
 
     tempCanvas.width = 0;
+    tempCanvas.height = 0;
     page.cleanup();
 
     if (pageNum % 2 === 0) {
