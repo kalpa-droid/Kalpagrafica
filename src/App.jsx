@@ -7,7 +7,7 @@ import ProductModal from './components/ProductModal';
 // Code-Splitting: Carga diferida por secciones para un primer render ultra rápido
 const LogoBookSection = lazy(() => import('./sections/LogoBookSection'));
 const ToolsSection = lazy(() => import('./sections/ToolsSection'));
-const StoreSection = lazy(() => import('./sections/StoreSection'));
+const ImpresionSection = lazy(() => import('./sections/ImpresionSection'));
 const EducationSection = lazy(() => import('./sections/EducationSection'));
 const CommunitySection = lazy(() => import('./sections/CommunitySection'));
 const AboutSection = lazy(() => import('./sections/AboutSection'));
@@ -76,8 +76,8 @@ export default function App() {
             <ToolsSection />
           </div>
 
-          <div id="tienda">
-            <StoreSection onSelectProduct={(prod) => setSelectedProduct(prod)} />
+          <div id="impresion">
+            <ImpresionSection />
           </div>
 
           <div id="educacion">

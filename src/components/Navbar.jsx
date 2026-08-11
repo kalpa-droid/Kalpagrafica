@@ -17,7 +17,7 @@ export default function Navbar({ activeSection, onNavigate }) {
   const navItems = [
     { id: 'logobook', label: 'Libro de Logos' },
     { id: 'herramientas', label: 'Herramientas' },
-    { id: 'tienda', label: 'Tienda (Mindy)' },
+    { id: 'impresion', label: 'Tools Impresión' },
     { id: 'educacion', label: 'Educación' },
     { id: 'comunidad', label: 'Comunidad' },
     { id: 'estudio', label: 'Sobre el Estudio' },
