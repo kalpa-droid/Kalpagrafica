@@ -221,9 +221,6 @@ export default function PdfToLibroTool() {
   const handleSelectPageFromViewer = (pageNum) => {
     setHasRefPage(true);
     setRefPdfPage(String(pageNum));
-    if (!refBookPage) {
-      setRefBookPage(String(pageNum));
-    }
   };
 
   return (
