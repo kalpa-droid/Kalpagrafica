@@ -31,7 +31,7 @@ async function procesarComoImagenes(file, mode, onProgress) {
     }
 
     const page = await pdf.getPage(pageNum);
-    const viewport = page.getViewport({ scale: 225 / 72 });
+    const viewport = page.getViewport({ scale: 300 / 72 });
 
     const tempCanvas = document.createElement('canvas');
     tempCanvas.width = viewport.width;
