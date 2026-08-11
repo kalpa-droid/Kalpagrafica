@@ -9,10 +9,8 @@ const LogoBookSection = lazy(() => import('./sections/LogoBookSection'));
 const ToolsSection = lazy(() => import('./sections/ToolsSection'));
 const ImpresionSection = lazy(() => import('./sections/ImpresionSection'));
 const DesignEditorSection = lazy(() => import('./sections/DesignEditorSection'));
-const AlbumSection = lazy(() => import('./sections/AlbumSection'));
 const EducationSection = lazy(() => import('./sections/EducationSection'));
 const CommunitySection = lazy(() => import('./sections/CommunitySection'));
-const AboutSection = lazy(() => import('./sections/AboutSection'));
 
 function SectionLoader() {
   return (
@@ -86,20 +84,12 @@ export default function App() {
             <DesignEditorSection />
           </div>
 
-          <div id="albumes">
-            <AlbumSection />
-          </div>
-
           <div id="educacion">
             <EducationSection />
           </div>
 
           <div id="comunidad">
             <CommunitySection />
-          </div>
-
-          <div id="estudio">
-            <AboutSection />
           </div>
         </Suspense>
       </main>

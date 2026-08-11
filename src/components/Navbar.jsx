@@ -19,10 +19,8 @@ export default function Navbar({ activeSection, onNavigate }) {
     { id: 'herramientas', label: 'Herramientas' },
     { id: 'impresion', label: 'Tools Impresión' },
     { id: 'editor-tarjetas', label: 'Editor Tarjetas' },
-    { id: 'albumes', label: 'Álbumes' },
     { id: 'educacion', label: 'Educación' },
     { id: 'comunidad', label: 'Comunidad' },
-    { id: 'estudio', label: 'Sobre el Estudio' },
   ];
 
   const handleNavClick = (id) => {

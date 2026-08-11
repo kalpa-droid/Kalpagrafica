@@ -88,6 +88,17 @@ export default function LogoBookSection() {
     return pages;
   }, [currentPage, totalPages]);
 
+  const handlePageChange = (newPage) => {
+    const targetPage = Math.max(1, Math.min(newPage, totalPages));
+    setCurrentPage(targetPage);
+    const element = document.getElementById('logobook');
+    if (element) {
+      const yOffset = -95;
+      const y = element.getBoundingClientRect().top + window.pageYOffset + yOffset;
+      window.scrollTo({ top: Math.max(0, y), behavior: 'smooth' });
+    }
+  };
+
   // Compact Combined Toolbar (Search + Navigation Dots + Theme Icon Only)
   const renderControlToolbar = () => (
     <div style={{
@@ -114,9 +125,9 @@ export default function LogoBookSection() {
           className="input"
           style={{
             width: '100%',
-            paddingLeft: '2.3rem',
-            paddingRight: searchQuery ? '2.2rem' : '0.8rem',
-            fontSize: '0.85rem',
+            paddingLeft: '2.2rem',
+            paddingRight: searchQuery ? '2rem' : '0.8rem',
+            fontSize: '0.82rem',
             backgroundColor: 'var(--bg-surface-2)',
             height: '36px'
           }}
@@ -155,7 +166,7 @@ export default function LogoBookSection() {
         }}>
           {/* Left Arrow Button */}
           <button
-            onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+            onClick={() => handlePageChange(currentPage - 1)}
             disabled={currentPage === 1}
             style={{
               background: 'none',
@@ -178,7 +189,7 @@ export default function LogoBookSection() {
             {pageDots[0] > 1 && (
               <>
                 <button
-                  onClick={() => setCurrentPage(1)}
+                  onClick={() => handlePageChange(1)}
                   style={{
                     width: '6px',
                     height: '6px',
@@ -199,7 +210,7 @@ export default function LogoBookSection() {
               return (
                 <button
                   key={pageNum}
-                  onClick={() => setCurrentPage(pageNum)}
+                  onClick={() => handlePageChange(pageNum)}
                   style={{
                     width: isActive ? '18px' : '7px',
                     height: '7px',
@@ -219,7 +230,7 @@ export default function LogoBookSection() {
               <>
                 <span style={{ color: 'var(--text-disabled)', fontSize: '0.65rem', lineHeight: 1 }}>…</span>
                 <button
-                  onClick={() => setCurrentPage(totalPages)}
+                  onClick={() => handlePageChange(totalPages)}
                   style={{
                     width: '6px',
                     height: '6px',
@@ -237,7 +248,7 @@ export default function LogoBookSection() {
 
           {/* Right Arrow Button */}
           <button
-            onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+            onClick={() => handlePageChange(currentPage + 1)}
             disabled={currentPage === totalPages}
             style={{
               background: 'none',

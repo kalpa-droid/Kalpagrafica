@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Type, Ruler, Layout, Printer } from 'lucide-react';
+import { Type, Ruler, Layout, Printer, Maximize2, X } from 'lucide-react';
 import { ToolCard, FieldLabel } from './CommonComponents';
 
 const TYPE_PRESETS = [
@@ -272,6 +272,7 @@ export default function TypeTab() {
 
   const [wcText, setWcText] = useState('');
   const [socialPlatformFilter, setSocialPlatformFilter] = useState('all');
+  const [isTypeFullscreen, setIsTypeFullscreen] = useState(false);
 
   const wcStats = useMemo(() => {
     const trimmed = wcText.trim();
@@ -383,6 +384,27 @@ export default function TypeTab() {
 
         {/* Col 3: MOCKUP VISUAL INTERACTIVO UNIFICADO */}
         <ToolCard icon={Layout} title="Vista Previa de Jerarquía Tipográfica" description="Muestra en tiempo real cómo se aplican los tamaños de H1, H2, H3, H4, Body y Small en un diseño real.">
+          <div style={{ marginBottom: '0.8rem', display: 'flex', justifyContent: 'flex-end' }}>
+            <button
+              onClick={() => setIsTypeFullscreen(true)}
+              style={{
+                backgroundColor: 'rgba(186,253,193,0.15)',
+                border: '1px solid var(--accent)',
+                color: 'var(--accent)',
+                borderRadius: 'var(--radius-sm)',
+                padding: '0.4rem 0.8rem',
+                fontSize: '0.78rem',
+                fontWeight: 700,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.4rem'
+              }}
+            >
+              <Maximize2 size={13} /> Pantalla Completa
+            </button>
+          </div>
+
           <div style={{
             backgroundColor: 'var(--bg-surface-2)',
             borderRadius: 'var(--radius-md)',
@@ -422,6 +444,85 @@ export default function TypeTab() {
             </div>
           </div>
         </ToolCard>
+
+        {/* MODAL FULLSCREEN DE VISTA PREVIA TIPOGRÁFICA (SIN BARRA DE DESPLAZAMIENTO) */}
+        {isTypeFullscreen && (
+          <div style={{
+            position: 'fixed',
+            top: 0, left: 0, right: 0, bottom: 0,
+            backgroundColor: 'rgba(8, 8, 12, 0.92)',
+            backdropFilter: 'blur(12px)',
+            zIndex: 9999,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '2rem'
+          }}>
+            <div style={{
+              backgroundColor: 'var(--bg-surface)',
+              border: '1.5px solid var(--accent)',
+              borderRadius: 'var(--radius-lg)',
+              maxWidth: '1100px',
+              width: '100%',
+              maxHeight: '92vh',
+              padding: '2.5rem',
+              position: 'relative',
+              boxShadow: '0 20px 50px rgba(0,0,0,0.6)',
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'space-between',
+              overflow: 'hidden'
+            }}>
+              <button
+                onClick={() => setIsTypeFullscreen(false)}
+                style={{
+                  position: 'absolute', top: '1.2rem', right: '1.2rem',
+                  backgroundColor: 'var(--bg-surface-2)', border: '1px solid var(--border-subtle)',
+                  borderRadius: '50%', width: '36px', height: '36px',
+                  color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center'
+                }}
+              >
+                <X size={20} />
+              </button>
+
+              <div style={{ marginBottom: '1.2rem' }}>
+                <div style={{ fontSize: '0.85rem', color: 'var(--accent)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                  Vista Previa Tipográfica en Pantalla Completa (Ajuste Perfecto Sin Desplazamiento)
+                </div>
+                <div style={{ fontSize: '0.78rem', color: 'var(--text-disabled)' }}>
+                  Escala activa: {activeTypePreset.name} (Base {fontSizesResolved.body}px, Line-height {lhPx}px)
+                </div>
+              </div>
+
+              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', backgroundColor: 'var(--bg-surface-2)', padding: '2rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-subtle)', overflow: 'hidden' }}>
+                <div style={{ fontSize: `${fontSizesResolved.h1}px`, fontWeight: 800, color: 'var(--accent)', lineHeight: 1.1, marginBottom: '0.8rem', letterSpacing: '-0.02em' }}>
+                  Kalpagráfica Editorial (H1 {fontSizesResolved.h1}px)
+                </div>
+
+                <div style={{ fontSize: `${fontSizesResolved.h2}px`, fontWeight: 700, color: 'var(--text-primary)', lineHeight: 1.2, marginBottom: '0.8rem' }}>
+                  Titular Secundario de la Composición (H2 {fontSizesResolved.h2}px)
+                </div>
+
+                <div style={{ fontSize: `${fontSizesResolved.h3}px`, fontWeight: 600, color: 'var(--text-primary)', lineHeight: 1.25, marginBottom: '0.8rem' }}>
+                  Jerarquía y Armonía Aplicada en Tiempo Real (H3 {fontSizesResolved.h3}px)
+                </div>
+
+                <div style={{ fontSize: `${fontSizesResolved.body}px`, lineHeight: `${lhPx}px`, color: 'var(--text-secondary)', marginBottom: '1.2rem' }}>
+                  La tipografía es la voz de la comunicación visual. Esta maqueta interactiva respeta tus ajustes tipográficos en pantalla completa sin barras de desplazamiento (Body {fontSizesResolved.body}px, Interlineado {lhPx}px).
+                </div>
+
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px dashed var(--border-subtle)', paddingTop: '0.8rem' }}>
+                  <div style={{ fontSize: `${fontSizesResolved.h4}px`, fontWeight: 700, color: 'var(--text-primary)' }}>
+                    Subtítulo de Sección (H4 {fontSizesResolved.h4}px)
+                  </div>
+                  <div style={{ fontSize: `${fontSizesResolved.small}px`, color: 'var(--text-disabled)' }}>
+                    Nota al pie de página · Créditos (Small {fontSizesResolved.small}px)
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Fila 2 — 2 Columnas de Ancho Completo: Formatos de Papel Proporcionales, Contador Redes 17 Plataformas & Meta Suite */}
