@@ -1,15 +1,47 @@
-import React, { useState } from 'react';
+import React, { useState, lazy, Suspense } from 'react';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import BriefForm from './components/BriefForm';
 import ProductModal from './components/ProductModal';
 
-import LogoBookSection from './sections/LogoBookSection';
-import ToolsSection from './sections/ToolsSection';
-import StoreSection from './sections/StoreSection';
-import EducationSection from './sections/EducationSection';
-import CommunitySection from './sections/CommunitySection';
-import AboutSection from './sections/AboutSection';
+// Code-Splitting: Carga diferida por secciones para un primer render ultra rápido
+const LogoBookSection = lazy(() => import('./sections/LogoBookSection'));
+const ToolsSection = lazy(() => import('./sections/ToolsSection'));
+const StoreSection = lazy(() => import('./sections/StoreSection'));
+const EducationSection = lazy(() => import('./sections/EducationSection'));
+const CommunitySection = lazy(() => import('./sections/CommunitySection'));
+const AboutSection = lazy(() => import('./sections/AboutSection'));
+
+function SectionLoader() {
+  return (
+    <div style={{
+      padding: '5rem 2rem',
+      textAlign: 'center',
+      color: 'var(--text-disabled)',
+      fontSize: '0.88rem',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: '0.6rem'
+    }}>
+      <div style={{
+        width: '18px',
+        height: '18px',
+        borderRadius: '50%',
+        border: '2px solid var(--border-subtle)',
+        borderTopColor: 'var(--accent)',
+        animation: 'spin 0.8s linear infinite'
+      }} />
+      <span>Cargando módulo de precisión...</span>
+      <style>{`
+        @keyframes spin {
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
+        }
+      `}</style>
+    </div>
+  );
+}
 
 export default function App() {
   const [activeSection, setActiveSection] = useState('logobook');
@@ -33,31 +65,33 @@ export default function App() {
       {/* Header Navbar */}
       <Navbar activeSection={activeSection} onNavigate={handleNavigate} />
 
-      {/* Main Content Area */}
+      {/* Main Content Area con Suspense Fallback */}
       <main style={{ flex: 1 }}>
-        <div id="logobook">
-          <LogoBookSection />
-        </div>
+        <Suspense fallback={<SectionLoader />}>
+          <div id="logobook">
+            <LogoBookSection />
+          </div>
 
-        <div id="herramientas">
-          <ToolsSection />
-        </div>
+          <div id="herramientas">
+            <ToolsSection />
+          </div>
 
-        <div id="tienda">
-          <StoreSection onSelectProduct={(prod) => setSelectedProduct(prod)} />
-        </div>
+          <div id="tienda">
+            <StoreSection onSelectProduct={(prod) => setSelectedProduct(prod)} />
+          </div>
 
-        <div id="educacion">
-          <EducationSection />
-        </div>
+          <div id="educacion">
+            <EducationSection />
+          </div>
 
-        <div id="comunidad">
-          <CommunitySection />
-        </div>
+          <div id="comunidad">
+            <CommunitySection />
+          </div>
 
-        <div id="estudio">
-          <AboutSection />
-        </div>
+          <div id="estudio">
+            <AboutSection />
+          </div>
+        </Suspense>
       </main>
 
       {/* Global Footer */}

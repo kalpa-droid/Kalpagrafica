@@ -322,6 +322,10 @@ export default function LogoBookSection() {
         }}>
           Colección de marcas e identidades visuales ordenadas alfabéticamente de la <strong style={{ color: 'var(--accent)' }}>Num</strong> a la <strong style={{ color: 'var(--accent)' }}>Z</strong>. Explora la ingeniería gráfica, empresas y creadores que dieron forma al diseño atemporal.
         </p>
+
+        <div style={{ marginTop: '1.2rem', padding: '0.6rem 1.2rem', borderRadius: 'var(--radius-lg)', backgroundColor: 'var(--bg-surface-2)', border: '1px solid var(--border-subtle)', fontSize: '0.8rem', color: 'var(--text-secondary)', display: 'inline-flex', alignItems: 'center', gap: '0.5rem' }}>
+          <span>ℹ️ <strong>Uso Didáctico & Referencia Técnica:</strong> Archivo de consulta para estudiantes y profesionales del diseño. Las marcas y logotipos expuestos pertenecen exclusivamente a sus respectivos titulares.</span>
+        </div>
       </div>
 
       {/* TOP Toolbar (Search + Navigation Dots + Theme Icon Only) */}
@@ -576,25 +580,10 @@ export default function LogoBookSection() {
             </div>
 
             {/* Modal Actions */}
-            <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
-              <a
-                href={selectedLogo.file}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="btn btn-primary"
-                style={{ flex: 1, justifyContent: 'center' }}
-              >
-                <Download size={18} />
-                <span>Ver / Descargar SVG</span>
-              </a>
-
-              <button
-                className="btn btn-secondary"
-                onClick={() => handleCopySvg(selectedLogo)}
-              >
-                {copiedId === selectedLogo.id ? <Check size={18} color="var(--accent)" /> : <ExternalLink size={18} />}
-                <span>{copiedId === selectedLogo.id ? '¡Ruta Copiada!' : 'Copiar Ruta SVG'}</span>
-              </button>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
+              <div style={{ padding: '0.8rem 1rem', borderRadius: 'var(--radius-sm)', backgroundColor: 'var(--bg-surface-2)', border: '1px solid var(--border-subtle)', textAlign: 'center', fontSize: '0.78rem', color: 'var(--text-disabled)' }}>
+                ℹ️ Muestra gráfica para análisis tipográfico y de retícula visual. Atribuido a <strong>{selectedLogo.author}</strong>. Marcas propiedad de sus respectivos titulares.
+              </div>
             </div>
           </div>
         </div>
