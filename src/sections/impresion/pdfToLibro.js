@@ -43,7 +43,16 @@ export function parseExcludedPages(inputStr, maxCount) {
 }
 
 async function procesarComoImagenes(file, mode, options = {}, onProgress) {
-  const { excludeStr = '', fotocopiaStart = 'derecha' } = options;
+  const {
+    excludeStr = '',
+    fotocopiaStart = 'derecha',
+    hasCover = false,
+    coverSide = 'derecha',
+    refPdfPage = 0,
+    refBookPage = 0,
+    refPageSide = 'derecha'
+  } = options;
+
   const newPdf = await PDFDocument.create();
   const arrayBuffer = await file.arrayBuffer();
 
@@ -56,8 +65,18 @@ async function procesarComoImagenes(file, mode, options = {}, onProgress) {
   const excludedSet = parseExcludedPages(excludeStr, pdf.numPages);
   let isFirstProcessedSheet = true;
 
+  // Evaluar si se requiere una página en blanco de ajuste justo detrás de la tapa
+  let needBlankPageBehindCover = false;
+  if (refPdfPage > 0 && refBookPage > 0) {
+    const isBookPageOdd = refBookPage % 2 !== 0;
+    const expectedSide = isBookPageOdd ? 'derecha' : 'izquierda';
+    if (refPageSide !== expectedSide) {
+      needBlankPageBehindCover = true;
+    }
+  }
+
   for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
-    // Si la página/hoja fue indicada para excluir, se omite
+    // Omitir páginas indicadas en la exclusión
     if (excludedSet.has(pageNum)) {
       continue;
     }
@@ -99,8 +118,7 @@ async function procesarComoImagenes(file, mode, options = {}, onProgress) {
       const halfW = finalCanvas.width / 2;
       const fullH = finalCanvas.height;
 
-      // Si es la primera hoja escaneada válida y arranca con "Página 1 a la Derecha" (Portada)
-      if (isFirstProcessedSheet && fotocopiaStart === 'derecha') {
+      if (isFirstProcessedSheet && (fotocopiaStart === 'derecha' || (hasCover && coverSide === 'derecha'))) {
         const rightCanvas = document.createElement('canvas');
         rightCanvas.width = halfW; rightCanvas.height = fullH;
         rightCanvas.getContext('2d').drawImage(finalCanvas, halfW, 0, halfW, fullH, 0, 0, halfW, fullH);
@@ -110,8 +128,13 @@ async function procesarComoImagenes(file, mode, options = {}, onProgress) {
         pageR.drawImage(rightImg, { x: 0, y: 0, width: halfW, height: fullH });
 
         rightCanvas.width = 0; rightCanvas.height = 0;
+
+        // Si se requiere ajuste detrás de la tapa, se inserta 1 hoja A5 en blanco inmediatamente
+        if (needBlankPageBehindCover) {
+          const blankPage = newPdf.addPage([halfW, fullH]);
+          blankPage.drawRectangle({ x: 0, y: 0, width: 0, height: 0 });
+        }
       } else {
-        // Hojas completas normal (Izquierda -> Derecha)
         const leftCanvas = document.createElement('canvas');
         leftCanvas.width = halfW; leftCanvas.height = fullH;
         leftCanvas.getContext('2d').drawImage(finalCanvas, 0, 0, halfW, fullH, 0, 0, halfW, fullH);
@@ -140,6 +163,12 @@ async function procesarComoImagenes(file, mode, options = {}, onProgress) {
       const jpgImage = await newPdf.embedJpg(imgData);
       const newPage = newPdf.addPage([tempCanvas.width, tempCanvas.height]);
       newPage.drawImage(jpgImage, { x: 0, y: 0, width: tempCanvas.width, height: tempCanvas.height });
+
+      // Si es la 1ª página y es la tapa con ajuste necesario detrás de la tapa
+      if (pageNum === 1 && hasCover && needBlankPageBehindCover) {
+        const blankPage = newPdf.addPage([tempCanvas.width, tempCanvas.height]);
+        blankPage.drawRectangle({ x: 0, y: 0, width: 0, height: 0 });
+      }
     }
 
     tempCanvas.width = 0;

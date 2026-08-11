@@ -1,111 +1,118 @@
 import React, { useState } from 'react';
-import { BookOpen, Download, AlertCircle, CheckCircle } from 'lucide-react';
+import { BookOpen, Download, AlertCircle, CheckCircle, HelpCircle, Layers, FileCheck } from 'lucide-react';
 import { pdfToLibro } from './pdfToLibro';
 
-function BookletDiagram({ mode, fotocopiaStart, excludeStr }) {
+function BookletDiagram({ mode, fotocopiaStart, excludeStr, hasCover, coverSide, hasRefPage, refPdfPage, refBookPage, refPageSide }) {
+  const isBookPageOdd = refBookPage > 0 ? refBookPage % 2 !== 0 : true;
+  const expectedSide = isBookPageOdd ? 'derecha' : 'izquierda';
+  const needAdjustment = hasRefPage && refPdfPage > 0 && refBookPage > 0 && refPageSide !== expectedSide;
+
   return (
     <div style={{
       backgroundColor: 'var(--bg-surface-2)',
       borderRadius: 'var(--radius-md)',
       border: '1.5px solid var(--accent)',
-      padding: '1.2rem',
+      padding: '1.4rem',
       marginBottom: '1.5rem',
       boxShadow: '0 4px 15px rgba(0,0,0,0.3)'
     }}>
-      <div style={{ fontSize: '0.78rem', color: 'var(--accent)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.8rem', textAlign: 'center' }}>
-        Diagrama Técnico de Imposición en Hoja A4 Doble Cara (A5 Cosido)
+      <div style={{ fontSize: '0.82rem', color: 'var(--accent)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '1.2rem', textAlign: 'center' }}>
+        Diagrama Comparativo de Preimpresión: Original vs Resultado Final A5 Cosido
       </div>
 
-      <div style={{ display: 'flex', gap: '1.2rem', flexWrap: 'wrap', justifyContent: 'center', alignItems: 'center' }}>
-        {/* HOJA 1: FRENTE (Tapa / Portada) */}
-        <div style={{ textAlign: 'center' }}>
-          <span style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '0.3rem', fontWeight: 600 }}>
-            Pliego 1: FRENTE (Exterior)
-          </span>
-          <div style={{
-            width: '210px', height: '135px', backgroundColor: 'rgba(186, 253, 193, 0.05)',
-            border: '2px solid var(--accent)', borderRadius: '4px', position: 'relative', display: 'flex'
-          }}>
-            {/* Lomo Central */}
-            <div style={{
-              position: 'absolute', left: '50%', top: 0, bottom: 0, width: 0,
-              borderLeft: '2px dashed var(--accent)', opacity: 0.7
-            }} />
-            <span style={{ position: 'absolute', left: '50%', top: '35%', transform: 'translateX(-50%) rotate(-90deg)', fontSize: '0.55rem', color: 'var(--accent)', fontWeight: 700, backgroundColor: 'var(--bg-surface-2)', padding: '0 2px' }}>
-              LOMO / DOBLEZ
-            </span>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1.5rem', alignItems: 'start' }}>
 
-            {/* Mitad Izquierda (Contraportada) */}
-            <div style={{ flex: 1, padding: '0.5rem', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', borderRight: '1px dashed rgba(186,253,193,0.3)' }}>
-              <span className="font-mono" style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', fontWeight: 700 }}>
-                Página N
-              </span>
-              <span style={{ fontSize: '0.62rem', color: 'var(--text-disabled)' }}>Contraportada</span>
+        {/* LADO IZQUIERDO: ESTADO DEL PDF ORIGINAL */}
+        <div style={{ backgroundColor: 'var(--bg-surface)', padding: '1rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-subtle)' }}>
+          <span style={{ fontSize: '0.78rem', color: 'var(--accent)', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.6rem' }}>
+            <BookOpen size={14} /> 1. Tu PDF / Escaneo Original
+          </span>
+
+          <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+            <div>
+              <span style={{ color: 'var(--text-disabled)' }}>Estructura de Tapa: </span>
+              <strong>{hasCover ? `Tapa aislada (lado ${coverSide})` : 'Sin tapa aislada'}</strong>
             </div>
 
-            {/* Mitad Derecha (Portada - Página 1) */}
-            <div style={{ flex: 1, padding: '0.5rem', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(186, 253, 193, 0.18)' }}>
-              <span className="font-mono" style={{ fontSize: '0.8rem', color: 'var(--accent)', fontWeight: 800 }}>
-                Página 1 ★
+            {hasRefPage && refPdfPage > 0 && refBookPage > 0 && (
+              <div style={{ backgroundColor: 'var(--bg-surface-2)', padding: '0.5rem', borderRadius: '4px', border: '1px solid var(--border-subtle)', marginTop: '0.2rem' }}>
+                <span style={{ display: 'block', color: 'var(--accent)', fontWeight: 700 }}>
+                  Pág PDF {refPdfPage} ➔ N° {refBookPage} del Libro ({refPageSide})
+                </span>
+                {needAdjustment ? (
+                  <span style={{ color: '#FBBF24', fontSize: '0.7rem', display: 'block', marginTop: '0.2rem' }}>
+                    ⚠ Desfase detectado: N° {refBookPage} ({isBookPageOdd ? 'Impar' : 'Par'}) requiere estar a la {expectedSide}.
+                  </span>
+                ) : (
+                  <span style={{ color: 'var(--accent)', fontSize: '0.7rem', display: 'block', marginTop: '0.2rem' }}>
+                    ✓ Alineación correcta: N° {refBookPage} ({isBookPageOdd ? 'Impar' : 'Par'}) queda a la {expectedSide}.
+                  </span>
+                )}
+              </div>
+            )}
+
+            {needAdjustment && (
+              <div style={{ backgroundColor: 'rgba(251,191,36,0.15)', color: '#FBBF24', padding: '0.5rem', borderRadius: '4px', border: '1px solid #FBBF24', fontSize: '0.72rem', fontWeight: 600 }}>
+                + 1 Hoja en Blanco insertada limpia JUSTO DETRÁS DE LA TAPA para alinear sin romper el texto.
+              </div>
+            )}
+
+            {excludeStr && (
+              <div style={{ fontSize: '0.72rem', color: '#F87171' }}>
+                Páginas a excluir: <strong>{excludeStr}</strong>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* LADO DERECHO: RESULTADO FINAL A4 IMPRESO A DOBLE CARA */}
+        <div style={{ backgroundColor: 'var(--bg-surface)', padding: '1rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-subtle)' }}>
+          <span style={{ fontSize: '0.78rem', color: 'var(--accent)', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.6rem' }}>
+            <FileCheck size={14} /> 2. Imposición Final (A4 Doble Cara ➔ A5 Cosido)
+          </span>
+
+          <div style={{ display: 'flex', gap: '0.8rem', justifyContent: 'center', alignItems: 'center', flexWrap: 'wrap' }}>
+            {/* Pliego 1 Frente */}
+            <div style={{ textAlign: 'center' }}>
+              <span style={{ fontSize: '0.68rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '0.2rem' }}>
+                FRENTE (Exterior)
               </span>
-              <span style={{ fontSize: '0.62rem', color: 'var(--accent)', fontWeight: 600 }}>
-                {mode === 'fotocopia' && fotocopiaStart === 'derecha' ? 'Portada Fotocopia' : 'Portada (Tapa)'}
+              <div style={{ width: '130px', height: '85px', backgroundColor: 'rgba(186, 253, 193, 0.05)', border: '1.5px solid var(--accent)', borderRadius: '3px', display: 'flex', position: 'relative' }}>
+                <div style={{ position: 'absolute', left: '50%', top: 0, bottom: 0, borderLeft: '1px dashed var(--accent)' }} />
+                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center' }}>
+                  <span style={{ fontSize: '0.65rem', color: 'var(--text-disabled)' }}>Pág N</span>
+                </div>
+                <div style={{ flex: 1, backgroundColor: 'rgba(186,253,193,0.2)', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center' }}>
+                  <span className="font-mono" style={{ fontSize: '0.7rem', color: 'var(--accent)', fontWeight: 800 }}>Pág 1 ★</span>
+                  <span style={{ fontSize: '0.55rem', color: 'var(--accent)' }}>Tapa (Der)</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Pliego 1 Dorso */}
+            <div style={{ textAlign: 'center' }}>
+              <span style={{ fontSize: '0.68rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '0.2rem' }}>
+                DORSO (Reverso)
               </span>
+              <div style={{ width: '130px', height: '85px', backgroundColor: 'rgba(186, 253, 193, 0.05)', border: '1.5px solid var(--border-subtle)', borderRadius: '3px', display: 'flex', position: 'relative' }}>
+                <div style={{ position: 'absolute', left: '50%', top: 0, bottom: 0, borderLeft: '1px dashed var(--border-strong)' }} />
+                <div style={{ flex: 1, backgroundColor: 'rgba(186,253,193,0.2)', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center' }}>
+                  <span className="font-mono" style={{ fontSize: '0.7rem', color: 'var(--accent)', fontWeight: 800 }}>Pág 2 ★</span>
+                  <span style={{ fontSize: '0.55rem', color: 'var(--accent)' }}>Interior (Izq)</span>
+                </div>
+                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center' }}>
+                  <span style={{ fontSize: '0.65rem', color: 'var(--text-disabled)' }}>Pág N-1</span>
+                </div>
+              </div>
             </div>
           </div>
         </div>
 
-        {/* HOJA 1: DORSO (Reverso - Página 2) */}
-        <div style={{ textAlign: 'center' }}>
-          <span style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '0.3rem', fontWeight: 600 }}>
-            Pliego 1: DORSO (Reverso)
-          </span>
-          <div style={{
-            width: '210px', height: '135px', backgroundColor: 'rgba(186, 253, 193, 0.05)',
-            border: '2px solid var(--border-subtle)', borderRadius: '4px', position: 'relative', display: 'flex'
-          }}>
-            {/* Lomo Central */}
-            <div style={{
-              position: 'absolute', left: '50%', top: 0, bottom: 0, width: 0,
-              borderLeft: '2px dashed var(--border-strong)', opacity: 0.7
-            }} />
-
-            {/* Mitad Izquierda (Página 2 Interior) */}
-            <div style={{ flex: 1, padding: '0.5rem', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(186, 253, 193, 0.18)', borderRight: '1px dashed rgba(186,253,193,0.3)' }}>
-              <span className="font-mono" style={{ fontSize: '0.8rem', color: 'var(--accent)', fontWeight: 800 }}>
-                Página 2 ★
-              </span>
-              <span style={{ fontSize: '0.62rem', color: 'var(--accent)', fontWeight: 600 }}>Interior Izq.</span>
-            </div>
-
-            {/* Mitad Derecha (Página N-1) */}
-            <div style={{ flex: 1, padding: '0.5rem', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center' }}>
-              <span className="font-mono" style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', fontWeight: 700 }}>
-                Página N-1
-              </span>
-              <span style={{ fontSize: '0.62rem', color: 'var(--text-disabled)' }}>Interior Der.</span>
-            </div>
-          </div>
-        </div>
       </div>
 
-      {/* Resumen de configuración activa */}
-      <div style={{ marginTop: '1rem', paddingTop: '0.8rem', borderTop: '1px dashed var(--border-subtle)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem', fontSize: '0.75rem' }}>
-        <div>
-          <span style={{ color: 'var(--text-disabled)' }}>Modo Activo: </span>
-          <strong style={{ color: 'var(--accent)' }}>
-            {mode === 'fotocopia' ? `Fotocopia Libro Abierto (${fotocopiaStart === 'derecha' ? 'Pág 1 a la Derecha' : 'Pág 1 a la Izquierda'})` : 'PDF Normal A4/A5'}
-          </strong>
-        </div>
-
-        {excludeStr && (
-          <div>
-            <span style={{ color: 'var(--text-disabled)' }}>Excluyendo: </span>
-            <span className="font-mono" style={{ color: '#F87171', backgroundColor: 'rgba(248,113,113,0.15)', padding: '2px 6px', borderRadius: '4px', fontWeight: 700 }}>
-              {excludeStr}
-            </span>
-          </div>
-        )}
+      {/* Regla Editorial */}
+      <div style={{ marginTop: '1rem', paddingTop: '0.8rem', borderTop: '1px dashed var(--border-subtle)', textAlign: 'center', fontSize: '0.73rem', color: 'var(--text-secondary)' }}>
+        📖 <strong style={{ color: 'var(--accent)' }}>Regla Editorial Universal:</strong> Páginas <strong>IMPARES (1, 3, 5...) siempre a la DERECHA</strong> | Páginas <strong>PARES (2, 4, 6...) siempre a la IZQUIERDA</strong>.
       </div>
     </div>
   );
@@ -114,8 +121,18 @@ function BookletDiagram({ mode, fotocopiaStart, excludeStr }) {
 export default function PdfToLibroTool() {
   const [file, setFile] = useState(null);
   const [mode, setMode] = useState('normal'); // 'normal' | 'fotocopia'
+
+  // Opciones de Tapa y Foliado
+  const [hasCover, setHasCover] = useState(true);
+  const [coverSide, setCoverSide] = useState('derecha'); // 'derecha' | 'izquierda'
+  const [hasRefPage, setHasRefPage] = useState(false);
+  const [refPdfPage, setRefPdfPage] = useState('');
+  const [refBookPage, setRefBookPage] = useState('');
+  const [refPageSide, setRefPageSide] = useState('derecha'); // 'derecha' | 'izquierda'
+
   const [excludeStr, setExcludeStr] = useState('');
-  const [fotocopiaStart, setFotocopiaStart] = useState('derecha'); // 'derecha' | 'izquierda'
+  const [fotocopiaStart, setFotocopiaStart] = useState('derecha');
+
   const [loading, setLoading] = useState(false);
   const [progressMsg, setProgressMsg] = useState('');
   const [progressPct, setProgressPct] = useState(0);
@@ -143,7 +160,16 @@ export default function PdfToLibroTool() {
       setProgressPct(5);
       setProgressMsg('Preparando motor PDF...');
 
-      const options = { excludeStr, fotocopiaStart };
+      const options = {
+        excludeStr,
+        fotocopiaStart,
+        hasCover,
+        coverSide,
+        refPdfPage: Number(refPdfPage) || 0,
+        refBookPage: Number(refBookPage) || 0,
+        refPageSide
+      };
+
       const result = await pdfToLibro(file, mode, options, (msg, pct) => {
         setProgressMsg(msg);
         setProgressPct(pct);
@@ -178,13 +204,13 @@ export default function PdfToLibroTool() {
         <span>PDF a Libro (Imposición de Folleto A4 / A5)</span>
       </h3>
       <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '1.5rem', lineHeight: 1.5 }}>
-        Convierte cualquier PDF en un folleto listo para imprimir a doble cara y abrochar al centro. Reordena las páginas automáticamente (imposición de cuadernillo de 4 páginas) y soporta PDFs de fotocopia de libro abierto.
+        Asistente inteligente de preimpresión para maquetar folletos A4 listos para imprimir a doble cara y coser/abrochar al centro en tamaño A5. Sincroniza automáticamente los números de página del libro con la regla editorial Par (Izquierda) / Impar (Derecha).
       </p>
 
-      {/* Selector de modo */}
+      {/* 1. Selector de formato de origen */}
       <div style={{ marginBottom: '1.2rem', backgroundColor: 'var(--bg-surface-2)', padding: '1rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-subtle)' }}>
         <label style={{ fontSize: '0.85rem', color: 'var(--accent)', fontWeight: 700, display: 'block', marginBottom: '0.6rem' }}>
-          Formato de origen del PDF:
+          1. Formato de origen del PDF:
         </label>
         <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
           <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem', color: 'var(--text-primary)', cursor: 'pointer' }}>
@@ -198,26 +224,88 @@ export default function PdfToLibroTool() {
         </div>
       </div>
 
-      {/* Configuración de Fotocopia de Libro Abierto (Alineación Portada) */}
-      {mode === 'fotocopia' && (
-        <div style={{ marginBottom: '1.2rem', backgroundColor: 'var(--bg-surface-2)', padding: '1rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-subtle)' }}>
-          <label style={{ fontSize: '0.85rem', color: 'var(--accent)', fontWeight: 700, display: 'block', marginBottom: '0.6rem' }}>
-            Alineación de la 1ª Hoja Escaneada:
-          </label>
-          <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
-            <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem', color: 'var(--text-primary)', cursor: 'pointer' }}>
-              <input type="radio" name="fotocopiaStart" value="derecha" checked={fotocopiaStart === 'derecha'} onChange={() => setFotocopiaStart('derecha')} style={{ accentColor: 'var(--accent)' }} />
-              <span>Página 1 a la Derecha (Portada Tradicional del Libro)</span>
+      {/* 2. Pregunta de Tapa aislada */}
+      <div style={{ marginBottom: '1.2rem', backgroundColor: 'var(--bg-surface-2)', padding: '1rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-subtle)' }}>
+        <label style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', fontSize: '0.85rem', color: 'var(--accent)', fontWeight: 700, cursor: 'pointer', marginBottom: hasCover ? '0.6rem' : 0 }}>
+          <input type="checkbox" checked={hasCover} onChange={(e) => setHasCover(e.target.checked)} style={{ accentColor: 'var(--accent)', width: '16px', height: '16px' }} />
+          <span>¿El PDF incluye Tapa / Carátula aislada?</span>
+        </label>
+
+        {hasCover && (
+          <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', marginTop: '0.5rem', paddingLeft: '1.6rem' }}>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.82rem', color: 'var(--text-primary)', cursor: 'pointer' }}>
+              <input type="radio" name="coverSide" value="derecha" checked={coverSide === 'derecha'} onChange={() => setCoverSide('derecha')} style={{ accentColor: 'var(--accent)' }} />
+              <span>Tapa en el lado DERECHO (Portada exterior recomendada)</span>
             </label>
-            <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem', color: 'var(--text-primary)', cursor: 'pointer' }}>
-              <input type="radio" name="fotocopiaStart" value="izquierda" checked={fotocopiaStart === 'izquierda'} onChange={() => setFotocopiaStart('izquierda')} style={{ accentColor: 'var(--accent)' }} />
-              <span>Página 1 a la Izquierda</span>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.82rem', color: 'var(--text-primary)', cursor: 'pointer' }}>
+              <input type="radio" name="coverSide" value="izquierda" checked={coverSide === 'izquierda'} onChange={() => setCoverSide('izquierda')} style={{ accentColor: 'var(--accent)' }} />
+              <span>Tapa en el lado IZQUIERDO</span>
             </label>
           </div>
-        </div>
-      )}
+        )}
+      </div>
 
-      {/* Rango de páginas a eliminar */}
+      {/* 3. Pregunta de Sincronización del Foliado (Libro vs PDF) */}
+      <div style={{ marginBottom: '1.2rem', backgroundColor: 'var(--bg-surface-2)', padding: '1rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-subtle)' }}>
+        <label style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', fontSize: '0.85rem', color: 'var(--accent)', fontWeight: 700, cursor: 'pointer', marginBottom: hasRefPage ? '0.8rem' : 0 }}>
+          <input type="checkbox" checked={hasRefPage} onChange={(e) => setHasRefPage(e.target.checked)} style={{ accentColor: 'var(--accent)', width: '16px', height: '16px' }} />
+          <span>Sincronizar número de página impreso en el libro con la página del PDF</span>
+        </label>
+
+        {hasRefPage && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem', paddingLeft: '1.6rem', marginTop: '0.4rem' }}>
+            <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', alignItems: 'center' }}>
+              <div style={{ flex: 1, minWidth: '180px' }}>
+                <span style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '0.3rem' }}>
+                  En la página del PDF N°:
+                </span>
+                <input
+                  type="number"
+                  min={1}
+                  placeholder="ej. 6"
+                  value={refPdfPage}
+                  onChange={(e) => setRefPdfPage(e.target.value)}
+                  className="input font-mono"
+                  style={{ width: '100%', fontSize: '0.85rem' }}
+                />
+              </div>
+
+              <div style={{ flex: 1, minWidth: '180px' }}>
+                <span style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '0.3rem' }}>
+                  Aparece el número del Libro N°:
+                </span>
+                <input
+                  type="number"
+                  min={1}
+                  placeholder="ej. 8"
+                  value={refBookPage}
+                  onChange={(e) => setRefBookPage(e.target.value)}
+                  className="input font-mono"
+                  style={{ width: '100%', fontSize: '0.85rem' }}
+                />
+              </div>
+            </div>
+
+            <div>
+              <span style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '0.4rem' }}>
+                ¿De qué lado se encuentra dicho número en esa hoja del PDF/fotocopia?
+              </span>
+              <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.82rem', color: 'var(--text-primary)', cursor: 'pointer' }}>
+                  <input type="radio" name="refPageSide" value="derecha" checked={refPageSide === 'derecha'} onChange={() => setRefPageSide('derecha')} style={{ accentColor: 'var(--accent)' }} />
+                  <span>Del lado DERECHO</span>
+                </label>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.82rem', color: 'var(--text-primary)', cursor: 'pointer' }}>
+                  <input type="radio" name="refPageSide" value="izquierda" checked={refPageSide === 'izquierda'} onChange={() => setRefPageSide('izquierda')} style={{ accentColor: 'var(--accent)' }} />
+                  <span>Del lado IZQUIERDO</span>
+                </label>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* 4. Rango de páginas a eliminar */}
       <div style={{ marginBottom: '1.5rem', backgroundColor: 'var(--bg-surface-2)', padding: '1rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-subtle)' }}>
         <label style={{ fontSize: '0.85rem', color: 'var(--accent)', fontWeight: 700, display: 'block', marginBottom: '0.4rem' }}>
           {mode === 'fotocopia' ? 'Hojas Escaneadas a Eliminar (Opcional):' : 'Páginas a Eliminar (Opcional):'}
@@ -230,13 +318,20 @@ export default function PdfToLibroTool() {
           className="input font-mono"
           style={{ width: '100%', fontSize: '0.85rem' }}
         />
-        <div style={{ fontSize: '0.75rem', color: 'var(--text-disabled)', marginTop: '0.4rem' }}>
-          Permite omitir portadas en blanco o páginas innecesarias antes de armar los pliegos de encuadernación.
-        </div>
       </div>
 
-      {/* DIAGRAMA TÉCNICO INTERACTIVO DE IMPOSICIÓN */}
-      <BookletDiagram mode={mode} fotocopiaStart={fotocopiaStart} excludeStr={excludeStr} />
+      {/* DIAGRAMA TÉCNICO INTERACTIVO COMPARATIVO ANTES / DESPUÉS */}
+      <BookletDiagram
+        mode={mode}
+        fotocopiaStart={fotocopiaStart}
+        excludeStr={excludeStr}
+        hasCover={hasCover}
+        coverSide={coverSide}
+        hasRefPage={hasRefPage}
+        refPdfPage={Number(refPdfPage) || 0}
+        refBookPage={Number(refBookPage) || 0}
+        refPageSide={refPageSide}
+      />
 
       {/* Carga de archivo */}
       <div
