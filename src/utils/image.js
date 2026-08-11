@@ -4,7 +4,7 @@
 // matte-generator, social-cropper, colorblind-sim (sobre imagen)
 // =============================================================================
 
-import { simulateColorblind, rgbToHex } from './color';
+import { simulateColorblind, rgbToHex, rgbToHsl, rgbToCmyk, findClosestPantone } from './color';
 
 export function loadImageFromFile(file) {
   return new Promise((resolve, reject) => {
@@ -14,6 +14,39 @@ export function loadImageFromFile(file) {
     img.onerror = (e) => reject(e);
     img.src = url;
   });
+}
+
+export function loadSvgTextFromFile(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (e) => resolve(e.target.result);
+    reader.onerror = (err) => reject(err);
+    reader.readAsText(file);
+  });
+}
+
+export function svgToImage(svgText) {
+  return new Promise((resolve, reject) => {
+    const blob = new Blob([svgText], { type: 'image/svg+xml;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const img = new Image();
+    img.onload = () => resolve({ img, url });
+    img.onerror = (e) => reject(e);
+    img.src = url;
+  });
+}
+
+export function recolorSvgText(svgText, targetColor) {
+  // Check if SVG has multiple color fills or strokes
+  const fills = (svgText.match(/fill=[\"\']([^\"\']+)[\"\']/gi) || []);
+  const strokes = (svgText.match(/stroke=[\"\']([^\"\']+)[\"\']/gi) || []);
+  const isMultiColor = (new Set([...fills, ...strokes])).size > 1;
+
+  let clean = svgText;
+  clean = clean.replace(/fill=[\"\'](?!none)[^\"\']+[\"\']/gi, `fill="${targetColor}"`);
+  clean = clean.replace(/stroke=[\"\'](?!none)[^\"\']+[\"\']/gi, `stroke="${targetColor}"`);
+
+  return { svgText: clean, isMultiColor };
 }
 
 export function downloadCanvas(canvas, filename, type = 'image/png', quality) {
@@ -30,8 +63,6 @@ export function downloadCanvas(canvas, filename, type = 'image/png', quality) {
   }, type, quality);
 }
 
-// Dibuja una imagen tipo "cover" (recorte centrado) dentro de un canvas de w x h,
-// con offsets porcentuales opcionales (-50 a 50) para reposicionar el foco del recorte.
 export function drawCover(ctx, img, w, h, offsetXPct = 0, offsetYPct = 0, bgColor = null) {
   ctx.clearRect(0, 0, w, h);
   if (bgColor) {
@@ -57,7 +88,6 @@ export function drawCover(ctx, img, w, h, offsetXPct = 0, offsetYPct = 0, bgColo
   ctx.drawImage(img, sx, sy, sw, sh, 0, 0, w, h);
 }
 
-// Dibuja la imagen completa "contenida" (sin recortar) sobre un fondo/matte opcional
 export function drawContain(ctx, img, w, h, bgColor = null) {
   ctx.clearRect(0, 0, w, h);
   if (bgColor) {
@@ -72,7 +102,6 @@ export function drawContain(ctx, img, w, h, bgColor = null) {
   ctx.drawImage(img, dx, dy, dw, dh);
 }
 
-// Extrae una paleta de N colores dominantes por cuantización en buckets (k-means ligero)
 export function extractPalette(img, count = 6) {
   const sampleSize = 96;
   const canvas = document.createElement('canvas');
@@ -83,10 +112,10 @@ export function extractPalette(img, count = 6) {
   const { data } = ctx.getImageData(0, 0, sampleSize, sampleSize);
 
   const buckets = new Map();
-  const step = 24; // tamaño del cuanto por canal
+  const step = 24;
   for (let i = 0; i < data.length; i += 4) {
     const a = data[i + 3];
-    if (a < 40) continue; // ignora píxeles casi transparentes
+    if (a < 40) continue;
     const r = Math.round(data[i] / step) * step;
     const g = Math.round(data[i + 1] / step) * step;
     const b = Math.round(data[i + 2] / step) * step;
@@ -104,13 +133,27 @@ export function extractPalette(img, count = 6) {
 
   const sorted = [...buckets.values()].sort((a, b) => b.count - a.count).slice(0, count);
   const total = sorted.reduce((sum, b) => sum + b.count, 0) || 1;
-  return sorted.map((b) => ({
-    hex: rgbToHex(b.r / b.count, b.g / b.count, b.b / b.count),
-    pct: Math.round((b.count / total) * 100)
-  }));
+  return sorted.map((b) => {
+    const r = Math.round(b.r / b.count);
+    const g = Math.round(b.g / b.count);
+    const bColor = Math.round(b.b / b.count);
+    const hex = rgbToHex(r, g, bColor);
+    const { h, s, l } = rgbToHsl(r, g, bColor);
+    const { c, m, y, k } = rgbToCmyk(r, g, bColor);
+    const pantone = findClosestPantone(r, g, bColor);
+
+    return {
+      hex,
+      rgb: `rgb(${r}, ${g}, ${bColor})`,
+      hsl: `hsl(${h}, ${s}%, ${l}%)`,
+      cmyk: `cmyk(${c}%, ${m}%, ${y}%, ${k}%)`,
+      pantoneC: pantone.coated.code,
+      pantoneU: pantone.uncoated.code,
+      pct: Math.round((b.count / total) * 100)
+    };
+  });
 }
 
-// Aplica una simulación de daltonismo a una imagen completa, devuelve un canvas nuevo
 export function applyColorblindToImage(img, type, maxDim = 640) {
   const scale = Math.min(1, maxDim / Math.max(img.width, img.height));
   const w = Math.max(1, Math.round(img.width * scale));
@@ -142,38 +185,71 @@ export function drawWatermark(ctx, w, h, opts) {
     opacity = 0.6,
     fontSize = 32,
     position = 'bottom-right',
-    tiled = false
+    tiled = false,
+    watermarkImg = null
   } = opts;
 
   ctx.save();
   ctx.globalAlpha = opacity;
-  ctx.fillStyle = color;
-  ctx.font = `700 ${fontSize}px "Space Grotesk", sans-serif`;
-  ctx.textBaseline = 'middle';
 
-  if (tiled) {
-    const textW = ctx.measureText(text).width;
-    const stepX = textW + fontSize * 2;
-    const stepY = fontSize * 4;
-    ctx.rotate(-Math.PI / 8);
-    const diag = Math.sqrt(w * w + h * h);
-    for (let y = -diag; y < diag; y += stepY) {
-      for (let x = -diag; x < diag; x += stepX) {
-        ctx.fillText(text, x, y);
+  if (watermarkImg) {
+    // Render SVG or PNG graphic watermark
+    const wmScale = (fontSize * 3) / Math.max(watermarkImg.width, watermarkImg.height);
+    const wmW = Math.round(watermarkImg.width * wmScale);
+    const wmH = Math.round(watermarkImg.height * wmScale);
+
+    if (tiled) {
+      const stepX = wmW + fontSize * 2;
+      const stepY = wmH + fontSize * 2;
+      ctx.rotate(-Math.PI / 8);
+      const diag = Math.sqrt(w * w + h * h);
+      for (let y = -diag; y < diag; y += stepY) {
+        for (let x = -diag; x < diag; x += stepX) {
+          ctx.drawImage(watermarkImg, x, y, wmW, wmH);
+        }
       }
+    } else {
+      const margin = fontSize * 0.8;
+      const positions = {
+        'top-left': [margin, margin],
+        'top-right': [w - wmW - margin, margin],
+        'bottom-left': [margin, h - wmH - margin],
+        'bottom-right': [w - wmW - margin, h - wmH - margin],
+        center: [(w - wmW) / 2, (h - wmH) / 2]
+      };
+      const [x, y] = positions[position] || positions['bottom-right'];
+      ctx.drawImage(watermarkImg, x, y, wmW, wmH);
     }
   } else {
-    const textW = ctx.measureText(text).width;
-    const margin = fontSize * 0.8;
-    const positions = {
-      'top-left': [margin, margin + fontSize / 2],
-      'top-right': [w - textW - margin, margin + fontSize / 2],
-      'bottom-left': [margin, h - margin - fontSize / 2],
-      'bottom-right': [w - textW - margin, h - margin - fontSize / 2],
-      center: [(w - textW) / 2, h / 2]
-    };
-    const [x, y] = positions[position] || positions['bottom-right'];
-    ctx.fillText(text, x, y);
+    // Render text watermark
+    ctx.fillStyle = color;
+    ctx.font = `700 ${fontSize}px "Space Grotesk", sans-serif`;
+    ctx.textBaseline = 'middle';
+
+    if (tiled) {
+      const textW = ctx.measureText(text).width;
+      const stepX = textW + fontSize * 2;
+      const stepY = fontSize * 4;
+      ctx.rotate(-Math.PI / 8);
+      const diag = Math.sqrt(w * w + h * h);
+      for (let y = -diag; y < diag; y += stepY) {
+        for (let x = -diag; x < diag; x += stepX) {
+          ctx.fillText(text, x, y);
+        }
+      }
+    } else {
+      const textW = ctx.measureText(text).width;
+      const margin = fontSize * 0.8;
+      const positions = {
+        'top-left': [margin, margin + fontSize / 2],
+        'top-right': [w - textW - margin, margin + fontSize / 2],
+        'bottom-left': [margin, h - margin - fontSize / 2],
+        'bottom-right': [w - textW - margin, h - margin - fontSize / 2],
+        center: [(w - textW) / 2, h / 2]
+      };
+      const [x, y] = positions[position] || positions['bottom-right'];
+      ctx.fillText(text, x, y);
+    }
   }
   ctx.restore();
 }
