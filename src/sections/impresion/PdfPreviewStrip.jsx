@@ -2,7 +2,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import { Eye, ChevronLeft, ChevronRight, CheckCircle2, RefreshCw, ZoomIn, X, Check } from 'lucide-react';
 import { inyectarPDFjs } from './pdfToLibro';
 
-function LightboxModal({ pdfDoc, pageNum, numPages, mode, rotation = 0, onSelect, onClose, onPrevPage, onNextPage, initialBookPage = '' }) {
+function LightboxModal({ pdfDoc, pageNum, numPages, mode, rotation = 0, onRotate, splitOffset = 50, onAdjustSplit, onSelect, onClose, onPrevPage, onNextPage, initialBookPage = '' }) {
   const [highResUrl, setHighResUrl] = useState(null);
   const [loading, setLoading] = useState(true);
   const [bookNumberInput, setBookNumberInput] = useState(initialBookPage);
@@ -88,7 +88,7 @@ function LightboxModal({ pdfDoc, pageNum, numPages, mode, rotation = 0, onSelect
       </div>
 
       {/* Contenedor con Imagen y Flechas de Navegación laterales */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem', maxWidth: '95vw', marginBottom: '1rem' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem', maxWidth: '95vw', marginBottom: '0.8rem' }}>
         <button
           onClick={onPrevPage}
           disabled={pageNum <= 1}
@@ -106,7 +106,7 @@ function LightboxModal({ pdfDoc, pageNum, numPages, mode, rotation = 0, onSelect
         </button>
 
         <div style={{
-          maxHeight: '60vh',
+          maxHeight: '58vh',
           maxWidth: '75vw',
           overflow: 'auto',
           borderRadius: 'var(--radius-md)',
@@ -115,12 +115,26 @@ function LightboxModal({ pdfDoc, pageNum, numPages, mode, rotation = 0, onSelect
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          padding: '8px'
+          padding: '8px',
+          position: 'relative'
         }}>
           {loading ? (
             <div style={{ color: '#000', padding: '2rem', fontSize: '0.9rem' }}>Cargando página...</div>
           ) : (
-            <img src={highResUrl} alt={`Página ${pageNum}`} style={{ maxHeight: '55vh', maxWidth: '100%', objectFit: 'contain' }} />
+            <div style={{ position: 'relative', display: 'inline-block' }}>
+              <img src={highResUrl} alt={`Página ${pageNum}`} style={{ maxHeight: '53vh', maxWidth: '100%', objectFit: 'contain' }} />
+
+              {/* Línea de corte central en zoom si es Fotocopia */}
+              {mode === 'fotocopia' && (
+                <div style={{
+                  position: 'absolute',
+                  left: `${splitOffset}%`, top: 0, bottom: 0, width: 0,
+                  borderLeft: '2px dashed #F87171', pointerEvents: 'none', zIndex: 10
+                }}>
+                  <span style={{ position: 'absolute', top: '10px', left: '-12px', fontSize: '0.8rem', color: '#fff', backgroundColor: '#F87171', padding: '2px 6px', borderRadius: '3px', fontWeight: 800 }}>✂ {splitOffset}%</span>
+                </div>
+              )}
+            </div>
           )}
         </div>
 
@@ -140,6 +154,28 @@ function LightboxModal({ pdfDoc, pageNum, numPages, mode, rotation = 0, onSelect
           Siguiente <ChevronRight size={18} />
         </button>
       </div>
+
+      {/* Barra de Ajustes de Fotocopia (Giro y Corte) si es modo Fotocopia */}
+      {mode === 'fotocopia' && (
+        <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', marginBottom: '0.8rem', backgroundColor: 'rgba(255,255,255,0.1)', padding: '0.4rem 1rem', borderRadius: 'var(--radius-sm)' }}>
+          <button
+            onClick={() => onRotate && onRotate(pageNum, 180)}
+            style={{
+              backgroundColor: 'var(--accent)', color: '#000', border: 'none', borderRadius: '4px',
+              padding: '0.4rem 0.8rem', fontSize: '0.78rem', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.3rem'
+            }}
+          >
+            <RefreshCw size={12} /> Corregir Giro (180°)
+          </button>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', color: '#fff', fontSize: '0.78rem' }}>
+            <span>Línea de corte:</span>
+            <button onClick={() => onAdjustSplit && onAdjustSplit(pageNum, Math.max(35, splitOffset - 2))} style={{ backgroundColor: 'rgba(255,255,255,0.2)', border: 'none', color: '#fff', padding: '2px 6px', borderRadius: '3px', cursor: 'pointer', fontWeight: 800 }}>◄</button>
+            <span className="font-mono" style={{ color: '#F87171', fontWeight: 700 }}>{splitOffset}%</span>
+            <button onClick={() => onAdjustSplit && onAdjustSplit(pageNum, Math.min(65, splitOffset + 2))} style={{ backgroundColor: 'rgba(255,255,255,0.2)', border: 'none', color: '#fff', padding: '2px 6px', borderRadius: '3px', cursor: 'pointer', fontWeight: 800 }}>►</button>
+          </div>
+        </div>
+      )}
 
       {/* Barra de Confirmación "¡Número encontrado!" */}
       <div style={{
@@ -523,6 +559,9 @@ export default function PdfPreviewStrip({ file, selectedPdfPage, onSelectPage, m
           numPages={numPages}
           mode={mode}
           rotation={pageRotations[lightboxPageNum] || 0}
+          onRotate={onRotatePage}
+          splitOffset={pageSplitOffsets[lightboxPageNum] !== undefined ? pageSplitOffsets[lightboxPageNum] : 50}
+          onAdjustSplit={onAdjustSplitPage}
           initialBookPage={selectedPdfPage === lightboxPageNum ? refBookPage : ''}
           onClose={() => setLightboxPageNum(null)}
           onPrevPage={() => setLightboxPageNum(prev => Math.max(1, prev - 1))}
