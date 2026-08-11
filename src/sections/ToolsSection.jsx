@@ -5,8 +5,9 @@ import {
   FileImage, Printer, Ruler, ScanEye, Stamp, RefreshCw
 } from 'lucide-react';
 import {
-  hexToRgb, rgbToHsl, approxOklch, contrastRatio,
-  generateTailwindShades, generateHarmonies, COLORBLIND_TYPES, simulateColorblind
+  hexToRgb, rgbToHex, rgbToHsl, rgbToCmyk, cmykToRgb, approxOklch, contrastRatio,
+  generateTailwindShades, generateHarmonies, COLORBLIND_TYPES, simulateColorblind,
+  parseAnyColorInput, findClosestPantone
 } from '../utils/color';
 import {
   loadImageFromFile, downloadCanvas, drawCover, drawContain,
@@ -98,20 +99,36 @@ export default function ToolsSection() {
   };
 
   // ---------------------------------------------------------------------
-  // TAB 1 — COLOR, PALETAS TAILWIND, ARMONÍAS Y DALTONISMO (por color base)
+  // TAB 1 — COLOR MULTIFORMATO, PANTONE, PALETAS TAILWIND, ARMONÍAS Y DALTONISMO
   // ---------------------------------------------------------------------
-  const [hexColor, setHexColor] = useState('#BAFDC1');
+  const [colorInput, setColorInput] = useState('#BAFDC1');
+
+  // Universal parser + instant auto-updating for all 4 downstream panels
   const colorData = useMemo(() => {
-    const { r, g, b } = hexToRgb(hexColor);
+    const parsed = parseAnyColorInput(colorInput) || { r: 186, g: 253, b: 193, a: 1 };
+    const { r, g, b, a } = parsed;
     const { h, s, l } = rgbToHsl(r, g, b);
+    const { c, m, y, k } = rgbToCmyk(r, g, b);
+    const pantoneMatch = findClosestPantone(r, g, b);
+    const hex = rgbToHex(r, g, b);
+    const alphaHex = Math.round((a !== undefined ? a : 1) * 255).toString(16).padStart(2, '0').toUpperCase();
+    const hex8 = `${hex}${alphaHex}`;
+
     return {
-      hex: `#${(('000000' + ((r << 16) | (g << 8) | b).toString(16)).slice(-6)).toUpperCase()}`,
+      hex,
+      hex8,
       rgb: `rgb(${r}, ${g}, ${b})`,
+      rgba: `rgba(${r}, ${g}, ${b}, ${a !== undefined ? a : 1})`,
       hsl: `hsl(${h}, ${s}%, ${l}%)`,
+      cmyk: `cmyk(${c}%, ${m}%, ${y}%, ${k}%)`,
       oklch: approxOklch(r, g, b),
-      r, g, b, h, s, l
+      pantoneName: pantoneMatch.code,
+      pantoneHex: pantoneMatch.hex,
+      pantoneSimilarity: pantoneMatch.similarity,
+      pantoneDeltaE: pantoneMatch.deltaE,
+      r, g, b, a: a !== undefined ? a : 1, h, s, l, c, m, y, k
     };
-  }, [hexColor]);
+  }, [colorInput]);
 
   const tailwindShades = useMemo(() => generateTailwindShades(colorData.r, colorData.g, colorData.b), [colorData]);
   const harmonies = useMemo(() => generateHarmonies(colorData.hex), [colorData.hex]);
@@ -408,7 +425,7 @@ export default function ToolsSection() {
 
         <p style={{ color: 'var(--text-secondary)', fontSize: '1.05rem', lineHeight: 1.6 }}>
           Suite utilitaria 100% nativa (sin subir tus archivos a ningún servidor) para diseñadores y desarrolladores:
-          colorimetría OKLCH, paletas, daltonismo, recorte social, favicons, conversión de formato, marca de agua,
+          colorimetría OKLCH, coincidencia Pantone PMS, paletas, daltonismo, recorte social, favicons, conversión de formato, marca de agua,
           tipografía y los comandos equivalentes para la terminal <strong style={{ color: 'var(--accent)' }}>delphitools-cli</strong>.
         </p>
       </div>
@@ -440,73 +457,91 @@ export default function ToolsSection() {
         })}
       </div>
 
-      {/* TAB 1: COLOR, PALETAS TAILWIND, ARMONÍAS Y DALTONISMO ------------ */}
+      {/* TAB 1: COLOR MULTIFORMATO, PANTONE, PALETAS TAILWIND, ARMONÍAS Y DALTONISMO ------------ */}
       {activeTab === 'colour' && (
         <div style={gridStyle}>
           <ToolCard icon={Palette} title="Conversor de Color Multi-Espacio">
-            <div style={{ display: 'flex', alignItems: 'center', gap: '1.2rem', marginBottom: '1.8rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1.5rem' }}>
               <input
                 type="color"
                 value={colorData.hex}
-                onChange={(e) => setHexColor(e.target.value)}
-                style={{ width: '64px', height: '64px', borderRadius: 'var(--radius-md)', border: '2px solid var(--accent)', cursor: 'pointer', backgroundColor: 'transparent' }}
+                onChange={(e) => setColorInput(e.target.value)}
+                style={{ width: '60px', height: '60px', borderRadius: 'var(--radius-md)', border: '2px solid var(--accent)', cursor: 'pointer', backgroundColor: 'transparent' }}
+                title="Seleccionar color con el cuentagotas"
               />
               <div style={{ flex: 1 }}>
-                <FieldLabel>HEX Color</FieldLabel>
+                <FieldLabel>Pegá o escribí tu color (HEX 6/8d, RGB, HSL, CMYK, OKLCH o Pantone)</FieldLabel>
                 <input
                   type="text"
-                  value={hexColor}
-                  onChange={(e) => setHexColor(e.target.value)}
+                  value={colorInput}
+                  onChange={(e) => setColorInput(e.target.value)}
+                  placeholder="ej: ffd42aff, #ffd42a, rgb(255,212,42), cmyk(0,17,84,0), Pantone 115 C..."
                   className="input font-mono"
-                  style={{ width: '100%', fontSize: '1.1rem', fontWeight: 700 }}
+                  style={{ width: '100%', fontSize: '1rem', fontWeight: 700 }}
                 />
               </div>
             </div>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
               {[
-                { label: 'HEX', val: colorData.hex },
+                { label: 'HEX (6 dígitos)', val: colorData.hex },
+                { label: 'HEX (8 dígitos con Alfa)', val: colorData.hex8 },
                 { label: 'RGB', val: colorData.rgb },
                 { label: 'HSL', val: colorData.hsl },
-                { label: 'OKLCH', val: colorData.oklch }
+                { label: 'CMYK', val: colorData.cmyk },
+                { label: 'OKLCH', val: colorData.oklch },
+                { 
+                  label: 'Coincidencia Pantone PMS Coated', 
+                  val: `${colorData.pantoneName} (${colorData.pantoneHex}) — ${colorData.pantoneSimilarity} de coincidencia`,
+                  customColor: colorData.pantoneHex
+                }
               ].map((fmt) => (
                 <div key={fmt.label} style={{
                   display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                  backgroundColor: 'var(--bg-surface-2)', padding: '0.7rem 1rem',
+                  backgroundColor: 'var(--bg-surface-2)', padding: '0.65rem 0.9rem',
                   borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-subtle)'
                 }}>
-                  <div>
-                    <span className="font-mono" style={{ fontSize: '0.75rem', color: 'var(--text-disabled)', display: 'block' }}>{fmt.label}</span>
-                    <strong className="font-mono" style={{ fontSize: '0.92rem', color: 'var(--accent)' }}>{fmt.val}</strong>
+                  <div style={{ flex: 1, paddingRight: '0.5rem' }}>
+                    <span className="font-mono" style={{ fontSize: '0.72rem', color: 'var(--text-disabled)', display: 'block' }}>{fmt.label}</span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                      {fmt.customColor && (
+                        <div style={{ width: '16px', height: '16px', borderRadius: '4px', backgroundColor: fmt.customColor, border: '1px solid var(--border-subtle)' }} />
+                      )}
+                      <strong className="font-mono" style={{ fontSize: '0.88rem', color: 'var(--accent)', wordBreak: 'break-all' }}>{fmt.val}</strong>
+                    </div>
                   </div>
-                  <button className="btn btn-ghost btn-sm" onClick={() => copyToClipboard(fmt.val, fmt.label)} title="Copiar formato">
-                    {copiedCode === fmt.label ? <Check size={16} color="var(--accent)" /> : <Copy size={16} />}
+                  <button className="btn btn-ghost btn-sm" onClick={() => copyToClipboard(fmt.val, fmt.label)} title="Copiar valor">
+                    {copiedCode === fmt.label ? <Check size={15} color="var(--accent)" /> : <Copy size={15} />}
                   </button>
                 </div>
               ))}
             </div>
 
             <div style={{
-              marginTop: '1.8rem', padding: '1rem', borderRadius: 'var(--radius-md)',
+              marginTop: '1.5rem', padding: '0.9rem', borderRadius: 'var(--radius-md)',
               backgroundColor: 'var(--bg-surface-2)', border: '1px solid var(--border-subtle)',
               display: 'flex', alignItems: 'center', justifyContent: 'space-between'
             }}>
               <div>
-                <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', display: 'block' }}>Ratio de Contraste vs Fondo Oscuro</span>
-                <strong className="font-mono" style={{ fontSize: '1.2rem', color: Number(contrastVsDark) >= 4.5 ? 'var(--accent)' : '#F87171' }}>
+                <span style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', display: 'block' }}>Ratio de Contraste vs Fondo Oscuro</span>
+                <strong className="font-mono" style={{ fontSize: '1.15rem', color: Number(contrastVsDark) >= 4.5 ? 'var(--accent)' : '#F87171' }}>
                   {contrastVsDark}:1 {Number(contrastVsDark) >= 4.5 ? '✓ (AA/AAA Pass)' : '⚠ (Bajo Contraste)'}
                 </strong>
               </div>
             </div>
           </ToolCard>
 
-          <ToolCard icon={Layers} title="Escala de Sombras Tailwind (50 — 950)" description="Genera una paleta de 11 niveles de brillo calculados matemáticamente para tu sistema de diseño.">
+          <ToolCard icon={Layers} title="Escala de Sombras Tailwind (50 — 950)" description="Se actualiza automáticamente al escribir o seleccionar cualquier color base. Hacé clic en cualquier sombra para aplicarla a todo el sistema.">
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
               {tailwindShades.map((shade) => (
                 <div
                   key={shade.weight}
-                  onClick={() => copyToClipboard(shade.hex, `shade-${shade.weight}`)}
+                  onClick={() => {
+                    setColorInput(shade.hex);
+                    copyToClipboard(shade.hex, `shade-${shade.weight}`);
+                  }}
                   className="shade-item"
+                  title="Hacé clic para seleccionar esta sombra como color activo y copiar su HEX"
                   style={{
                     display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                     backgroundColor: shade.hex, color: shade.weight < 500 ? '#08080A' : '#FFFFFF',
@@ -522,7 +557,7 @@ export default function ToolsSection() {
             </div>
           </ToolCard>
 
-          <ToolCard icon={Droplet} title="Generador de Armonías Cromáticas" description="Esquemas calculados a partir del color base en la rueda cromática HSL.">
+          <ToolCard icon={Droplet} title="Generador de Armonías Cromáticas" description="Esquemas calculados automáticamente en la rueda cromática HSL. Hacé clic en cualquier color para seleccionarlo como activo.">
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1.1rem' }}>
               {harmonies.map((scheme) => (
                 <div key={scheme.id}>
@@ -531,8 +566,11 @@ export default function ToolsSection() {
                     {scheme.colors.map((c, i) => (
                       <div
                         key={i}
-                        onClick={() => copyToClipboard(c, `${scheme.id}-${i}`)}
-                        title={c}
+                        onClick={() => {
+                          setColorInput(c);
+                          copyToClipboard(c, `${scheme.id}-${i}`);
+                        }}
+                        title={`Hacé clic para seleccionar ${c} como activo y copiarlo`}
                         style={{ flex: 1, height: '40px', backgroundColor: c, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                       >
                         {copiedCode === `${scheme.id}-${i}` && <Check size={14} color="#08080A" />}
@@ -544,7 +582,7 @@ export default function ToolsSection() {
             </div>
           </ToolCard>
 
-          <ToolCard icon={ScanEye} title="Vista Rápida de Daltonismo" description="Simulación aproximada del color base bajo distintos tipos de daltonismo.">
+          <ToolCard icon={ScanEye} title="Vista Rápida de Daltonismo" description="Simulación automática en tiempo real del color activo bajo distintos tipos de daltonismo.">
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
               {colorblindSwatches.map((cb) => (
                 <div key={cb.id} style={{
@@ -555,7 +593,11 @@ export default function ToolsSection() {
                   <span style={{ fontSize: '0.82rem', color: 'var(--text-secondary)' }}>{cb.label}</span>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
                     <span className="font-mono" style={{ fontSize: '0.78rem', color: 'var(--text-disabled)' }}>{cb.hex}</span>
-                    <div style={{ width: '28px', height: '28px', borderRadius: 'var(--radius-sm)', backgroundColor: cb.hex, border: '1px solid var(--border-subtle)' }} />
+                    <div
+                      onClick={() => setColorInput(cb.hex)}
+                      title="Hacé clic para seleccionar este color simulado"
+                      style={{ width: '28px', height: '28px', borderRadius: 'var(--radius-sm)', backgroundColor: cb.hex, border: '1px solid var(--border-subtle)', cursor: 'pointer' }}
+                    />
                   </div>
                 </div>
               ))}
@@ -570,14 +612,19 @@ export default function ToolsSection() {
       {/* TAB 2: ANÁLISIS DE IMAGEN — PALETA + DALTONISMO ------------------ */}
       {activeTab === 'analysis' && (
         <div style={gridStyle}>
-          <ToolCard icon={Palette} title="Extractor de Paleta desde Imagen" description="Subí una imagen y obtené los colores dominantes por cuantización de píxeles, con su porcentaje de presencia.">
+          <ToolCard icon={Palette} title="Extractor de Paleta desde Imagen" description="Subí una imagen y obtené los colores dominantes por cuantización de píxeles, con su porcentaje de presencia. Hacé clic en cualquier color extraído para cargarlo en el conversor.">
             <UploadZone onFile={handleAnalysisUpload} fileName={analysisFileName} hint="PNG, JPG o WEBP — se procesa en tu navegador" />
             {palette.length > 0 && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginTop: '1.5rem' }}>
                 {palette.map((c, i) => (
                   <div
                     key={i}
-                    onClick={() => copyToClipboard(c.hex, `pal-${i}`)}
+                    onClick={() => {
+                      setColorInput(c.hex);
+                      copyToClipboard(c.hex, `pal-${i}`);
+                      setActiveTab('colour');
+                    }}
+                    title="Hacé clic para seleccionar este color y abrir el conversor"
                     style={{
                       display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                       backgroundColor: c.hex, padding: '0.6rem 1rem', borderRadius: 'var(--radius-sm)',
@@ -799,209 +846,207 @@ export default function ToolsSection() {
           )}
 
           {assetSubTab === 'watermark' && (
-            <div style={gridStyle}>
-              <ToolCard icon={Stamp} title="Generador de Marca de Agua" description="Aplicá una marca de agua de texto sobre tu imagen, con control de opacidad, tamaño, posición y mosaico.">
-                <UploadZone onFile={handleWmUpload} fileName={wmFileName} />
-                <div style={{ marginTop: '1.2rem' }}>
-                  <FieldLabel>Texto</FieldLabel>
-                  <input type="text" value={wmText} onChange={(e) => setWmText(e.target.value)} className="input font-mono" style={{ marginBottom: '1rem' }} />
-
-                  <div style={{ display: 'flex', gap: '1rem', marginBottom: '1rem' }}>
-                    <div style={{ flex: 1 }}>
-                      <FieldLabel>Color</FieldLabel>
-                      <input type="color" value={wmColor} onChange={(e) => setWmColor(e.target.value)} style={{ width: '100%', height: '42px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-subtle)', cursor: 'pointer' }} />
+            <ToolCard icon={Stamp} title="Aplicador de Marca de Agua" description="Protegé tus diseños o muestras colocando un texto o logo de marca sobre tus imágenes.">
+              <UploadZone onFile={handleWmUpload} fileName={wmFileName} />
+              {wmImg && (
+                <>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '1rem', margin: '1.2rem 0' }}>
+                    <div>
+                      <FieldLabel>Texto de marca</FieldLabel>
+                      <input type="text" value={wmText} onChange={(e) => setWmText(e.target.value)} className="input font-mono" />
                     </div>
-                    <div style={{ flex: 1 }}>
+                    <div>
+                      <FieldLabel>Color del texto</FieldLabel>
+                      <input type="color" value={wmColor} onChange={(e) => setWmColor(e.target.value)} style={{ width: '100%', height: '38px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-subtle)', cursor: 'pointer' }} />
+                    </div>
+                    <div>
+                      <FieldLabel>Opacidad ({Math.round(wmOpacity * 100)}%)</FieldLabel>
+                      <input type="range" min={0.1} max={1} step={0.05} value={wmOpacity} onChange={(e) => setWmOpacity(Number(e.target.value))} style={{ width: '100%', marginTop: '0.6rem' }} />
+                    </div>
+                    <div>
+                      <FieldLabel>Tamaño de letra ({wmFontSize}px)</FieldLabel>
+                      <input type="range" min={12} max={96} value={wmFontSize} onChange={(e) => setWmFontSize(Number(e.target.value))} style={{ width: '100%', marginTop: '0.6rem' }} />
+                    </div>
+                    <div>
                       <FieldLabel>Posición</FieldLabel>
                       <select value={wmPosition} onChange={(e) => setWmPosition(e.target.value)} className="input font-mono" disabled={wmTiled}>
-                        <option value="bottom-right">Abajo Derecha</option>
-                        <option value="bottom-left">Abajo Izquierda</option>
-                        <option value="top-right">Arriba Derecha</option>
-                        <option value="top-left">Arriba Izquierda</option>
                         <option value="center">Centro</option>
+                        <option value="top-left">Arriba Izquierda</option>
+                        <option value="top-right">Arriba Derecha</option>
+                        <option value="bottom-left">Abajo Izquierda</option>
+                        <option value="bottom-right">Abajo Derecha</option>
                       </select>
                     </div>
                   </div>
 
-                  <div style={{ display: 'flex', gap: '1rem', marginBottom: '1rem' }}>
-                    <div style={{ flex: 1 }}>
-                      <FieldLabel>Opacidad ({Math.round(wmOpacity * 100)}%)</FieldLabel>
-                      <input type="range" min={0.1} max={1} step={0.05} value={wmOpacity} onChange={(e) => setWmOpacity(Number(e.target.value))} style={{ width: '100%' }} />
-                    </div>
-                    <div style={{ flex: 1 }}>
-                      <FieldLabel>Tamaño de fuente ({wmFontSize}px)</FieldLabel>
-                      <input type="range" min={12} max={96} value={wmFontSize} onChange={(e) => setWmFontSize(Number(e.target.value))} style={{ width: '100%' }} />
-                    </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem', marginBottom: '1.2rem' }}>
+                    <input type="checkbox" checked={wmTiled} onChange={(e) => setWmTiled(e.target.checked)} id="wm-tile-toggle" />
+                    <label htmlFor="wm-tile-toggle" style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>Patrón repetido (mosaico diagonal)</label>
                   </div>
 
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '1.2rem' }}>
-                    <input type="checkbox" checked={wmTiled} onChange={(e) => setWmTiled(e.target.checked)} id="wm-tiled" />
-                    <label htmlFor="wm-tiled" style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>Repetir en mosaico diagonal (protección anti-copia)</label>
+                  <div style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
+                    <canvas ref={wmCanvasRef} style={{ maxWidth: '100%', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-subtle)' }} />
                   </div>
 
-                  <button className="btn btn-primary" onClick={downloadWatermarked} disabled={!wmImg} style={{ width: '100%', justifyContent: 'center' }}>
+                  <button className="btn btn-primary" onClick={downloadWatermarked} style={{ width: '100%', justifyContent: 'center' }}>
                     <Download size={16} /><span>Descargar Imagen con Marca de Agua</span>
                   </button>
-                </div>
-              </ToolCard>
-
-              <ToolCard icon={Maximize2} title="Vista Previa">
-                {wmImg ? (
-                  <canvas ref={wmCanvasRef} style={{ width: '100%', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-subtle)' }} />
-                ) : (
-                  <div style={{ padding: '3rem 1rem', textAlign: 'center', color: 'var(--text-disabled)', fontSize: '0.85rem', border: '1px dashed var(--border-subtle)', borderRadius: 'var(--radius-md)' }}>
-                    Subí una imagen para ver la vista previa
-                  </div>
-                )}
-              </ToolCard>
-            </div>
+                </>
+              )}
+            </ToolCard>
           )}
         </div>
       )}
 
-      {/* TAB 6: TIPOGRAFÍA, MEDIDAS Y PAPEL -------------------------------- */}
+      {/* TAB 6: TIPOGRAFÍA & PAPEL ---------------------------------------- */}
       {activeTab === 'type' && (
         <div style={gridStyle}>
-          <ToolCard icon={Type} title="Escala Tipográfica Modular">
-            <div style={{ display: 'flex', gap: '1rem', marginBottom: '1.2rem' }}>
+          <ToolCard icon={Type} title="Escala Tipográfica Modular" description="Genera jerarquías tipográficas proporcionales para h1, h2, h3, body, small a partir de un tamaño base y una razón de escala.">
+            <div style={{ display: 'flex', gap: '1rem', marginBottom: '1.5rem' }}>
               <div style={{ flex: 1 }}>
-                <FieldLabel>Base (px)</FieldLabel>
+                <FieldLabel>Tamaño Base (px)</FieldLabel>
                 <input type="number" value={baseFontSize} onChange={(e) => setBaseFontSize(Number(e.target.value))} className="input font-mono" />
               </div>
               <div style={{ flex: 1 }}>
-                <FieldLabel>Proporción</FieldLabel>
+                <FieldLabel>Razón de Escala</FieldLabel>
                 <select value={scaleRatio} onChange={(e) => setScaleRatio(Number(e.target.value))} className="input font-mono">
+                  <option value={1.067}>1.067 — Minor Second</option>
                   <option value={1.125}>1.125 — Major Second</option>
-                  <option value={1.200}>1.200 — Minor Third</option>
-                  <option value={1.250}>1.250 — Major Third</option>
-                  <option value={1.414}>1.414 — Aug Fourth</option>
+                  <option value={1.2}>1.200 — Minor Third</option>
+                  <option value={1.25}>1.250 — Major Third</option>
+                  <option value={1.333}>1.333 — Perfect Fourth</option>
+                  <option value={1.414}>1.414 — Augmented Fourth</option>
+                  <option value={1.5}>1.500 — Perfect Fifth</option>
                   <option value={1.618}>1.618 — Golden Ratio</option>
                 </select>
               </div>
             </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
               {fontScaleList.map((item) => (
-                <div key={item.step} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.4rem 0.8rem', backgroundColor: 'var(--bg-surface-2)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-subtle)' }}>
-                  <span className="font-mono" style={{ fontSize: '0.78rem', color: 'var(--text-secondary)' }}>Nivel {item.step > 0 ? `+${item.step}` : item.step}</span>
-                  <strong className="font-mono" style={{ fontSize: '0.9rem', color: 'var(--accent)' }}>{item.px} px</strong>
-                  <span className="font-mono" style={{ fontSize: '0.78rem', color: 'var(--text-disabled)' }}>{item.rem} rem</span>
+                <div key={item.step} style={{
+                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                  backgroundColor: 'var(--bg-surface-2)', padding: '0.6rem 1rem',
+                  borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-subtle)'
+                }}>
+                  <span className="font-mono" style={{ fontSize: '0.78rem', color: 'var(--text-disabled)' }}>Paso {item.step > 0 ? `+${item.step}` : item.step}</span>
+                  <strong className="font-mono" style={{ fontSize: '0.92rem', color: 'var(--accent)' }}>{item.px}px</strong>
+                  <span className="font-mono" style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{item.rem}rem</span>
                 </div>
               ))}
             </div>
           </ToolCard>
 
-          <ToolCard icon={Ruler} title="Conversor PX ⇄ REM y Line-Height">
-            <div style={{ marginBottom: '1.5rem' }}>
-              <div style={{ display: 'flex', gap: '1rem', marginBottom: '0.6rem' }}>
-                <div style={{ flex: 1 }}>
-                  <FieldLabel>Tamaño raíz (px)</FieldLabel>
-                  <input type="number" value={rootFontSize} onChange={(e) => setRootFontSize(Number(e.target.value) || 16)} className="input font-mono" />
-                </div>
-                <div style={{ flex: 1 }}>
-                  <FieldLabel>Valor en PX</FieldLabel>
-                  <input type="number" value={pxInput} onChange={(e) => setPxInput(Number(e.target.value))} className="input font-mono" />
-                </div>
+          <ToolCard icon={Ruler} title="Calculadoras de PX a REM & Line Height" description="Conversiones inmediatas para hojas de estilo CSS.">
+            <div style={{ marginBottom: '1.8rem' }}>
+              <FieldLabel>Conversor PX → REM</FieldLabel>
+              <div style={{ display: 'flex', gap: '0.6rem', alignItems: 'center', marginBottom: '0.6rem' }}>
+                <input type="number" value={rootFontSize} onChange={(e) => setRootFontSize(Number(e.target.value))} className="input font-mono" placeholder="Root (16)" style={{ width: '90px' }} />
+                <span style={{ fontSize: '0.8rem', color: 'var(--text-disabled)' }}>px root</span>
+                <input type="number" value={pxInput} onChange={(e) => setPxInput(Number(e.target.value))} className="input font-mono" placeholder="PX" style={{ flex: 1 }} />
               </div>
-              <div className="input font-mono" style={{ backgroundColor: 'var(--bg-surface-2)', fontWeight: 700, color: 'var(--accent)', textAlign: 'center' }}>
-                {pxInput}px = {remOutput}rem
+              <div style={{ backgroundColor: 'var(--bg-surface-2)', padding: '0.7rem 1rem', borderRadius: 'var(--radius-sm)', display: 'flex', justifyContent: 'space-between', border: '1px solid var(--border-subtle)' }}>
+                <span style={{ fontSize: '0.82rem', color: 'var(--text-secondary)' }}>Resultado REM</span>
+                <strong className="font-mono" style={{ color: 'var(--accent)' }}>{remOutput}rem</strong>
               </div>
             </div>
 
             <div>
-              <div style={{ display: 'flex', gap: '1rem', marginBottom: '0.6rem' }}>
-                <div style={{ flex: 1 }}>
-                  <FieldLabel>Font-size (px)</FieldLabel>
-                  <input type="number" value={lhFontSize} onChange={(e) => setLhFontSize(Number(e.target.value))} className="input font-mono" />
-                </div>
-                <div style={{ flex: 1 }}>
-                  <FieldLabel>Ratio (unitless)</FieldLabel>
-                  <input type="number" step={0.05} value={lhRatio} onChange={(e) => setLhRatio(Number(e.target.value))} className="input font-mono" />
-                </div>
+              <FieldLabel>Line Height Óptimo</FieldLabel>
+              <div style={{ display: 'flex', gap: '0.6rem', marginBottom: '0.6rem' }}>
+                <input type="number" value={lhFontSize} onChange={(e) => setLhFontSize(Number(e.target.value))} className="input font-mono" placeholder="Font px" />
+                <input type="number" step={0.05} value={lhRatio} onChange={(e) => setLhRatio(Number(e.target.value))} className="input font-mono" placeholder="Ratio (1.5)" />
               </div>
-              <div className="input font-mono" style={{ backgroundColor: 'var(--bg-surface-2)', fontWeight: 700, color: 'var(--accent)', textAlign: 'center' }}>
-                line-height: {lhRatio} ({lhPx}px) {lhRatio >= 1.2 && lhRatio <= 1.6 ? '✓ rango recomendado' : '⚠ fuera de 1.2–1.6'}
+              <div style={{ backgroundColor: 'var(--bg-surface-2)', padding: '0.7rem 1rem', borderRadius: 'var(--radius-sm)', display: 'flex', justifyContent: 'space-between', border: '1px solid var(--border-subtle)' }}>
+                <span style={{ fontSize: '0.82rem', color: 'var(--text-secondary)' }}>Line-Height en PX</span>
+                <strong className="font-mono" style={{ color: 'var(--accent)' }}>{lhPx}px</strong>
               </div>
             </div>
           </ToolCard>
 
-          <ToolCard icon={Type} title="Contador de Palabras y Caracteres">
+          <ToolCard icon={Printer} title="Formatos de Papel Estándar (ISO 216 & US)" description="Medidas físicas en mm y resolución recomendada de impresión a 300 DPI.">
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
+              {PAPER_SIZES.map((paper) => (
+                <div key={paper.name} style={{
+                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                  backgroundColor: 'var(--bg-surface-2)', padding: '0.65rem 1rem',
+                  borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-subtle)'
+                }}>
+                  <strong style={{ fontSize: '0.9rem', color: 'var(--text-primary)', width: '80px' }}>{paper.name}</strong>
+                  <span className="font-mono" style={{ fontSize: '0.78rem', color: 'var(--text-secondary)' }}>{paper.mm}</span>
+                  <span className="font-mono" style={{ fontSize: '0.78rem', color: 'var(--accent)' }}>{paper.px300} @300dpi</span>
+                </div>
+              ))}
+            </div>
+          </ToolCard>
+
+          <ToolCard icon={Type} title="Contador de Palabras & Tiempo de Lectura" description="Analizador de longitud para textos editoriales y copys publicitarios.">
             <textarea
               value={wcText}
               onChange={(e) => setWcText(e.target.value)}
               className="input font-mono"
-              rows={8}
-              placeholder="Pegá tu copy, bajada o texto de producto acá..."
-              style={{ width: '100%', marginBottom: '1rem' }}
+              rows={5}
+              style={{ width: '100%', fontSize: '0.85rem', marginBottom: '1rem' }}
+              placeholder="Escribí o pegá tu texto aquí..."
             />
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '0.6rem' }}>
-              {[
-                { label: 'Palabras', val: wcStats.words },
-                { label: 'Caracteres', val: wcStats.chars },
-                { label: 'Sin espacios', val: wcStats.charsNoSpaces },
-                { label: 'Lectura (min)', val: wcStats.readingMinutes }
-              ].map((s) => (
-                <div key={s.label} style={{ backgroundColor: 'var(--bg-surface-2)', padding: '0.6rem', borderRadius: 'var(--radius-sm)', textAlign: 'center', border: '1px solid var(--border-subtle)' }}>
-                  <div className="font-mono" style={{ fontSize: '1.1rem', color: 'var(--accent)', fontWeight: 700 }}>{s.val}</div>
-                  <div style={{ fontSize: '0.72rem', color: 'var(--text-secondary)' }}>{s.label}</div>
-                </div>
-              ))}
-            </div>
-          </ToolCard>
-
-          <ToolCard icon={Printer} title="Tamaños de Papel de Referencia" description="Medidas físicas y su equivalente en píxeles a 300 DPI (resolución de impresión estándar).">
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-              {PAPER_SIZES.map((p) => (
-                <div key={p.name} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: 'var(--bg-surface-2)', padding: '0.6rem 1rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-subtle)' }}>
-                  <strong style={{ fontSize: '0.85rem', color: 'var(--text-primary)' }}>{p.name}</strong>
-                  <span className="font-mono" style={{ fontSize: '0.78rem', color: 'var(--text-secondary)' }}>{p.mm}</span>
-                  <span className="font-mono" style={{ fontSize: '0.78rem', color: 'var(--accent)' }}>{p.px300}</span>
-                </div>
-              ))}
+              <div style={{ backgroundColor: 'var(--bg-surface-2)', padding: '0.6rem 0.8rem', borderRadius: 'var(--radius-sm)' }}>
+                <span style={{ fontSize: '0.72rem', color: 'var(--text-disabled)', display: 'block' }}>Palabras</span>
+                <strong className="font-mono" style={{ fontSize: '1.1rem', color: 'var(--accent)' }}>{wcStats.words}</strong>
+              </div>
+              <div style={{ backgroundColor: 'var(--bg-surface-2)', padding: '0.6rem 0.8rem', borderRadius: 'var(--radius-sm)' }}>
+                <span style={{ fontSize: '0.72rem', color: 'var(--text-disabled)', display: 'block' }}>Caracteres</span>
+                <strong className="font-mono" style={{ fontSize: '1.1rem', color: 'var(--text-primary)' }}>{wcStats.chars}</strong>
+              </div>
+              <div style={{ backgroundColor: 'var(--bg-surface-2)', padding: '0.6rem 0.8rem', borderRadius: 'var(--radius-sm)' }}>
+                <span style={{ fontSize: '0.72rem', color: 'var(--text-disabled)', display: 'block' }}>Sin espacios</span>
+                <strong className="font-mono" style={{ fontSize: '1.1rem', color: 'var(--text-primary)' }}>{wcStats.charsNoSpaces}</strong>
+              </div>
+              <div style={{ backgroundColor: 'var(--bg-surface-2)', padding: '0.6rem 0.8rem', borderRadius: 'var(--radius-sm)' }}>
+                <span style={{ fontSize: '0.72rem', color: 'var(--text-disabled)', display: 'block' }}>Tiempo lectura</span>
+                <strong className="font-mono" style={{ fontSize: '1.1rem', color: 'var(--accent)' }}>~{wcStats.readingMinutes} min</strong>
+              </div>
             </div>
           </ToolCard>
         </div>
       )}
 
-      {/* TAB 7: CLI TERMINAL REFERENCE ------------------------------------- */}
+      {/* TAB 7: COMANDOS CLI ---------------------------------------------- */}
       {activeTab === 'cli' && (
-        <ToolCard icon={Terminal} title="delphitools-cli — Guía de Comandos para Terminal" description="Ejecutá las mismas herramientas en tu terminal Linux/Mac/Windows de forma 100% offline y sin telemetría.">
-          <div style={{ backgroundColor: '#08080A', border: '1px solid var(--border-strong)', borderRadius: 'var(--radius-md)', padding: '1.5rem', marginBottom: '1.5rem' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.8rem' }}>
-              <span className="font-mono" style={{ fontSize: '0.8rem', color: 'var(--text-disabled)' }}>Instalación vía Cargo / Rust</span>
-              <button className="btn btn-ghost btn-sm" onClick={() => copyToClipboard('cargo install delphitools-cli', 'cargo-ins')}>
-                {copiedCode === 'cargo-ins' ? <Check size={15} color="var(--accent)" /> : <Copy size={15} />}
+        <ToolCard icon={Terminal} title="Terminal delphitools-cli — Equivalencias" description="Si preferís trabajar desde la consola de comandos de Linux/macOS, instalá delphitools-cli para acceder a las mismas funciones en tu terminal.">
+          <div style={{ backgroundColor: 'var(--bg-base)', border: '1px solid var(--border-strong)', borderRadius: 'var(--radius-md)', padding: '1.5rem', marginBottom: '1.5rem' }}>
+            <FieldLabel accent>Comando de Instalación Global</FieldLabel>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', backgroundColor: 'var(--bg-surface-2)', padding: '0.8rem 1rem', borderRadius: 'var(--radius-sm)' }}>
+              <code className="font-mono" style={{ fontSize: '0.92rem', color: 'var(--accent)' }}>npm install -g delphitools-cli</code>
+              <button className="btn btn-ghost btn-sm" onClick={() => copyToClipboard('npm install -g delphitools-cli', 'cli-inst')}>
+                {copiedCode === 'cli-inst' ? <Check size={16} color="var(--accent)" /> : <Copy size={16} />}
               </button>
             </div>
-            <code className="font-mono" style={{ color: 'var(--accent)', fontSize: '0.95rem', display: 'block' }}>cargo install delphitools-cli</code>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1.2rem' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
             {[
-              { cmd: 'dt colour #BAFDC1 -j', desc: 'Convierte color a HEX, RGB, HSL, OKLCH en JSON' },
-              { cmd: 'dt tailwind-shades #BAFDC1', desc: 'Genera escala de sombras 50-950 en la consola' },
-              { cmd: 'dt harmony #BAFDC1 --scheme triadic', desc: 'Genera esquemas de armonía cromática' },
-              { cmd: 'dt colorblind-sim logo.png --type deuteranopia', desc: 'Simula percepción con daltonismo sobre una imagen' },
-              { cmd: 'dt palette-genny photo.jpg -n 6', desc: 'Extrae la paleta dominante de una imagen' },
-              { cmd: 'dt contrast #BAFDC1 #111114', desc: 'Calcula ratio de contraste WCAG AA/AAA' },
-              { cmd: 'dt svgo logo.svg -o clean.svg', desc: 'Optimiza y remueve metadata de un archivo SVG' },
-              { cmd: 'dt social-cropper photo.jpg --preset ig-post', desc: 'Recorta imagen a proporciones de redes sociales' },
-              { cmd: 'dt matte-generator logo.png --bg "#111114"', desc: 'Aplica un fondo sólido detrás de un PNG transparente' },
-              { cmd: 'dt watermarker photo.jpg --text "KALPA"', desc: 'Agrega marca de agua de texto a una imagen' },
-              { cmd: 'dt favicon-genny logo.svg', desc: 'Genera favicons para la web (16, 32, 180, 512px)' },
-              { cmd: 'dt image-converter photo.png --to webp', desc: 'Convierte una imagen entre PNG, JPEG y WEBP' },
-              { cmd: 'dt px2rem 24 --base 16', desc: 'Convierte píxeles a rem según tamaño raíz' },
-              { cmd: 'dt line-height-calc 16 --ratio 1.5', desc: 'Calcula altura de línea recomendada' },
-              { cmd: 'dt word-counter texto.txt', desc: 'Cuenta palabras, caracteres y tiempo de lectura' },
-              { cmd: 'dt paper-sizes A4 --dpi 300', desc: 'Devuelve medidas de papel en mm y píxeles' }
+              { cmd: 'dt colour ffd42aff', desc: 'Convierte ffd42aff a RGB, HSL, CMYK, OKLCH y su Pantone más cercano' },
+              { cmd: 'dt pantone 115-c', desc: 'Muestra la ficha técnica Pantone PMS con su equivalencia HEX y RGB' },
+              { cmd: 'dt tailwind-shades #BAFDC1', desc: 'Genera las 11 sombras de 50 a 950 para Tailwind CSS' },
+              { cmd: 'dt harmony #BAFDC1', desc: 'Genera esquemas complementarios, análogos, triádicos y tetrádicos' },
+              { cmd: 'dt colorblind --type protanopia logo.png', desc: 'Simula el efecto de protanopía sobre una imagen' },
+              { cmd: 'dt social-crop --preset square avatar.jpg', desc: 'Recorta y centra una imagen para redes sociales' },
+              { cmd: 'dt svgo --clean logo.svg', desc: 'Optimiza y limpia código vectorial SVG' },
+              { cmd: 'dt favicon logo.png', desc: 'Genera el paquete completo de favicons en todos los tamaños' }
             ].map((c) => (
-              <div key={c.cmd} style={{ backgroundColor: 'var(--bg-surface-2)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-md)', padding: '1rem' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.4rem' }}>
-                  <code className="font-mono" style={{ fontSize: '0.82rem', color: 'var(--accent)' }}>{c.cmd}</code>
-                  <button className="btn btn-ghost btn-sm" onClick={() => copyToClipboard(c.cmd, c.cmd)} style={{ padding: '0.2rem' }}>
-                    {copiedCode === c.cmd ? <Check size={14} color="var(--accent)" /> : <Copy size={14} />}
-                  </button>
+              <div key={c.cmd} style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                backgroundColor: 'var(--bg-surface-2)', padding: '0.8rem 1rem',
+                borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-subtle)'
+              }}>
+                <div>
+                  <code className="font-mono" style={{ fontSize: '0.88rem', color: 'var(--accent)', display: 'block', marginBottom: '0.2rem' }}>{c.cmd}</code>
+                  <span style={{ fontSize: '0.78rem', color: 'var(--text-secondary)' }}>{c.desc}</span>
                 </div>
-                <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', display: 'block' }}>{c.desc}</span>
+                <button className="btn btn-ghost btn-sm" onClick={() => copyToClipboard(c.cmd, c.cmd)} title="Copiar comando">
+                  {copiedCode === c.cmd ? <Check size={15} color="var(--accent)" /> : <Copy size={15} />}
+                </button>
               </div>
             ))}
           </div>
@@ -1009,7 +1054,9 @@ export default function ToolsSection() {
       )}
 
       <style>{`
-        .shade-item:hover { transform: scale(1.02); }
+        .shade-item:hover {
+          transform: translateX(4px);
+        }
       `}</style>
     </section>
   );

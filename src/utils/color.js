@@ -1,12 +1,31 @@
 // =============================================================================
 // KALPAGRÁFICA — Utilidades de Color (equivalente nativo a `dt colour`,
-// `dt harmony`, `dt colorblind`, `dt contrast`, `dt tailwind-shades`)
-// Sin dependencias externas — todo en JS puro.
+// `dt harmony`, `dt colorblind`, `dt contrast`, `dt tailwind-shades`, `dt pantone`)
+// Sin dependencias externas — todo en JS puro con soporte Pantone PMS Coated.
 // =============================================================================
+
+import { PANTONE_COATED_DB } from './pantoneData';
+
+// Cache array of Pantone objects for fast scanning
+const PANTONE_LIST = PANTONE_COATED_DB.map((entry) => {
+  const [code, hex] = entry.split(':');
+  const cleanHex = hex.toUpperCase();
+  const r = parseInt(cleanHex.substring(0, 2), 16);
+  const g = parseInt(cleanHex.substring(2, 4), 16);
+  const b = parseInt(cleanHex.substring(4, 6), 16);
+  return {
+    code: `Pantone ${code.replace('-', ' ')}`,
+    rawCode: code.toLowerCase(),
+    hex: `#${cleanHex}`,
+    r, g, b
+  };
+});
 
 export function normalizeHex(hex) {
   let clean = (hex || '').replace('#', '').trim();
   if (clean.length === 3) clean = clean.split('').map((c) => c + c).join('');
+  if (clean.length === 4) clean = clean.substring(0, 3).split('').map((c) => c + c).join('');
+  if (clean.length >= 8) clean = clean.substring(0, 6);
   if (!/^[0-9a-fA-F]{6}$/.test(clean)) clean = 'BAFDC1';
   return clean.toUpperCase();
 }
@@ -76,13 +95,143 @@ export function hslToHex(h, s, l) {
   return rgbToHex(r, g, b);
 }
 
-// Aproximación de OKLCH (suficiente para uso de diseño, no colorimetría de laboratorio)
+export function rgbToCmyk(r, g, b) {
+  const rN = r / 255, gN = g / 255, bN = b / 255;
+  const k = 1 - Math.max(rN, gN, bN);
+  if (k === 1) return { c: 0, m: 0, y: 0, k: 100 };
+  const c = Math.round(((1 - rN - k) / (1 - k)) * 100);
+  const m = Math.round(((1 - gN - k) / (1 - k)) * 100);
+  const y = Math.round(((1 - bN - k) / (1 - k)) * 100);
+  return { c: Math.max(0, c), m: Math.max(0, m), y: Math.max(0, y), k: Math.round(k * 100) };
+}
+
+export function cmykToRgb(c, m, y, k) {
+  const cN = c / 100, mN = m / 100, yN = y / 100, kN = k / 100;
+  const r = Math.round(255 * (1 - cN) * (1 - kN));
+  const g = Math.round(255 * (1 - mN) * (1 - kN));
+  const b = Math.round(255 * (1 - yN) * (1 - kN));
+  return { r: Math.max(0, Math.min(255, r)), g: Math.max(0, Math.min(255, g)), b: Math.max(0, Math.min(255, b)) };
+}
+
 export function approxOklch(r, g, b) {
   const rN = r / 255, gN = g / 255, bN = b / 255;
   const l = (0.2126 * rN + 0.7152 * gN + 0.0722 * bN).toFixed(3);
   const c = (Math.sqrt((rN - gN) ** 2 + (gN - bN) ** 2) * 0.15).toFixed(3);
   const { h } = rgbToHsl(r, g, b);
   return `oklch(${l} ${c} ${h})`;
+}
+
+// Búsqueda de coincidencia Pantone PMS Coated (con distancia visual ponderada)
+export function findClosestPantone(r, g, b) {
+  let bestMatch = PANTONE_LIST[0];
+  let minDistance = Infinity;
+
+  for (let i = 0; i < PANTONE_LIST.length; i++) {
+    const p = PANTONE_LIST[i];
+    const rMean = (r + p.r) / 2;
+    const dR = r - p.r;
+    const dG = g - p.g;
+    const dB = b - p.b;
+    // Perceptual color distance formula
+    const dist = Math.sqrt((2 + rMean / 256) * dR * dR + 4 * dG * dG + (2 + (255 - rMean) / 256) * dB * dB);
+
+    if (dist < minDistance) {
+      minDistance = dist;
+      bestMatch = p;
+    }
+  }
+
+  const similarity = Math.max(0, Math.round(100 - (minDistance / 7.65)));
+  return {
+    code: bestMatch.code,
+    hex: bestMatch.hex,
+    deltaE: minDistance.toFixed(1),
+    similarity: `${similarity}%`
+  };
+}
+
+// Universal Multiformat Color Parser (HEX 6/8 dígitos, RGB, HSL, CMYK, OKLCH, Pantone)
+export function parseAnyColorInput(inputStr) {
+  if (!inputStr || typeof inputStr !== 'string') return null;
+  const clean = inputStr.trim().toLowerCase();
+
+  // 1. Check if input is a Pantone query (e.g., '115 c', 'pantone 115', 'pms 115')
+  const pMatch = clean.match(/(?:pantone|pms)?\s*([0-9]{3,4})\s*([ca-z])?/);
+  if (pMatch && pMatch[1]) {
+    const codeQuery = `${pMatch[1]}-${pMatch[2] || 'c'}`;
+    const pFound = PANTONE_LIST.find((p) => p.rawCode === codeQuery || p.rawCode.startsWith(pMatch[1]));
+    if (pFound) {
+      return { r: pFound.r, g: pFound.g, b: pFound.b, a: 1, source: 'pantone' };
+    }
+  }
+
+  // 2. HEX 3, 4, 6, 8 digits (with or without #)
+  const hexMatch = clean.match(/^#?([0-9a-f]{3,8})$/);
+  if (hexMatch) {
+    let h = hexMatch[1];
+    if (h.length === 3) h = h.split('').map((c) => c + c).join('');
+    if (h.length === 4) h = h.substring(0, 3).split('').map((c) => c + c).join('');
+    if (h.length === 6 || h.length === 8) {
+      const r = parseInt(h.substring(0, 2), 16);
+      const g = parseInt(h.substring(2, 4), 16);
+      const b = parseInt(h.substring(4, 6), 16);
+      let a = 1;
+      if (h.length === 8) {
+        a = roundToTwo(parseInt(h.substring(6, 8), 16) / 255);
+      }
+      return { r, g, b, a, source: 'hex' };
+    }
+  }
+
+  // 3. RGB / RGBA: e.g. "rgb(255, 212, 42)", "255, 212, 42", "255 212 42"
+  const rgbMatch = clean.match(/rgba?\s*\(?\s*(\d{1,3})\s*[\s,]+\s*(\d{1,3})\s*[\s,]+\s*(\d{1,3})/);
+  if (rgbMatch) {
+    return {
+      r: Math.min(255, parseInt(rgbMatch[1], 10)),
+      g: Math.min(255, parseInt(rgbMatch[2], 10)),
+      b: Math.min(255, parseInt(rgbMatch[3], 10)),
+      a: 1,
+      source: 'rgb'
+    };
+  }
+
+  // 4. HSL / HSLA: e.g. "hsl(47, 100%, 58%)", "47 100% 58%"
+  const hslMatch = clean.match(/hsla?\s*\(?\s*(\d{1,3})\s*[\s,]+\s*(\d{1,3})%?\s*[\s,]+\s*(\d{1,3})%?/);
+  if (hslMatch) {
+    const h = parseInt(hslMatch[1], 10);
+    const s = parseInt(hslMatch[2], 10);
+    const l = parseInt(hslMatch[3], 10);
+    const rgb = hslToRgb(h, s, l);
+    return { ...rgb, a: 1, source: 'hsl' };
+  }
+
+  // 5. CMYK: e.g. "cmyk(0, 17, 84, 0)", "cmyk(0%, 17%, 84%, 0%)", "0, 17, 84, 0"
+  const cmykMatch = clean.match(/cmyk\s*\(?\s*(\d{1,3})%?\s*[\s,]+\s*(\d{1,3})%?\s*[\s,]+\s*(\d{1,3})%?\s*[\s,]+\s*(\d{1,3})%?/);
+  if (cmykMatch) {
+    const c = parseInt(cmykMatch[1], 10);
+    const m = parseInt(cmykMatch[2], 10);
+    const y = parseInt(cmykMatch[3], 10);
+    const k = parseInt(cmykMatch[4], 10);
+    const rgb = cmykToRgb(c, m, y, k);
+    return { ...rgb, a: 1, source: 'cmyk' };
+  }
+
+  // 6. OKLCH: e.g. "oklch(0.85 0.18 85)"
+  const oklchMatch = clean.match(/oklch\s*\(\s*([\d\.]+)\s+([\d\.]+)\s+([\d\.]+)\s*\)/);
+  if (oklchMatch) {
+    const l = parseFloat(oklchMatch[1]);
+    const c = parseFloat(oklchMatch[2]);
+    const h = parseFloat(oklchMatch[3]);
+    // Rough OKLCH to RGB conversion
+    const rgb = hslToRgb(h, Math.min(100, c * 300), Math.min(100, l * 100));
+    return { ...rgb, a: 1, source: 'oklch' };
+  }
+
+  return null;
+}
+
+function roundToTwo(num) {
+  return Math.round(num * 100) / 100;
 }
 
 export function relativeLuminance(r, g, b) {
@@ -99,7 +248,6 @@ export function contrastRatio(rgbA, rgbB) {
   return (Math.max(lumA, lumB) + 0.05) / (Math.min(lumA, lumB) + 0.05);
 }
 
-// Escala de sombras estilo Tailwind (50 → 950) a partir de un color base
 export function generateTailwindShades(r, g, b) {
   const weights = [50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 950];
   return weights.map((weight) => {
@@ -119,7 +267,6 @@ export function generateTailwindShades(r, g, b) {
   });
 }
 
-// Generador de armonías cromáticas (equivalente a `dt harmony`)
 export function generateHarmonies(hex) {
   const { r, g, b } = hexToRgb(hex);
   const { h, s, l } = rgbToHsl(r, g, b);
@@ -138,7 +285,6 @@ export function generateHarmonies(hex) {
   ];
 }
 
-// Matrices simplificadas de simulación de daltonismo (uso estándar en herramientas de diseño)
 export const COLORBLIND_TYPES = [
   { id: 'protanopia', label: 'Protanopía (rojo-verde)' },
   { id: 'deuteranopia', label: 'Deuteranopía (rojo-verde)' },
