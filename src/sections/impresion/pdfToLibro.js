@@ -98,6 +98,12 @@ async function procesarComoImagenes(file, mode, onProgress) {
     }
   }
 
+  try {
+    pdf.destroy();
+  } catch (e) {
+    // ignore
+  }
+
   return newPdf;
 }
 
