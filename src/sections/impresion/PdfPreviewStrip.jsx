@@ -2,7 +2,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import { Eye, ChevronLeft, ChevronRight, CheckCircle2, RefreshCw, ZoomIn, X, Check } from 'lucide-react';
 import { inyectarPDFjs } from './pdfToLibro';
 
-function LightboxModal({ pdfDoc, pageNum, mode, rotation = 0, onSelect, onClose, initialBookPage = '' }) {
+function LightboxModal({ pdfDoc, pageNum, numPages, mode, rotation = 0, onSelect, onClose, onPrevPage, onNextPage, initialBookPage = '' }) {
   const [highResUrl, setHighResUrl] = useState(null);
   const [loading, setLoading] = useState(true);
   const [bookNumberInput, setBookNumberInput] = useState(initialBookPage);
@@ -62,15 +62,15 @@ function LightboxModal({ pdfDoc, pageNum, mode, rotation = 0, onSelect, onClose,
       flexDirection: 'column',
       alignItems: 'center',
       justifyContent: 'center',
-      padding: '1.5rem',
-      backdropFilter: 'blur(5px)'
+      padding: '1rem',
+      backdropFilter: 'blur(6px)'
     }}>
       {/* Botón cerrar */}
       <button
         onClick={onClose}
         style={{
-          position: 'absolute', top: '20px', right: '20px',
-          backgroundColor: 'rgba(255,255,255,0.1)',
+          position: 'absolute', top: '16px', right: '20px',
+          backgroundColor: 'rgba(255,255,255,0.15)',
           border: '1px solid var(--border-subtle)',
           borderRadius: '50%', width: '36px', height: '36px',
           color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center'
@@ -79,44 +79,82 @@ function LightboxModal({ pdfDoc, pageNum, mode, rotation = 0, onSelect, onClose,
         <X size={20} />
       </button>
 
-      {/* Imagen en Alta Resolución */}
-      <div style={{
-        maxHeight: '65vh',
-        maxWidth: '90vw',
-        overflow: 'auto',
-        marginBottom: '1.5rem',
-        borderRadius: 'var(--radius-md)',
-        boxShadow: '0 10px 30px rgba(0,0,0,0.5)',
-        backgroundColor: '#fff',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: '10px'
-      }}>
-        {loading ? (
-          <div style={{ color: '#000', padding: '2rem', fontSize: '0.9rem' }}>Cargando página en alta resolución...</div>
-        ) : (
-          <img src={highResUrl} alt={`Página física ${pageNum}`} style={{ maxHeight: '60vh', maxWidth: '100%', objectFit: 'contain' }} />
-        )}
+      {/* Título instructivo */}
+      <div style={{ color: '#fff', fontSize: '0.95rem', fontWeight: 600, marginBottom: '0.8rem', textAlign: 'center', display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+        <span>Si no ves un número pasa a la siguiente</span>
+        <span style={{ fontSize: '0.75rem', backgroundColor: 'rgba(255,255,255,0.15)', padding: '2px 8px', borderRadius: '10px', color: 'var(--accent)' }}>
+          Pág {pageNum} de {numPages}
+        </span>
       </div>
 
-      {/* Barra de Confirmación e Inserción de Número Impreso */}
+      {/* Contenedor con Imagen y Flechas de Navegación laterales */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem', maxWidth: '95vw', marginBottom: '1rem' }}>
+        <button
+          onClick={onPrevPage}
+          disabled={pageNum <= 1}
+          style={{
+            backgroundColor: pageNum <= 1 ? 'rgba(255,255,255,0.05)' : 'rgba(255,255,255,0.2)',
+            border: '1px solid var(--border-subtle)',
+            borderRadius: 'var(--radius-sm)',
+            color: pageNum <= 1 ? 'rgba(255,255,255,0.2)' : '#fff',
+            padding: '0.6rem 0.8rem',
+            cursor: pageNum <= 1 ? 'not-allowed' : 'pointer',
+            display: 'flex', alignItems: 'center', gap: '0.3rem', fontSize: '0.82rem', fontWeight: 600
+          }}
+        >
+          <ChevronLeft size={18} /> Anterior
+        </button>
+
+        <div style={{
+          maxHeight: '60vh',
+          maxWidth: '75vw',
+          overflow: 'auto',
+          borderRadius: 'var(--radius-md)',
+          boxShadow: '0 10px 30px rgba(0,0,0,0.6)',
+          backgroundColor: '#fff',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: '8px'
+        }}>
+          {loading ? (
+            <div style={{ color: '#000', padding: '2rem', fontSize: '0.9rem' }}>Cargando página...</div>
+          ) : (
+            <img src={highResUrl} alt={`Página ${pageNum}`} style={{ maxHeight: '55vh', maxWidth: '100%', objectFit: 'contain' }} />
+          )}
+        </div>
+
+        <button
+          onClick={onNextPage}
+          disabled={pageNum >= numPages}
+          style={{
+            backgroundColor: pageNum >= numPages ? 'rgba(255,255,255,0.05)' : 'rgba(255,255,255,0.2)',
+            border: '1px solid var(--border-subtle)',
+            borderRadius: 'var(--radius-sm)',
+            color: pageNum >= numPages ? 'rgba(255,255,255,0.2)' : '#fff',
+            padding: '0.6rem 0.8rem',
+            cursor: pageNum >= numPages ? 'not-allowed' : 'pointer',
+            display: 'flex', alignItems: 'center', gap: '0.3rem', fontSize: '0.82rem', fontWeight: 600
+          }}
+        >
+          Siguiente <ChevronRight size={18} />
+        </button>
+      </div>
+
+      {/* Barra de Confirmación "¡Número encontrado!" */}
       <div style={{
         backgroundColor: 'var(--bg-surface-2)',
         border: '1.5px solid var(--accent)',
         borderRadius: 'var(--radius-md)',
-        padding: '1rem 1.5rem',
-        maxWidth: '520px',
+        padding: '0.8rem 1.2rem',
+        maxWidth: '480px',
         width: '100%',
         display: 'flex',
-        flexDirection: 'column',
-        gap: '0.8rem'
+        alignItems: 'center',
+        gap: '0.8rem',
+        justifyContent: 'space-between'
       }}>
-        <div style={{ fontSize: '0.88rem', color: 'var(--accent)', fontWeight: 700, textAlign: 'center' }}>
-          ✓ Seleccionaste la Página física N° {pageNum} del documento
-        </div>
-
-        <div style={{ display: 'flex', gap: '0.8rem', alignItems: 'center', justifyContent: 'center' }}>
+        <div style={{ display: 'flex', gap: '0.6rem', alignItems: 'center' }}>
           <span style={{ fontSize: '0.88rem', color: 'var(--text-primary)', fontWeight: 700 }}>
             Veo el número:
           </span>
@@ -127,35 +165,19 @@ function LightboxModal({ pdfDoc, pageNum, mode, rotation = 0, onSelect, onClose,
             value={bookNumberInput}
             onChange={(e) => setBookNumberInput(e.target.value)}
             className="input font-mono"
-            style={{ width: '110px', fontSize: '1rem', textAlign: 'center', fontWeight: 800, color: 'var(--accent)' }}
+            style={{ width: '90px', fontSize: '1rem', textAlign: 'center', fontWeight: 800, color: 'var(--accent)' }}
             autoFocus
           />
         </div>
 
-        <div style={{ display: 'flex', gap: '0.8rem' }}>
-          <button
-            onClick={handleConfirm}
-            className="btn btn-primary"
-            style={{ flex: 1, justifyContent: 'center' }}
-          >
-            <Check size={16} />
-            <span>Confirmar Número</span>
-          </button>
-          <button
-            onClick={onClose}
-            style={{
-              backgroundColor: 'transparent',
-              border: '1px solid var(--border-subtle)',
-              color: 'var(--text-secondary)',
-              borderRadius: 'var(--radius-sm)',
-              padding: '0.5rem 1rem',
-              fontSize: '0.8rem',
-              cursor: 'pointer'
-            }}
-          >
-            Cancelar
-          </button>
-        </div>
+        <button
+          onClick={handleConfirm}
+          className="btn btn-primary"
+          style={{ padding: '0.55rem 1.2rem', fontSize: '0.88rem', fontWeight: 700 }}
+        >
+          <Check size={16} />
+          <span>¡Número encontrado!</span>
+        </button>
       </div>
     </div>
   );
@@ -498,10 +520,13 @@ export default function PdfPreviewStrip({ file, selectedPdfPage, onSelectPage, m
         <LightboxModal
           pdfDoc={pdfDoc}
           pageNum={lightboxPageNum}
+          numPages={numPages}
           mode={mode}
           rotation={pageRotations[lightboxPageNum] || 0}
           initialBookPage={selectedPdfPage === lightboxPageNum ? refBookPage : ''}
           onClose={() => setLightboxPageNum(null)}
+          onPrevPage={() => setLightboxPageNum(prev => Math.max(1, prev - 1))}
+          onNextPage={() => setLightboxPageNum(prev => Math.min(numPages, prev + 1))}
           onSelect={(pNum, bNum) => onSelectPage(pNum, bNum)}
         />
       )}
