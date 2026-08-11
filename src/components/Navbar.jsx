@@ -18,6 +18,8 @@ export default function Navbar({ activeSection, onNavigate }) {
     { id: 'logobook', label: 'Libro de Logos' },
     { id: 'herramientas', label: 'Herramientas' },
     { id: 'impresion', label: 'Tools Impresión' },
+    { id: 'editor-tarjetas', label: 'Editor Tarjetas' },
+    { id: 'albumes', label: 'Álbumes' },
     { id: 'educacion', label: 'Educación' },
     { id: 'comunidad', label: 'Comunidad' },
     { id: 'estudio', label: 'Sobre el Estudio' },
