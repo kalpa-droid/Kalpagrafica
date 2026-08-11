@@ -14,7 +14,36 @@ async function inyectarPDFjs() {
   });
 }
 
-async function procesarComoImagenes(file, mode, onProgress) {
+// Función auxiliar para interpretar rangos de páginas/hojas a excluir (ej. "1, 4-6, 12")
+export function parseExcludedPages(inputStr, maxCount) {
+  if (!inputStr || !inputStr.trim()) return new Set();
+  const excluded = new Set();
+  const parts = inputStr.split(',');
+
+  for (const part of parts) {
+    const trimmed = part.trim();
+    if (!trimmed) continue;
+    if (trimmed.includes('-')) {
+      const [startStr, endStr] = trimmed.split('-').map(s => parseInt(s.trim(), 10));
+      if (!isNaN(startStr) && !isNaN(endStr)) {
+        const min = Math.min(startStr, endStr);
+        const max = Math.max(startStr, endStr);
+        for (let p = min; p <= max; p++) {
+          if (p >= 1 && p <= maxCount) excluded.add(p);
+        }
+      }
+    } else {
+      const p = parseInt(trimmed, 10);
+      if (!isNaN(p) && p >= 1 && p <= maxCount) {
+        excluded.add(p);
+      }
+    }
+  }
+  return excluded;
+}
+
+async function procesarComoImagenes(file, mode, options = {}, onProgress) {
+  const { excludeStr = '', fotocopiaStart = 'derecha' } = options;
   const newPdf = await PDFDocument.create();
   const arrayBuffer = await file.arrayBuffer();
 
@@ -24,7 +53,15 @@ async function procesarComoImagenes(file, mode, onProgress) {
     cMapPacked: true,
   }).promise;
 
+  const excludedSet = parseExcludedPages(excludeStr, pdf.numPages);
+  let isFirstProcessedSheet = true;
+
   for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+    // Si la página/hoja fue indicada para excluir, se omite
+    if (excludedSet.has(pageNum)) {
+      continue;
+    }
+
     if (onProgress) {
       const avance = 10 + Math.floor((pageNum / pdf.numPages) * 45);
       onProgress(`Procesando página ${pageNum} de ${pdf.numPages}...`, avance);
@@ -62,26 +99,42 @@ async function procesarComoImagenes(file, mode, onProgress) {
       const halfW = finalCanvas.width / 2;
       const fullH = finalCanvas.height;
 
-      const leftCanvas = document.createElement('canvas');
-      leftCanvas.width = halfW; leftCanvas.height = fullH;
-      leftCanvas.getContext('2d').drawImage(finalCanvas, 0, 0, halfW, fullH, 0, 0, halfW, fullH);
+      // Si es la primera hoja escaneada válida y arranca con "Página 1 a la Derecha" (Portada)
+      if (isFirstProcessedSheet && fotocopiaStart === 'derecha') {
+        const rightCanvas = document.createElement('canvas');
+        rightCanvas.width = halfW; rightCanvas.height = fullH;
+        rightCanvas.getContext('2d').drawImage(finalCanvas, halfW, 0, halfW, fullH, 0, 0, halfW, fullH);
 
-      const rightCanvas = document.createElement('canvas');
-      rightCanvas.width = halfW; rightCanvas.height = fullH;
-      rightCanvas.getContext('2d').drawImage(finalCanvas, halfW, 0, halfW, fullH, 0, 0, halfW, fullH);
+        const rightImg = await newPdf.embedJpg(rightCanvas.toDataURL('image/jpeg', 0.92));
+        const pageR = newPdf.addPage([halfW, fullH]);
+        pageR.drawImage(rightImg, { x: 0, y: 0, width: halfW, height: fullH });
 
-      const leftImg = await newPdf.embedJpg(leftCanvas.toDataURL('image/jpeg', 0.92));
-      const rightImg = await newPdf.embedJpg(rightCanvas.toDataURL('image/jpeg', 0.92));
+        rightCanvas.width = 0; rightCanvas.height = 0;
+      } else {
+        // Hojas completas normal (Izquierda -> Derecha)
+        const leftCanvas = document.createElement('canvas');
+        leftCanvas.width = halfW; leftCanvas.height = fullH;
+        leftCanvas.getContext('2d').drawImage(finalCanvas, 0, 0, halfW, fullH, 0, 0, halfW, fullH);
 
-      const pageL = newPdf.addPage([halfW, fullH]);
-      pageL.drawImage(leftImg, { x: 0, y: 0, width: halfW, height: fullH });
+        const rightCanvas = document.createElement('canvas');
+        rightCanvas.width = halfW; rightCanvas.height = fullH;
+        rightCanvas.getContext('2d').drawImage(finalCanvas, halfW, 0, halfW, fullH, 0, 0, halfW, fullH);
 
-      const pageR = newPdf.addPage([halfW, fullH]);
-      pageR.drawImage(rightImg, { x: 0, y: 0, width: halfW, height: fullH });
+        const leftImg = await newPdf.embedJpg(leftCanvas.toDataURL('image/jpeg', 0.92));
+        const rightImg = await newPdf.embedJpg(rightCanvas.toDataURL('image/jpeg', 0.92));
 
-      leftCanvas.width = 0; leftCanvas.height = 0;
-      rightCanvas.width = 0; rightCanvas.height = 0;
+        const pageL = newPdf.addPage([halfW, fullH]);
+        pageL.drawImage(leftImg, { x: 0, y: 0, width: halfW, height: fullH });
+
+        const pageR = newPdf.addPage([halfW, fullH]);
+        pageR.drawImage(rightImg, { x: 0, y: 0, width: halfW, height: fullH });
+
+        leftCanvas.width = 0; leftCanvas.height = 0;
+        rightCanvas.width = 0; rightCanvas.height = 0;
+      }
+
       if (finalCanvas !== tempCanvas) { finalCanvas.width = 0; finalCanvas.height = 0; }
+      isFirstProcessedSheet = false;
     } else {
       const imgData = tempCanvas.toDataURL('image/jpeg', 0.92);
       const jpgImage = await newPdf.embedJpg(imgData);
@@ -107,13 +160,17 @@ async function procesarComoImagenes(file, mode, onProgress) {
   return newPdf;
 }
 
-export async function pdfToLibro(file, mode, onProgress) {
+export async function pdfToLibro(file, mode, options = {}, onProgress) {
   if (onProgress) onProgress('Iniciando motor PDF.js...', 5);
   await inyectarPDFjs();
 
-  const pagesDoc = await procesarComoImagenes(file, mode, onProgress);
+  const pagesDoc = await procesarComoImagenes(file, mode, options, onProgress);
 
   const count = pagesDoc.getPageCount();
+  if (count === 0) {
+    throw new Error('No quedan páginas activas después de aplicar la exclusión.');
+  }
+
   const remainder = (4 - (count % 4)) % 4;
   for (let i = 0; i < remainder; i++) {
     const blank = pagesDoc.addPage(PageSizes.A4);

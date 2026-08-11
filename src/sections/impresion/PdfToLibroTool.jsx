@@ -4,7 +4,9 @@ import { pdfToLibro } from './pdfToLibro';
 
 export default function PdfToLibroTool() {
   const [file, setFile] = useState(null);
-  const [mode, setMode] = useState('normal');
+  const [mode, setMode] = useState('normal'); // 'normal' | 'fotocopia'
+  const [excludeStr, setExcludeStr] = useState('');
+  const [fotocopiaStart, setFotocopiaStart] = useState('derecha'); // 'derecha' | 'izquierda'
   const [loading, setLoading] = useState(false);
   const [progressMsg, setProgressMsg] = useState('');
   const [progressPct, setProgressPct] = useState(0);
@@ -32,7 +34,8 @@ export default function PdfToLibroTool() {
       setProgressPct(5);
       setProgressMsg('Preparando motor PDF...');
 
-      const result = await pdfToLibro(file, mode, (msg, pct) => {
+      const options = { excludeStr, fotocopiaStart };
+      const result = await pdfToLibro(file, mode, options, (msg, pct) => {
         setProgressMsg(msg);
         setProgressPct(pct);
       });
@@ -55,7 +58,7 @@ export default function PdfToLibroTool() {
     } catch (err) {
       console.error(err);
       setLoading(false);
-      setErrorMsg('Error al procesar el libro PDF. Intenta con un archivo válido.');
+      setErrorMsg(err?.message || 'Error al procesar el libro PDF. Intenta con un archivo válido.');
     }
   };
 
@@ -63,14 +66,14 @@ export default function PdfToLibroTool() {
     <div style={{ backgroundColor: 'var(--bg-surface)', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border-subtle)', padding: '1.8rem', boxShadow: 'var(--shadow-card)' }}>
       <h3 style={{ fontSize: '1.2rem', color: 'var(--text-primary)', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
         <BookOpen size={20} color="var(--accent)" />
-        <span>PDF a Libro (Imposición de Folleto)</span>
+        <span>PDF a Libro (Imposición de Folleto A4 / A5)</span>
       </h3>
       <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '1.5rem', lineHeight: 1.5 }}>
-        Convierte cualquier PDF en un folleto listo para imprimir a doble cara y abrochar al centro. Reordena las páginas automáticamente (imposición de cuadernillo) y soporta PDFs de fotocopia de libro abierto.
+        Convierte cualquier PDF en un folleto listo para imprimir a doble cara y abrochar al centro. Reordena las páginas automáticamente (imposición de cuadernillo de 4 páginas) y soporta PDFs de fotocopia de libro abierto.
       </p>
 
       {/* Selector de modo */}
-      <div style={{ marginBottom: '1.5rem', backgroundColor: 'var(--bg-surface-2)', padding: '1rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-subtle)' }}>
+      <div style={{ marginBottom: '1.2rem', backgroundColor: 'var(--bg-surface-2)', padding: '1rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-subtle)' }}>
         <label style={{ fontSize: '0.85rem', color: 'var(--accent)', fontWeight: 700, display: 'block', marginBottom: '0.6rem' }}>
           Formato de origen del PDF:
         </label>
@@ -81,8 +84,45 @@ export default function PdfToLibroTool() {
           </label>
           <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem', color: 'var(--text-primary)', cursor: 'pointer' }}>
             <input type="radio" name="mode" value="fotocopia" checked={mode === 'fotocopia'} onChange={() => setMode('fotocopia')} style={{ accentColor: 'var(--accent)' }} />
-            <span>Fotocopia de Libro Abierto (Doble página por hoja)</span>
+            <span>Fotocopia de Libro Abierto (Doble página por hoja A4)</span>
           </label>
+        </div>
+      </div>
+
+      {/* Configuración de Fotocopia de Libro Abierto (Alineación Portada) */}
+      {mode === 'fotocopia' && (
+        <div style={{ marginBottom: '1.2rem', backgroundColor: 'var(--bg-surface-2)', padding: '1rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-subtle)' }}>
+          <label style={{ fontSize: '0.85rem', color: 'var(--accent)', fontWeight: 700, display: 'block', marginBottom: '0.6rem' }}>
+            Alineación de la 1ª Hoja Escaneada:
+          </label>
+          <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem', color: 'var(--text-primary)', cursor: 'pointer' }}>
+              <input type="radio" name="fotocopiaStart" value="derecha" checked={fotocopiaStart === 'derecha'} onChange={() => setFotocopiaStart('derecha')} style={{ accentColor: 'var(--accent)' }} />
+              <span>Página 1 a la Derecha (Portada Tradicional del Libro)</span>
+            </label>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem', color: 'var(--text-primary)', cursor: 'pointer' }}>
+              <input type="radio" name="fotocopiaStart" value="izquierda" checked={fotocopiaStart === 'izquierda'} onChange={() => setFotocopiaStart('izquierda')} style={{ accentColor: 'var(--accent)' }} />
+              <span>Página 1 a la Izquierda</span>
+            </label>
+          </div>
+        </div>
+      )}
+
+      {/* Rango de páginas a eliminar */}
+      <div style={{ marginBottom: '1.5rem', backgroundColor: 'var(--bg-surface-2)', padding: '1rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-subtle)' }}>
+        <label style={{ fontSize: '0.85rem', color: 'var(--accent)', fontWeight: 700, display: 'block', marginBottom: '0.4rem' }}>
+          {mode === 'fotocopia' ? 'Hojas Escaneadas a Eliminar (Opcional):' : 'Páginas a Eliminar (Opcional):'}
+        </label>
+        <input
+          type="text"
+          placeholder={mode === 'fotocopia' ? 'ej. 1, 4-6, 12' : 'ej. 1, 3-5, 8'}
+          value={excludeStr}
+          onChange={(e) => setExcludeStr(e.target.value)}
+          className="input font-mono"
+          style={{ width: '100%', fontSize: '0.85rem' }}
+        />
+        <div style={{ fontSize: '0.75rem', color: 'var(--text-disabled)', marginTop: '0.4rem' }}>
+          Permite omitir portadas en blanco o páginas innecesarias antes de armar los pliegos de encuadernación.
         </div>
       </div>
 
