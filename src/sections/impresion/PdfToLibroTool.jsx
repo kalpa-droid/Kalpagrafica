@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { BookOpen, Download, AlertCircle, CheckCircle, FileCheck } from 'lucide-react';
 import { pdfToLibro } from './pdfToLibro';
+import PdfPreviewStrip from './PdfPreviewStrip';
 
 function PageSlot({ label, sub, side, highlight }) {
   // Representa una hoja de 2 caras (izquierda/derecha). `side` indica dónde va el contenido marcado.
@@ -217,6 +218,14 @@ export default function PdfToLibroTool() {
     }
   };
 
+  const handleSelectPageFromViewer = (pageNum) => {
+    setHasRefPage(true);
+    setRefPdfPage(String(pageNum));
+    if (!refBookPage) {
+      setRefBookPage(String(pageNum));
+    }
+  };
+
   return (
     <div style={{ backgroundColor: 'var(--bg-surface)', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border-subtle)', padding: '1.8rem', boxShadow: 'var(--shadow-card)' }}>
       <h3 style={{ fontSize: '1.2rem', color: 'var(--text-primary)', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
@@ -226,6 +235,39 @@ export default function PdfToLibroTool() {
       <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '1.5rem', lineHeight: 1.5 }}>
         Asistente inteligente de preimpresión para maquetar folletos A4 listos para imprimir a doble cara y coser/abrochar al centro en tamaño A5. Sincroniza automáticamente los números de página del libro con la regla editorial Par (Izquierda) / Impar (Derecha).
       </p>
+
+      {/* Carga de archivo */}
+      <div
+        onClick={() => document.getElementById('pdf-libro-input')?.click()}
+        style={{
+          border: '1.5px dashed var(--border-strong)',
+          borderRadius: 'var(--radius-md)',
+          padding: '1.5rem',
+          textAlign: 'center',
+          cursor: 'pointer',
+          backgroundColor: 'var(--bg-surface-2)',
+          marginBottom: '1.5rem'
+        }}
+      >
+        <input id="pdf-libro-input" type="file" accept="application/pdf" onChange={handleFileChange} style={{ display: 'none' }} />
+        <BookOpen size={28} color="var(--accent)" style={{ marginBottom: '0.5rem' }} />
+        <div style={{ fontSize: '0.9rem', color: 'var(--text-primary)', fontWeight: 600 }}>
+          {file ? file.name : 'Arrastrá tu PDF o hacé clic para seleccionar'}
+        </div>
+        <div style={{ fontSize: '0.75rem', color: 'var(--text-disabled)', marginTop: '0.3rem' }}>
+          {file ? `${(file.size / (1024 * 1024)).toFixed(2)} MB` : 'Soporta PDFs de cualquier número de páginas'}
+        </div>
+      </div>
+
+      {/* VISOR INTERACTIVO DE PÁGINAS FÍSICAS (FILMSTRIP / THUMBNAILS) */}
+      {file && (
+        <PdfPreviewStrip
+          file={file}
+          selectedPdfPage={Number(refPdfPage) || 0}
+          onSelectPage={handleSelectPageFromViewer}
+          mode={mode}
+        />
+      )}
 
       {/* 1. Selector de formato de origen */}
       <div style={{ marginBottom: '1.2rem', backgroundColor: 'var(--bg-surface-2)', padding: '1rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-subtle)' }}>
