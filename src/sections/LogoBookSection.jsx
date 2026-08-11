@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Search, Download, Check, BookOpen, ExternalLink, RefreshCw, Sun, Moon, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Search, Download, Check, BookOpen, ExternalLink, RefreshCw, Sun, Moon, ChevronLeft, ChevronRight, Info } from 'lucide-react';
 
 const LETTERS = ['TODOS', 'Num', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z'];
 const ITEMS_PER_PAGE = 36;
@@ -323,8 +323,9 @@ export default function LogoBookSection() {
           Colección de marcas e identidades visuales ordenadas alfabéticamente de la <strong style={{ color: 'var(--accent)' }}>Num</strong> a la <strong style={{ color: 'var(--accent)' }}>Z</strong>. Explora la ingeniería gráfica, empresas y creadores que dieron forma al diseño atemporal.
         </p>
 
-        <div style={{ marginTop: '1.2rem', padding: '0.6rem 1.2rem', borderRadius: 'var(--radius-lg)', backgroundColor: 'var(--bg-surface-2)', border: '1px solid var(--border-subtle)', fontSize: '0.8rem', color: 'var(--text-secondary)', display: 'inline-flex', alignItems: 'center', gap: '0.5rem' }}>
-          <span>ℹ️ <strong>Uso Didáctico & Referencia Técnica:</strong> Archivo de consulta para estudiantes y profesionales del diseño. Las marcas y logotipos expuestos pertenecen exclusivamente a sus respectivos titulares.</span>
+        <div style={{ marginTop: '1.2rem', padding: '0.6rem 1.2rem', borderRadius: 'var(--radius-lg)', backgroundColor: 'var(--bg-surface-2)', border: '1px solid var(--border-subtle)', fontSize: '0.8rem', color: 'var(--text-secondary)', display: 'inline-flex', alignItems: 'center', gap: '0.55rem' }}>
+          <Info size={15} color="var(--accent)" style={{ flexShrink: 0 }} />
+          <span><strong>Uso Didáctico & Referencia Técnica:</strong> Archivo de consulta para estudiantes y profesionales del diseño. Las marcas y logotipos expuestos pertenecen exclusivamente a sus respectivos titulares.</span>
         </div>
       </div>
 
@@ -581,8 +582,9 @@ export default function LogoBookSection() {
 
             {/* Modal Actions */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
-              <div style={{ padding: '0.8rem 1rem', borderRadius: 'var(--radius-sm)', backgroundColor: 'var(--bg-surface-2)', border: '1px solid var(--border-subtle)', textAlign: 'center', fontSize: '0.78rem', color: 'var(--text-disabled)' }}>
-                ℹ️ Muestra gráfica para análisis tipográfico y de retícula visual. Atribuido a <strong>{selectedLogo.author}</strong>. Marcas propiedad de sus respectivos titulares.
+              <div style={{ padding: '0.8rem 1rem', borderRadius: 'var(--radius-sm)', backgroundColor: 'var(--bg-surface-2)', border: '1px solid var(--border-subtle)', textAlign: 'center', fontSize: '0.78rem', color: 'var(--text-disabled)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.45rem' }}>
+                <Info size={14} color="var(--accent)" style={{ flexShrink: 0 }} />
+                <span>Muestra gráfica para análisis tipográfico y de retícula visual. Atribuido a <strong>{selectedLogo.author}</strong>. Marcas propiedad de sus respectivos titulares.</span>
               </div>
             </div>
           </div>
