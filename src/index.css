@@ -66,10 +66,15 @@
 
 html {
   scroll-behavior: smooth;
+  scroll-padding-top: 100px;
   font-family: var(--font-body);
   background-color: var(--bg-base);
   color: var(--text-primary);
   line-height: 1.6;
+}
+
+[id], section, .section-container {
+  scroll-margin-top: 100px;
 }
 
 body {
