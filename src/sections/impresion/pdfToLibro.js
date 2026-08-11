@@ -73,17 +73,98 @@ export async function crearCanvasTapaCustom(coverConfig) {
   return canvas;
 }
 
+export async function crearCanvasContratapaCustom(backCoverConfig) {
+  if (!backCoverConfig) return null;
+  const width = 1748;
+  const height = 2480;
+  const canvas = document.createElement('canvas');
+  canvas.width = width;
+  canvas.height = height;
+  const ctx = canvas.getContext('2d');
+
+  if (backCoverConfig.type === 'upload' && backCoverConfig.imageUri) {
+    const img = new Image();
+    img.src = backCoverConfig.imageUri;
+    await new Promise((res) => { img.onload = res; img.onerror = res; });
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, width, height);
+    const scale = Math.min(width / (img.width || width), height / (img.height || height));
+    const w = (img.width || width) * scale;
+    const h = (img.height || height) * scale;
+    ctx.drawImage(img, (width - w) / 2, (height - h) / 2, w, h);
+  } else if (backCoverConfig.type === 'template') {
+    const { synopsis = '', publisher = '', isbn = '', bgColor = '#1a1a2e', textColor = '#bafdc1', bgImageUri } = backCoverConfig;
+    ctx.fillStyle = bgColor || '#1a1a2e';
+    ctx.fillRect(0, 0, width, height);
+
+    if (bgImageUri) {
+      const img = new Image();
+      img.src = bgImageUri;
+      await new Promise((res) => { img.onload = res; img.onerror = res; });
+      ctx.globalAlpha = 0.35;
+      ctx.drawImage(img, 0, 0, width, height);
+      ctx.globalAlpha = 1.0;
+    }
+
+    ctx.strokeStyle = textColor || '#bafdc1';
+    ctx.lineWidth = 12;
+    ctx.strokeRect(80, 80, width - 160, height - 160);
+
+    ctx.fillStyle = textColor || '#bafdc1';
+    ctx.textAlign = 'center';
+
+    if (synopsis) {
+      ctx.font = '500 52px Georgia, serif';
+      const words = synopsis.split(' ');
+      let line = '';
+      let y = height * 0.35;
+      const maxWidth = width - 360;
+      for (let n = 0; n < words.length; n++) {
+        const testLine = line + words[n] + ' ';
+        const metrics = ctx.measureText(testLine);
+        if (metrics.width > maxWidth && n > 0) {
+          ctx.fillText(line.trim(), width / 2, y);
+          line = words[n] + ' ';
+          y += 70;
+        } else {
+          line = testLine;
+        }
+      }
+      ctx.fillText(line.trim(), width / 2, y);
+    }
+
+    if (isbn) {
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(width / 2 - 200, height * 0.78 - 40, 400, 100);
+      ctx.fillStyle = '#000000';
+      ctx.font = 'bold 36px monospace';
+      ctx.fillText(`ISBN ${isbn}`, width / 2, height * 0.78 + 20);
+    }
+
+    if (publisher) {
+      ctx.fillStyle = textColor || '#bafdc1';
+      ctx.font = '400 45px sans-serif';
+      ctx.fillText(publisher.toUpperCase(), width / 2, height * 0.88);
+    }
+  }
+
+  return canvas;
+}
+
 async function procesarComoImagenes(file, mode, options = {}, onProgress) {
   const {
     fotocopiaStart = 'derecha',
     hasCover = false,
     coverSide = 'derecha',
+    hasBackCover = false,
+    backCoverSide = 'izquierda',
     refPdfPage = 0,
     refBookPage = 0,
     refPageSide = 'derecha',
     pageRotations = {},
     pageSplitOffsets = {},
-    customCover = null
+    customCover = null,
+    customBackCover = null
   } = options;
 
   const newPdf = await PDFDocument.create();
@@ -244,15 +325,35 @@ export async function pdfToLibro(file, mode, options = {}, onProgress) {
 
   const pagesDoc = await procesarComoImagenes(file, mode, options, onProgress);
 
-  const count = pagesDoc.getPageCount();
-  if (count === 0) {
+  const { hasBackCover = false, customBackCover = null } = options;
+
+  // Si hay una Contratapa Custom para agregar
+  let backCoverCanvas = null;
+  if (!hasBackCover && customBackCover && (customBackCover.type === 'upload' || customBackCover.type === 'template')) {
+    backCoverCanvas = await crearCanvasContratapaCustom(customBackCover);
+  }
+
+  const currentCount = pagesDoc.getPageCount();
+  if (currentCount === 0) {
     throw new Error('No quedan páginas activas después de aplicar la exclusión.');
   }
 
-  const remainder = (4 - (count % 4)) % 4;
+  // Calcular el total de páginas incluyendo la contratapa custom si existe
+  const targetCount = backCoverCanvas ? currentCount + 1 : currentCount;
+  const remainder = (4 - (targetCount % 4)) % 4;
+
+  // Insertar páginas en blanco ANTES de la contratapa para que actúen como hojas de cortesía
   for (let i = 0; i < remainder; i++) {
     const blank = pagesDoc.addPage(PageSizes.A4);
     blank.drawRectangle({ x: 0, y: 0, width: 0, height: 0 });
+  }
+
+  // Insertar la contratapa al final absoluto si fue generada
+  if (backCoverCanvas) {
+    const backCoverImg = await pagesDoc.embedJpg(backCoverCanvas.toDataURL('image/jpeg', 0.92));
+    const pageBC = pagesDoc.addPage([backCoverCanvas.width, backCoverCanvas.height]);
+    pageBC.drawImage(backCoverImg, { x: 0, y: 0, width: backCoverCanvas.width, height: backCoverCanvas.height });
+    backCoverCanvas.width = 0; backCoverCanvas.height = 0;
   }
 
   const bookletDoc = await PDFDocument.create();

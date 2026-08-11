@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { BookOpen, Download, AlertCircle, CheckCircle, FileCheck, Info, Upload, Palette, Layers, Edit3, ArrowRight, Check } from 'lucide-react';
-import { pdfToLibro, crearCanvasTapaCustom } from './pdfToLibro';
+import { BookOpen, Download, AlertCircle, CheckCircle, FileCheck, Info, Upload, Palette, Layers, Edit3, ArrowRight, Check, Crop, Maximize2 } from 'lucide-react';
+import { pdfToLibro, crearCanvasTapaCustom, crearCanvasContratapaCustom } from './pdfToLibro';
 import PdfPreviewStrip from './PdfPreviewStrip';
+import A5ImageCropperModal from './A5ImageCropperModal';
 
 function PageSlot({ label, sub, side, highlight }) {
   const isRight = side === 'derecha';
@@ -158,6 +159,25 @@ export default function PdfToLibroTool() {
   const [pageRotations, setPageRotations] = useState({});
   const [pageSplitOffsets, setPageSplitOffsets] = useState({});
 
+  // Opciones de Contratapa (Portada Posterior)
+  const [hasBackCover, setHasBackCover] = useState(true);
+  const [backCoverSide, setBackCoverSide] = useState('izquierda'); // 'izquierda' | 'derecha'
+  const [customBackCoverType, setCustomBackCoverType] = useState('upload'); // 'upload' | 'template'
+  const [customBackCoverUploadUri, setCustomBackCoverUploadUri] = useState(null);
+  const [backCoverSynopsis, setBackCoverSynopsis] = useState('');
+  const [backCoverPublisher, setBackCoverPublisher] = useState('');
+  const [backCoverIsbn, setBackCoverIsbn] = useState('');
+  const [backCoverBgColor, setBackCoverBgColor] = useState('#1a1a2e');
+  const [backCoverTextColor, setBackCoverTextColor] = useState('#bafdc1');
+  const [backCoverBgImageUri, setBackCoverBgImageUri] = useState(null);
+  const [backCoverPreviewUrl, setBackCoverPreviewUrl] = useState(null);
+
+  // Recortador de Imagen A5 Interactivo (Pantalla Completa)
+  const [cropperOpen, setCropperOpen] = useState(false);
+  const [cropperImageSrc, setCropperImageSrc] = useState(null);
+  const [cropperTarget, setCropperTarget] = useState(null); // 'cover_upload' | 'cover_bg' | 'backcover_upload' | 'backcover_bg'
+  const [cropperTitle, setCropperTitle] = useState('Recortar Imagen A5');
+
   // Opciones de Tapa Personalizada
   const [customCoverType, setCustomCoverType] = useState('upload'); // 'upload' | 'template'
   const [customCoverUploadUri, setCustomCoverUploadUri] = useState(null);
@@ -207,6 +227,35 @@ export default function PdfToLibroTool() {
     return () => { isCancelled = true; };
   }, [hasCover, customCoverType, customCoverUploadUri, templateTitle, templateAuthor, templatePublisher, templateBgColor, templateTextColor, templateBgImageUri]);
 
+  // Generar vista previa en tiempo real de la Contratapa Custom
+  useEffect(() => {
+    if (hasBackCover) {
+      setBackCoverPreviewUrl(null);
+      return;
+    }
+    let isCancelled = false;
+    const generatePreview = async () => {
+      const config = customBackCoverType === 'upload'
+        ? { type: 'upload', imageUri: customBackCoverUploadUri }
+        : {
+            type: 'template',
+            synopsis: backCoverSynopsis,
+            publisher: backCoverPublisher,
+            isbn: backCoverIsbn,
+            bgColor: backCoverBgColor,
+            textColor: backCoverTextColor,
+            bgImageUri: backCoverBgImageUri
+          };
+      const canvas = await crearCanvasContratapaCustom(config);
+      if (canvas && !isCancelled) {
+        setBackCoverPreviewUrl(canvas.toDataURL('image/jpeg', 0.8));
+        canvas.width = 0; canvas.height = 0;
+      }
+    };
+    generatePreview();
+    return () => { isCancelled = true; };
+  }, [hasBackCover, customBackCoverType, customBackCoverUploadUri, backCoverSynopsis, backCoverPublisher, backCoverIsbn, backCoverBgColor, backCoverTextColor, backCoverBgImageUri]);
+
   const handleFileChange = (e) => {
     const selected = e.target.files[0];
     if (!selected) return;
@@ -223,14 +272,30 @@ export default function PdfToLibroTool() {
     setActiveStep(mode === 'fotocopia' ? 2 : 3);
   };
 
-  const handleCoverUpload = (e) => {
-    const imgFile = e.target.files[0];
+  const handleImageSelectForCropping = (e, targetKey, titleText) => {
+    const imgFile = e.target.files && e.target.files[0];
     if (!imgFile) return;
     const reader = new FileReader();
     reader.onload = (evt) => {
-      setCustomCoverUploadUri(evt.target.result);
+      setCropperImageSrc(evt.target.result);
+      setCropperTarget(targetKey);
+      setCropperTitle(titleText || 'Recortar Imagen A5');
+      setCropperOpen(true);
     };
     reader.readAsDataURL(imgFile);
+    e.target.value = '';
+  };
+
+  const handleCroppedResult = (croppedUri) => {
+    if (cropperTarget === 'cover_upload') {
+      setCustomCoverUploadUri(croppedUri);
+    } else if (cropperTarget === 'cover_bg') {
+      setTemplateBgImageUri(croppedUri);
+    } else if (cropperTarget === 'backcover_upload') {
+      setCustomBackCoverUploadUri(croppedUri);
+    } else if (cropperTarget === 'backcover_bg') {
+      setBackCoverBgImageUri(croppedUri);
+    }
   };
 
   const handleRotatePage = (pageNum, angleDelta) => {
@@ -270,15 +335,32 @@ export default function PdfToLibroTool() {
             }
       ) : null;
 
+      const customBackCoverConfig = !hasBackCover ? (
+        customBackCoverType === 'upload'
+          ? { type: 'upload', imageUri: customBackCoverUploadUri }
+          : {
+              type: 'template',
+              synopsis: backCoverSynopsis,
+              publisher: backCoverPublisher,
+              isbn: backCoverIsbn,
+              bgColor: backCoverBgColor,
+              textColor: backCoverTextColor,
+              bgImageUri: backCoverBgImageUri
+            }
+      ) : null;
+
       const options = {
         hasCover,
         coverSide,
+        hasBackCover,
+        backCoverSide,
         refPdfPage: Number(refPdfPage) || 0,
         refBookPage: Number(refBookPage) || 0,
         refPageSide: effectiveRefPageSide,
         pageRotations,
         pageSplitOffsets,
-        customCover: customCoverConfig
+        customCover: customCoverConfig,
+        customBackCover: customBackCoverConfig
       };
 
       const result = await pdfToLibro(file, mode, options, (msg, pct) => {
@@ -577,12 +659,12 @@ export default function PdfToLibroTool() {
         </div>
       )}
 
-      {/* ETAPA 4: GESTIÓN DE TAPA / PORTADA EXTERIOR */}
+      {/* ETAPA 4: GESTIÓN DE TAPA Y CONTRATAPA EXTERIOR */}
       {file && activeStep >= 4 && (
         <div style={{ marginBottom: '1.5rem', backgroundColor: 'var(--bg-surface-2)', padding: '1.2rem', borderRadius: 'var(--radius-md)', border: `1.5px solid ${activeStep === 4 ? 'var(--accent)' : 'var(--border-subtle)'}` }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.8rem' }}>
             <div style={{ fontSize: '0.88rem', color: 'var(--accent)', fontWeight: 700 }}>
-              {mode === 'fotocopia' ? '4' : '3'}. Gestión de Tapa / Portada Exterior del Libro
+              {mode === 'fotocopia' ? '4' : '3'}. Gestión de Tapa y Contratapa Exterior del Libro
             </div>
             {activeStep > 4 && (
               <button onClick={() => setActiveStep(4)} style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
@@ -591,217 +673,254 @@ export default function PdfToLibroTool() {
             )}
           </div>
 
-          <div style={{ backgroundColor: 'var(--bg-surface)', padding: '1rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-subtle)', marginBottom: '1rem' }}>
-            <div style={{ marginBottom: '1rem' }}>
-              <span style={{ fontSize: '0.85rem', color: 'var(--text-primary)', fontWeight: 700, display: 'block', marginBottom: '0.6rem' }}>
-                ¿Tu documento incluye la Tapa / Portada Exterior?
+          {/* SECCIÓN A: PORTADA EXTERIOR (TAPA) */}
+          <div style={{ backgroundColor: 'var(--bg-surface)', padding: '1rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-subtle)', marginBottom: '1.2rem' }}>
+            <div style={{ fontSize: '0.82rem', color: 'var(--accent)', fontWeight: 700, marginBottom: '0.6rem' }}>
+              📘 1. Tapa / Portada Exterior (FRENTE)
+            </div>
+            <div style={{ marginBottom: '0.8rem' }}>
+              <span style={{ fontSize: '0.8rem', color: 'var(--text-primary)', fontWeight: 600, display: 'block', marginBottom: '0.4rem' }}>
+                ¿Tu documento incluye la Tapa Exterior?
               </span>
 
               <div style={{ display: 'flex', gap: '0.8rem', flexWrap: 'wrap' }}>
-                {/* OPCIÓN 1: YA INCLUYE TAPA */}
                 <button
                   type="button"
                   onClick={() => setHasCover(true)}
                   style={{
-                    flex: '1 1 200px',
-                    padding: '0.7rem 0.9rem',
+                    flex: '1 1 180px',
+                    padding: '0.6rem 0.8rem',
                     borderRadius: 'var(--radius-sm)',
                     backgroundColor: hasCover ? 'rgba(186,253,193,0.15)' : 'var(--bg-surface-2)',
                     border: `1.5px solid ${hasCover ? 'var(--accent)' : 'var(--border-subtle)'}`,
                     color: hasCover ? 'var(--accent)' : 'var(--text-primary)',
                     cursor: 'pointer',
                     fontWeight: 700,
-                    fontSize: '0.82rem',
-                    textAlign: 'left',
-                    transition: 'all 0.2s ease'
+                    fontSize: '0.8rem',
+                    textAlign: 'left'
                   }}
                 >
-                  ✓ El documento YA incluye Tapa / Carátula
+                  ✓ El documento YA incluye Tapa
                 </button>
-
-                {/* OPCIÓN 2: NO TIENE TAPA (CREAR / SUBIR) */}
                 <button
                   type="button"
                   onClick={() => setHasCover(false)}
                   style={{
-                    flex: '1 1 200px',
-                    padding: '0.7rem 0.9rem',
+                    flex: '1 1 180px',
+                    padding: '0.6rem 0.8rem',
                     borderRadius: 'var(--radius-sm)',
                     backgroundColor: !hasCover ? 'rgba(186,253,193,0.15)' : 'var(--bg-surface-2)',
                     border: `1.5px solid ${!hasCover ? 'var(--accent)' : 'var(--border-subtle)'}`,
                     color: !hasCover ? 'var(--accent)' : 'var(--text-primary)',
                     cursor: 'pointer',
                     fontWeight: 700,
-                    fontSize: '0.82rem',
-                    textAlign: 'left',
-                    transition: 'all 0.2s ease'
+                    fontSize: '0.8rem',
+                    textAlign: 'left'
                   }}
                 >
-                  🎨 No tiene Tapa — Subir Imagen o Crear Tapa nueva
+                  🎨 Crear / Subir Tapa nueva
                 </button>
               </div>
             </div>
 
             {hasCover ? (
               mode === 'normal' ? (
-                <div style={{ padding: '0.6rem 0.8rem', backgroundColor: 'var(--bg-surface-2)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-subtle)', color: 'var(--text-secondary)', fontSize: '0.8rem' }}>
-                  💡 Se utilizará la <strong>Página 1</strong> del PDF subido como la Tapa Exterior del libro.
+                <div style={{ padding: '0.5rem 0.8rem', backgroundColor: 'var(--bg-surface-2)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-subtle)', color: 'var(--text-secondary)', fontSize: '0.78rem' }}>
+                  💡 Se utilizará la <strong>Página 1</strong> del PDF subido como la Tapa Exterior.
                 </div>
               ) : (
                 <div>
-                  <span style={{ fontSize: '0.85rem', color: 'var(--accent)', fontWeight: 700, display: 'block', marginBottom: '0.6rem', textAlign: 'center' }}>
-                    👉 Tocá del lado donde está la Tapa / Portada en la 1ª hoja escaneada:
+                  <span style={{ fontSize: '0.8rem', color: 'var(--accent)', fontWeight: 700, display: 'block', marginBottom: '0.4rem', textAlign: 'center' }}>
+                    👉 Tocá del lado donde está la Tapa en la 1ª hoja escaneada:
                   </span>
-                  
-                  {/* Single divided page graphic for Cover */}
-                  <div style={{
-                    maxWidth: '380px',
-                    margin: '0 auto',
-                    height: '80px',
-                    border: '2px solid var(--border-strong)',
-                    borderRadius: 'var(--radius-md)',
-                    display: 'flex',
-                    overflow: 'hidden',
-                    backgroundColor: '#141418',
-                    boxShadow: '0 4px 15px rgba(0,0,0,0.3)',
-                    cursor: 'pointer'
-                  }}>
-                    {/* MITAD IZQUIERDA */}
-                    <div
-                      onClick={() => setCoverSide('izquierda')}
-                      style={{
-                        flex: 1,
-                        borderRight: '2px dashed var(--border-subtle)',
-                        backgroundColor: coverSide === 'izquierda' ? 'var(--accent)' : 'transparent',
-                        color: coverSide === 'izquierda' ? '#0a0a0c' : 'var(--text-secondary)',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        fontWeight: 800,
-                        fontSize: '0.88rem',
-                        transition: 'all 0.2s ease',
-                        userSelect: 'none'
-                      }}
-                    >
+                  <div style={{ maxWidth: '360px', margin: '0 auto', height: '70px', border: '2px solid var(--border-strong)', borderRadius: 'var(--radius-md)', display: 'flex', overflow: 'hidden', backgroundColor: '#141418', cursor: 'pointer' }}>
+                    <div onClick={() => setCoverSide('izquierda')} style={{ flex: 1, borderRight: '2px dashed var(--border-subtle)', backgroundColor: coverSide === 'izquierda' ? 'var(--accent)' : 'transparent', color: coverSide === 'izquierda' ? '#0a0a0c' : 'var(--text-secondary)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: '0.82rem' }}>
                       <span>◄ IZQUIERDA</span>
-                      {coverSide === 'izquierda' && (
-                        <span style={{ fontSize: '0.75rem', marginTop: '3px', fontWeight: 900, backgroundColor: '#0a0a0c', color: 'var(--accent)', padding: '2px 8px', borderRadius: '4px' }}>
-                          ✓ TAPA
-                        </span>
-                      )}
+                      {coverSide === 'izquierda' && <span style={{ fontSize: '0.68rem', backgroundColor: '#0a0a0c', color: 'var(--accent)', padding: '1px 6px', borderRadius: '3px' }}>✓ TAPA</span>}
                     </div>
-
-                    {/* MITAD DERECHA */}
-                    <div
-                      onClick={() => setCoverSide('derecha')}
-                      style={{
-                        flex: 1,
-                        backgroundColor: coverSide === 'derecha' ? 'var(--accent)' : 'transparent',
-                        color: coverSide === 'derecha' ? '#0a0a0c' : 'var(--text-secondary)',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        fontWeight: 800,
-                        fontSize: '0.88rem',
-                        transition: 'all 0.2s ease',
-                        userSelect: 'none'
-                      }}
-                    >
+                    <div onClick={() => setCoverSide('derecha')} style={{ flex: 1, backgroundColor: coverSide === 'derecha' ? 'var(--accent)' : 'transparent', color: coverSide === 'derecha' ? '#0a0a0c' : 'var(--text-secondary)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: '0.82rem' }}>
                       <span>DERECHA ►</span>
-                      {coverSide === 'derecha' && (
-                        <span style={{ fontSize: '0.75rem', marginTop: '3px', fontWeight: 900, backgroundColor: '#0a0a0c', color: 'var(--accent)', padding: '2px 8px', borderRadius: '4px' }}>
-                          ✓ TAPA
-                        </span>
-                      )}
+                      {coverSide === 'derecha' && <span style={{ fontSize: '0.68rem', backgroundColor: '#0a0a0c', color: 'var(--accent)', padding: '1px 6px', borderRadius: '3px' }}>✓ TAPA</span>}
                     </div>
                   </div>
                 </div>
               )
-            ) : null}
-
-            {/* SUITE DE CREACIÓN DE TAPA SI NO VIENE INCORPORADA */}
-            {!hasCover && (
-              <div style={{ marginTop: '1rem', paddingTop: '1rem', borderTop: '1px dashed var(--border-subtle)' }}>
-                <div style={{ fontSize: '0.82rem', color: 'var(--accent)', fontWeight: 700, marginBottom: '0.6rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                  <Layers size={15} /> 🎨 Tu PDF no tiene Tapa: Elegí cómo querés agregar la Portada Exterior
-                </div>
-
-                <div style={{ display: 'flex', gap: '1rem', marginBottom: '1rem' }}>
-                  <button
-                    onClick={() => setCustomCoverType('upload')}
-                    style={{
-                      flex: 1, padding: '0.6rem', borderRadius: 'var(--radius-sm)',
-                      backgroundColor: customCoverType === 'upload' ? 'rgba(186,253,193,0.15)' : 'var(--bg-surface-2)',
-                      border: `1.5px solid ${customCoverType === 'upload' ? 'var(--accent)' : 'var(--border-subtle)'}`,
-                      color: customCoverType === 'upload' ? 'var(--accent)' : 'var(--text-primary)',
-                      cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem', fontSize: '0.8rem', fontWeight: 600
-                    }}
-                  >
-                    <Upload size={14} /> Subir Imagen de Tapa
+            ) : (
+              <div style={{ marginTop: '0.8rem', paddingTop: '0.8rem', borderTop: '1px dashed var(--border-subtle)' }}>
+                <div style={{ display: 'flex', gap: '0.8rem', marginBottom: '0.8rem' }}>
+                  <button onClick={() => setCustomCoverType('upload')} style={{ flex: 1, padding: '0.5rem', borderRadius: 'var(--radius-sm)', backgroundColor: customCoverType === 'upload' ? 'rgba(186,253,193,0.15)' : 'var(--bg-surface-2)', border: `1.5px solid ${customCoverType === 'upload' ? 'var(--accent)' : 'var(--border-subtle)'}`, color: customCoverType === 'upload' ? 'var(--accent)' : 'var(--text-primary)', cursor: 'pointer', fontSize: '0.78rem', fontWeight: 600, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.3rem' }}>
+                    <Upload size={13} /> Subir Imagen
                   </button>
-                  <button
-                    onClick={() => setCustomCoverType('template')}
-                    style={{
-                      flex: 1, padding: '0.6rem', borderRadius: 'var(--radius-sm)',
-                      backgroundColor: customCoverType === 'template' ? 'rgba(186,253,193,0.15)' : 'var(--bg-surface-2)',
-                      border: `1.5px solid ${customCoverType === 'template' ? 'var(--accent)' : 'var(--border-subtle)'}`,
-                      color: customCoverType === 'template' ? 'var(--accent)' : 'var(--text-primary)',
-                      cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem', fontSize: '0.8rem', fontWeight: 600
-                    }}
-                  >
-                    <Palette size={14} /> Crear Tapa con Plantilla
+                  <button onClick={() => setCustomCoverType('template')} style={{ flex: 1, padding: '0.5rem', borderRadius: 'var(--radius-sm)', backgroundColor: customCoverType === 'template' ? 'rgba(186,253,193,0.15)' : 'var(--bg-surface-2)', border: `1.5px solid ${customCoverType === 'template' ? 'var(--accent)' : 'var(--border-subtle)'}`, color: customCoverType === 'template' ? 'var(--accent)' : 'var(--text-primary)', cursor: 'pointer', fontSize: '0.78rem', fontWeight: 600, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.3rem' }}>
+                    <Palette size={13} /> Crear con Plantilla
                   </button>
                 </div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1rem', alignItems: 'start' }}>
+                {customCoverType === 'upload' ? (
                   <div>
-                    {customCoverType === 'upload' ? (
-                      <div>
-                        <span style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '0.4rem' }}>
-                          Subir archivo de imagen (.jpg / .png):
-                        </span>
-                        <input type="file" accept="image/*" onChange={handleCoverUpload} className="input" style={{ width: '100%', fontSize: '0.8rem' }} />
-                      </div>
-                    ) : (
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
-                        <div>
-                          <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Título del Libro:</span>
-                          <input type="text" placeholder="Ej. MI LIBRO DE PRUEBA" value={templateTitle} onChange={(e) => setTemplateTitle(e.target.value)} className="input" style={{ width: '100%', fontSize: '0.82rem' }} />
-                        </div>
-                        <div>
-                          <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Autor:</span>
-                          <input type="text" placeholder="Ej. Juan Pérez" value={templateAuthor} onChange={(e) => setTemplateAuthor(e.target.value)} className="input" style={{ width: '100%', fontSize: '0.82rem' }} />
-                        </div>
-                        <div>
-                          <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Editorial / Sello:</span>
-                          <input type="text" placeholder="Ej. Editorial Kalpa" value={templatePublisher} onChange={(e) => setTemplatePublisher(e.target.value)} className="input" style={{ width: '100%', fontSize: '0.82rem' }} />
-                        </div>
-                        <div style={{ display: 'flex', gap: '0.8rem' }}>
-                          <div style={{ flex: 1 }}>
-                            <span style={{ fontSize: '0.72rem', color: 'var(--text-secondary)' }}>Fondo:</span>
-                            <input type="color" value={templateBgColor} onChange={(e) => setTemplateBgColor(e.target.value)} style={{ width: '100%', height: '32px', cursor: 'pointer' }} />
-                          </div>
-                          <div style={{ flex: 1 }}>
-                            <span style={{ fontSize: '0.72rem', color: 'var(--text-secondary)' }}>Texto:</span>
-                            <input type="color" value={templateTextColor} onChange={(e) => setTemplateTextColor(e.target.value)} style={{ width: '100%', height: '32px', cursor: 'pointer' }} />
-                          </div>
-                        </div>
+                    <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '0.3rem' }}>Subir Imagen de Tapa:</span>
+                    <input type="file" accept="image/*" onChange={(e) => handleImageSelectForCropping(e, 'cover_upload', 'Recortar Tapa A5 (Vertical)')} className="input" style={{ width: '100%', fontSize: '0.78rem' }} />
+                    {customCoverUploadUri && (
+                      <div style={{ marginTop: '0.6rem', textAlign: 'center' }}>
+                        <img src={customCoverUploadUri} alt="Tapa Crop" style={{ width: '90px', height: '127px', borderRadius: '4px', border: '1.5px solid var(--accent)', objectFit: 'cover' }} />
+                        <button
+                          onClick={() => {
+                            setCropperImageSrc(customCoverUploadUri);
+                            setCropperTarget('cover_upload');
+                            setCropperTitle('Recortar Tapa A5 (Vertical)');
+                            setCropperOpen(true);
+                          }}
+                          className="btn btn-secondary btn-sm"
+                          style={{ marginTop: '0.4rem', fontSize: '0.72rem', gap: '0.3rem' }}
+                        >
+                          <Crop size={12} /> Recortar / Ajustar Tapa A5 en Pantalla Completa
+                        </button>
                       </div>
                     )}
                   </div>
-
-                  {coverPreviewUrl && (
-                    <div style={{ textAlign: 'center' }}>
-                      <span style={{ fontSize: '0.72rem', color: 'var(--accent)', fontWeight: 700, display: 'block', marginBottom: '0.3rem' }}>
-                        Vista previa de Tapa A5
-                      </span>
-                      <img src={coverPreviewUrl} alt="Preview Tapa A5" style={{ width: '110px', height: '150px', border: '1px solid var(--accent)', borderRadius: '3px', objectFit: 'cover' }} />
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                    <input type="text" placeholder="Título del Libro" value={templateTitle} onChange={(e) => setTemplateTitle(e.target.value)} className="input" style={{ fontSize: '0.78rem' }} />
+                    <input type="text" placeholder="Autor" value={templateAuthor} onChange={(e) => setTemplateAuthor(e.target.value)} className="input" style={{ fontSize: '0.78rem' }} />
+                    <input type="text" placeholder="Editorial" value={templatePublisher} onChange={(e) => setTemplatePublisher(e.target.value)} className="input" style={{ fontSize: '0.78rem' }} />
+                    <div style={{ display: 'flex', gap: '0.6rem' }}>
+                      <div style={{ flex: 1 }}>
+                        <span style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>Fondo:</span>
+                        <input type="color" value={templateBgColor} onChange={(e) => setTemplateBgColor(e.target.value)} style={{ width: '100%', height: '28px', cursor: 'pointer' }} />
+                      </div>
+                      <div style={{ flex: 1 }}>
+                        <span style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>Texto:</span>
+                        <input type="color" value={templateTextColor} onChange={(e) => setTemplateTextColor(e.target.value)} style={{ width: '100%', height: '28px', cursor: 'pointer' }} />
+                      </div>
                     </div>
-                  )}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* SECCIÓN B: PORTADA POSTERIOR (CONTRATAPA) */}
+          <div style={{ backgroundColor: 'var(--bg-surface)', padding: '1rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-subtle)', marginBottom: '1rem' }}>
+            <div style={{ fontSize: '0.82rem', color: 'var(--accent)', fontWeight: 700, marginBottom: '0.6rem' }}>
+              📙 2. Contratapa / Portada Posterior (DORSAL)
+            </div>
+            <div style={{ marginBottom: '0.8rem' }}>
+              <span style={{ fontSize: '0.8rem', color: 'var(--text-primary)', fontWeight: 600, display: 'block', marginBottom: '0.4rem' }}>
+                ¿Tu documento incluye la Contratapa Exterior?
+              </span>
+
+              <div style={{ display: 'flex', gap: '0.8rem', flexWrap: 'wrap' }}>
+                <button
+                  type="button"
+                  onClick={() => setHasBackCover(true)}
+                  style={{
+                    flex: '1 1 180px',
+                    padding: '0.6rem 0.8rem',
+                    borderRadius: 'var(--radius-sm)',
+                    backgroundColor: hasBackCover ? 'rgba(186,253,193,0.15)' : 'var(--bg-surface-2)',
+                    border: `1.5px solid ${hasBackCover ? 'var(--accent)' : 'var(--border-subtle)'}`,
+                    color: hasBackCover ? 'var(--accent)' : 'var(--text-primary)',
+                    cursor: 'pointer',
+                    fontWeight: 700,
+                    fontSize: '0.8rem',
+                    textAlign: 'left'
+                  }}
+                >
+                  ✓ El documento YA incluye Contratapa
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setHasBackCover(false)}
+                  style={{
+                    flex: '1 1 180px',
+                    padding: '0.6rem 0.8rem',
+                    borderRadius: 'var(--radius-sm)',
+                    backgroundColor: !hasBackCover ? 'rgba(186,253,193,0.15)' : 'var(--bg-surface-2)',
+                    border: `1.5px solid ${!hasBackCover ? 'var(--accent)' : 'var(--border-subtle)'}`,
+                    color: !hasBackCover ? 'var(--accent)' : 'var(--text-primary)',
+                    cursor: 'pointer',
+                    fontWeight: 700,
+                    fontSize: '0.8rem',
+                    textAlign: 'left'
+                  }}
+                >
+                  🎨 Crear / Subir Contratapa nueva
+                </button>
+              </div>
+            </div>
+
+            {hasBackCover ? (
+              mode === 'normal' ? (
+                <div style={{ padding: '0.5rem 0.8rem', backgroundColor: 'var(--bg-surface-2)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-subtle)', color: 'var(--text-secondary)', fontSize: '0.78rem' }}>
+                  💡 Se utilizará la <strong>Última Página</strong> del PDF subido como Contratapa Exterior.
+                </div>
+              ) : (
+                <div>
+                  <span style={{ fontSize: '0.8rem', color: 'var(--accent)', fontWeight: 700, display: 'block', marginBottom: '0.4rem', textAlign: 'center' }}>
+                    👉 Tocá del lado donde está la Contratapa en la última hoja escaneada:
+                  </span>
+                  <div style={{ maxWidth: '360px', margin: '0 auto', height: '70px', border: '2px solid var(--border-strong)', borderRadius: 'var(--radius-md)', display: 'flex', overflow: 'hidden', backgroundColor: '#141418', cursor: 'pointer' }}>
+                    <div onClick={() => setBackCoverSide('izquierda')} style={{ flex: 1, borderRight: '2px dashed var(--border-subtle)', backgroundColor: backCoverSide === 'izquierda' ? 'var(--accent)' : 'transparent', color: backCoverSide === 'izquierda' ? '#0a0a0c' : 'var(--text-secondary)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: '0.82rem' }}>
+                      <span>◄ IZQUIERDA</span>
+                      {backCoverSide === 'izquierda' && <span style={{ fontSize: '0.68rem', backgroundColor: '#0a0a0c', color: 'var(--accent)', padding: '1px 6px', borderRadius: '3px' }}>✓ CONTRATAPA</span>}
+                    </div>
+                    <div onClick={() => setBackCoverSide('derecha')} style={{ flex: 1, backgroundColor: backCoverSide === 'derecha' ? 'var(--accent)' : 'transparent', color: backCoverSide === 'derecha' ? '#0a0a0c' : 'var(--text-secondary)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: '0.82rem' }}>
+                      <span>DERECHA ►</span>
+                      {backCoverSide === 'derecha' && <span style={{ fontSize: '0.68rem', backgroundColor: '#0a0a0c', color: 'var(--accent)', padding: '1px 6px', borderRadius: '3px' }}>✓ CONTRATAPA</span>}
+                    </div>
+                  </div>
+                </div>
+              )
+            ) : (
+              <div style={{ marginTop: '0.8rem', paddingTop: '0.8rem', borderTop: '1px dashed var(--border-subtle)' }}>
+                <div style={{ display: 'flex', gap: '0.8rem', marginBottom: '0.8rem' }}>
+                  <button onClick={() => setCustomBackCoverType('upload')} style={{ flex: 1, padding: '0.5rem', borderRadius: 'var(--radius-sm)', backgroundColor: customBackCoverType === 'upload' ? 'rgba(186,253,193,0.15)' : 'var(--bg-surface-2)', border: `1.5px solid ${customBackCoverType === 'upload' ? 'var(--accent)' : 'var(--border-subtle)'}`, color: customBackCoverType === 'upload' ? 'var(--accent)' : 'var(--text-primary)', cursor: 'pointer', fontSize: '0.78rem', fontWeight: 600, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.3rem' }}>
+                    <Upload size={13} /> Subir Imagen
+                  </button>
+                  <button onClick={() => setCustomBackCoverType('template')} style={{ flex: 1, padding: '0.5rem', borderRadius: 'var(--radius-sm)', backgroundColor: customBackCoverType === 'template' ? 'rgba(186,253,193,0.15)' : 'var(--bg-surface-2)', border: `1.5px solid ${customBackCoverType === 'template' ? 'var(--accent)' : 'var(--border-subtle)'}`, color: customBackCoverType === 'template' ? 'var(--accent)' : 'var(--text-primary)', cursor: 'pointer', fontSize: '0.78rem', fontWeight: 600, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.3rem' }}>
+                    <Palette size={13} /> Crear con Plantilla
+                  </button>
                 </div>
 
+                {customBackCoverType === 'upload' ? (
+                  <div>
+                    <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '0.3rem' }}>Subir Imagen de Contratapa:</span>
+                    <input type="file" accept="image/*" onChange={(e) => handleImageSelectForCropping(e, 'backcover_upload', 'Recortar Contratapa A5 (Vertical)')} className="input" style={{ width: '100%', fontSize: '0.78rem' }} />
+                    {customBackCoverUploadUri && (
+                      <div style={{ marginTop: '0.6rem', textAlign: 'center' }}>
+                        <img src={customBackCoverUploadUri} alt="Contratapa Crop" style={{ width: '90px', height: '127px', borderRadius: '4px', border: '1.5px solid var(--accent)', objectFit: 'cover' }} />
+                        <button
+                          onClick={() => {
+                            setCropperImageSrc(customBackCoverUploadUri);
+                            setCropperTarget('backcover_upload');
+                            setCropperTitle('Recortar Contratapa A5 (Vertical)');
+                            setCropperOpen(true);
+                          }}
+                          className="btn btn-secondary btn-sm"
+                          style={{ marginTop: '0.4rem', fontSize: '0.72rem', gap: '0.3rem' }}
+                        >
+                          <Crop size={12} /> Recortar / Ajustar Contratapa A5 en Pantalla Completa
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                    <textarea placeholder="Resumen / Sinopsis del libro..." value={backCoverSynopsis} onChange={(e) => setBackCoverSynopsis(e.target.value)} className="input" style={{ fontSize: '0.78rem', height: '60px', resize: 'vertical' }} />
+                    <input type="text" placeholder="ISBN / Código (opcional)" value={backCoverIsbn} onChange={(e) => setBackCoverIsbn(e.target.value)} className="input" style={{ fontSize: '0.78rem' }} />
+                    <input type="text" placeholder="Editorial / Créditos" value={backCoverPublisher} onChange={(e) => setBackCoverPublisher(e.target.value)} className="input" style={{ fontSize: '0.78rem' }} />
+                    <div style={{ display: 'flex', gap: '0.6rem' }}>
+                      <div style={{ flex: 1 }}>
+                        <span style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>Fondo:</span>
+                        <input type="color" value={backCoverBgColor} onChange={(e) => setBackCoverBgColor(e.target.value)} style={{ width: '100%', height: '28px', cursor: 'pointer' }} />
+                      </div>
+                      <div style={{ flex: 1 }}>
+                        <span style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>Texto:</span>
+                        <input type="color" value={backCoverTextColor} onChange={(e) => setBackCoverTextColor(e.target.value)} style={{ width: '100%', height: '28px', cursor: 'pointer' }} />
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -813,7 +932,7 @@ export default function PdfToLibroTool() {
               style={{ width: '100%', justifyContent: 'center' }}
             >
               <Check size={16} />
-              <span>✓ Confirmar Carátula y Ver Maquetación</span>
+              <span>✓ Confirmar Tapas y Ver Maquetación</span>
             </button>
           )}
         </div>
@@ -870,6 +989,15 @@ export default function PdfToLibroTool() {
           </button>
         </>
       )}
+
+      {/* MODAL RECORTADOR DE IMAGEN A5 EN PANTALLA COMPLETA */}
+      <A5ImageCropperModal
+        isOpen={cropperOpen}
+        imageSrc={cropperImageSrc}
+        title={cropperTitle}
+        onCropComplete={handleCroppedResult}
+        onClose={() => setCropperOpen(false)}
+      />
     </div>
   );
 }
