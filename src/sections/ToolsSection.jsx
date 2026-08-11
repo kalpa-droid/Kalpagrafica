@@ -148,6 +148,27 @@ export default function ToolsSection() {
     [colorData]
   );
 
+  // Bulk String Helpers for Tab 1
+  const bulkFormatsStr = useMemo(() => {
+    return `HEX: ${colorData.hex} | HEX8: ${colorData.hex8} | RGB: ${colorData.rgb} | HSL: ${colorData.hsl} | CMYK: ${colorData.cmyk} | OKLCH: ${colorData.oklch}`;
+  }, [colorData]);
+
+  const bulkPantoneStr = useMemo(() => {
+    return `Coated: ${colorData.pantone.coated.code} (${colorData.pantone.coated.hex}) | Uncoated: ${colorData.pantone.uncoated.code} (${colorData.pantone.uncoated.hex})`;
+  }, [colorData]);
+
+  const bulkTailwindStr = useMemo(() => {
+    return tailwindShades.map(s => `${s.weight}: ${s.hex}`).join(', ');
+  }, [tailwindShades]);
+
+  const bulkHarmoniesStr = useMemo(() => {
+    return harmonies.map(h => `${h.label}: ${h.colors.join(', ')}`).join('\n');
+  }, [harmonies]);
+
+  const bulkColorblindStr = useMemo(() => {
+    return colorblindSwatches.map(cb => `${cb.label}: ${cb.hex}`).join(', ');
+  }, [colorblindSwatches]);
+
   // ---------------------------------------------------------------------
   // TAB 2 — ANÁLISIS DE IMAGEN: PALETA CON COPIA EN BLOQUE & DALTONISMO DESCARGABLE
   // ---------------------------------------------------------------------
@@ -629,46 +650,101 @@ export default function ToolsSection() {
                       <span className="font-mono" style={{ fontSize: '0.72rem', color: 'var(--text-disabled)', display: 'block' }}>{fmt.label}</span>
                       <strong className="font-mono" style={{ fontSize: '0.85rem', color: 'var(--accent)', wordBreak: 'break-all' }}>{fmt.val}</strong>
                     </div>
-                    <button className="btn btn-ghost btn-sm" onClick={() => copyToClipboard(fmt.val, fmt.label)} title="Copiar valor">
+                    <button className="btn btn-ghost btn-sm" onClick={() => copyToClipboard(fmt.val, fmt.label)} title="Copiar este formato individual">
                       {copiedCode === fmt.label ? <Check size={14} color="var(--accent)" /> : <Copy size={14} />}
                     </button>
                   </div>
                 ))}
               </div>
+
+              <button
+                className="btn btn-ghost btn-sm"
+                onClick={() => copyToClipboard(bulkFormatsStr, 'bulk-formats')}
+                style={{ marginTop: '1rem', width: '100%', justifyContent: 'center', border: '1px dashed var(--border-strong)' }}
+              >
+                {copiedCode === 'bulk-formats' ? <Check size={14} color="var(--accent)" /> : <Copy size={14} />}
+                <span>{copiedCode === 'bulk-formats' ? '¡Todos los Formatos Copiados!' : 'Copiar Todos los Formatos'}</span>
+              </button>
             </ToolCard>
 
             {/* COLUMN 3: Guías Pantone® PMS Coated (C) & Uncoated (U) */}
             <ToolCard icon={Printer} title="Guías Pantone® PMS" description="Comparativa del color activo según el soporte: Coated (brillante) vs Uncoated (mate).">
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
+                {/* Coated C */}
                 <div
-                  onClick={() => { setColorInput(colorData.pantone.coated.hex); copyToClipboard(colorData.pantone.coated.code, 'p-coated'); }}
-                  style={{ backgroundColor: 'var(--bg-surface-2)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-subtle)', padding: '0.8rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.8rem' }}
+                  style={{
+                    backgroundColor: 'var(--bg-surface-2)', borderRadius: 'var(--radius-sm)',
+                    border: '1px solid var(--border-subtle)', padding: '0.8rem',
+                    display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.8rem'
+                  }}
                 >
-                  <div style={{ width: '48px', height: '48px', borderRadius: 'var(--radius-sm)', backgroundColor: colorData.pantone.coated.hex, border: '1px solid rgba(255,255,255,0.2)', flexShrink: 0 }} />
-                  <div style={{ flex: 1, textOverflow: 'ellipsis', overflow: 'hidden' }}>
-                    <strong className="font-headline" style={{ fontSize: '0.95rem', color: 'var(--accent)', display: 'block' }}>{colorData.pantone.coated.code}</strong>
-                    <span style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '0.2rem' }}>Papel Estucado / Brillante</span>
-                    <span className="font-mono" style={{ fontSize: '0.72rem', color: 'var(--text-disabled)' }}>HEX {colorData.pantone.coated.hex} | {colorData.pantone.coated.similarity}</span>
+                  <div
+                    onClick={() => setColorInput(colorData.pantone.coated.hex)}
+                    style={{ display: 'flex', alignItems: 'center', gap: '0.8rem', cursor: 'pointer', flex: 1 }}
+                    title="Hacé clic para cargar este color Coated en la app"
+                  >
+                    <div style={{ width: '44px', height: '44px', borderRadius: 'var(--radius-sm)', backgroundColor: colorData.pantone.coated.hex, border: '1px solid rgba(255,255,255,0.2)', flexShrink: 0 }} />
+                    <div style={{ textOverflow: 'ellipsis', overflow: 'hidden' }}>
+                      <strong className="font-headline" style={{ fontSize: '0.95rem', color: 'var(--accent)', display: 'block' }}>{colorData.pantone.coated.code}</strong>
+                      <span style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '0.1rem' }}>Papel Estucado / Brillante</span>
+                      <span className="font-mono" style={{ fontSize: '0.72rem', color: 'var(--text-disabled)' }}>HEX {colorData.pantone.coated.hex} | {colorData.pantone.coated.similarity}</span>
+                    </div>
                   </div>
+
+                  <button
+                    className="btn btn-ghost btn-sm"
+                    onClick={() => copyToClipboard(`${colorData.pantone.coated.code} (${colorData.pantone.coated.hex})`, 'p-c-single')}
+                    title="Copiar Pantone Coated"
+                  >
+                    {copiedCode === 'p-c-single' ? <Check size={14} color="var(--accent)" /> : <Copy size={14} />}
+                  </button>
                 </div>
 
+                {/* Uncoated U */}
                 <div
-                  onClick={() => { setColorInput(colorData.pantone.uncoated.hex); copyToClipboard(colorData.pantone.uncoated.code, 'p-uncoated'); }}
-                  style={{ backgroundColor: 'var(--bg-surface-2)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-subtle)', padding: '0.8rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.8rem' }}
+                  style={{
+                    backgroundColor: 'var(--bg-surface-2)', borderRadius: 'var(--radius-sm)',
+                    border: '1px solid var(--border-subtle)', padding: '0.8rem',
+                    display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.8rem'
+                  }}
                 >
-                  <div style={{ width: '48px', height: '48px', borderRadius: 'var(--radius-sm)', backgroundColor: colorData.pantone.uncoated.hex, border: '1px solid rgba(255,255,255,0.2)', flexShrink: 0 }} />
-                  <div style={{ flex: 1, textOverflow: 'ellipsis', overflow: 'hidden' }}>
-                    <strong className="font-headline" style={{ fontSize: '0.95rem', color: 'var(--accent)', display: 'block' }}>{colorData.pantone.uncoated.code}</strong>
-                    <span style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '0.2rem' }}>Papel Obra / Mate</span>
-                    <span className="font-mono" style={{ fontSize: '0.72rem', color: 'var(--text-disabled)' }}>HEX {colorData.pantone.uncoated.hex} | {colorData.pantone.uncoated.similarity}</span>
+                  <div
+                    onClick={() => setColorInput(colorData.pantone.uncoated.hex)}
+                    style={{ display: 'flex', alignItems: 'center', gap: '0.8rem', cursor: 'pointer', flex: 1 }}
+                    title="Hacé clic para cargar este color Uncoated en la app"
+                  >
+                    <div style={{ width: '44px', height: '44px', borderRadius: 'var(--radius-sm)', backgroundColor: colorData.pantone.uncoated.hex, border: '1px solid rgba(255,255,255,0.2)', flexShrink: 0 }} />
+                    <div style={{ textOverflow: 'ellipsis', overflow: 'hidden' }}>
+                      <strong className="font-headline" style={{ fontSize: '0.95rem', color: 'var(--accent)', display: 'block' }}>{colorData.pantone.uncoated.code}</strong>
+                      <span style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '0.1rem' }}>Papel Obra / Mate</span>
+                      <span className="font-mono" style={{ fontSize: '0.72rem', color: 'var(--text-disabled)' }}>HEX {colorData.pantone.uncoated.hex} | {colorData.pantone.uncoated.similarity}</span>
+                    </div>
                   </div>
+
+                  <button
+                    className="btn btn-ghost btn-sm"
+                    onClick={() => copyToClipboard(`${colorData.pantone.uncoated.code} (${colorData.pantone.uncoated.hex})`, 'p-u-single')}
+                    title="Copiar Pantone Uncoated"
+                  >
+                    {copiedCode === 'p-u-single' ? <Check size={14} color="var(--accent)" /> : <Copy size={14} />}
+                  </button>
                 </div>
               </div>
+
+              <button
+                className="btn btn-ghost btn-sm"
+                onClick={() => copyToClipboard(bulkPantoneStr, 'bulk-pantones')}
+                style={{ marginTop: '1rem', width: '100%', justifyContent: 'center', border: '1px dashed var(--border-strong)' }}
+              >
+                {copiedCode === 'bulk-pantones' ? <Check size={14} color="var(--accent)" /> : <Copy size={14} />}
+                <span>{copiedCode === 'bulk-pantones' ? '¡Ambos Pantones Copiados!' : 'Copiar Ambos Pantones (C & U)'}</span>
+              </button>
             </ToolCard>
           </div>
 
           {/* Row 2 — 3-Column Grid */}
           <div style={gridStyle3Col}>
+            {/* Tailwind Shades */}
             <ToolCard icon={Layers} title="Escala de Sombras Tailwind (50 — 950)" description="Se actualiza automáticamente al escribir o seleccionar cualquier color base. Hacé clic en cualquier sombra para aplicarla a todo el sistema.">
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.45rem' }}>
                 {tailwindShades.map((shade) => (
@@ -689,18 +765,41 @@ export default function ToolsSection() {
                   </div>
                 ))}
               </div>
+
+              <button
+                className="btn btn-ghost btn-sm"
+                onClick={() => copyToClipboard(bulkTailwindStr, 'bulk-tailwind')}
+                style={{ marginTop: '1rem', width: '100%', justifyContent: 'center', border: '1px dashed var(--border-strong)' }}
+              >
+                {copiedCode === 'bulk-tailwind' ? <Check size={14} color="var(--accent)" /> : <Copy size={14} />}
+                <span>{copiedCode === 'bulk-tailwind' ? '¡Todas las Sombras Copiadas!' : 'Copiar Todas las Sombras Tailwind'}</span>
+              </button>
             </ToolCard>
 
-            <ToolCard icon={Droplet} title="Generador de Armonías Cromáticas" description="Esquemas calculados automáticamente en la rueda cromática HSL. Hacé clic en cualquier color para seleccionarlo como activo.">
+            {/* Harmonies */}
+            <ToolCard icon={Droplet} title="Generador de Armonías Cromáticas" description="Esquemas calculados automáticamente en la rueda cromática HSL. Hacé clic en cualquier color para seleccionarlo o usá los botones de copia.">
               <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                 {harmonies.map((scheme) => (
                   <div key={scheme.id}>
-                    <span style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '0.35rem' }}>{scheme.label}</span>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.35rem' }}>
+                      <span style={{ fontSize: '0.78rem', color: 'var(--text-secondary)' }}>{scheme.label}</span>
+                      <button
+                        className="btn btn-ghost btn-sm"
+                        onClick={() => copyToClipboard(scheme.colors.join(', '), `scheme-${scheme.id}`)}
+                        style={{ padding: '0.1rem 0.4rem', fontSize: '0.7rem' }}
+                        title="Copiar todos los colores de este esquema"
+                      >
+                        {copiedCode === `scheme-${scheme.id}` ? <Check size={12} color="var(--accent)" /> : <Copy size={12} />}
+                        <span>{copiedCode === `scheme-${scheme.id}` ? 'Copiado' : 'Copiar Esquema'}</span>
+                      </button>
+                    </div>
+
                     <div style={{ display: 'flex', borderRadius: 'var(--radius-sm)', overflow: 'hidden', border: '1px solid var(--border-subtle)' }}>
                       {scheme.colors.map((c, i) => (
                         <div
                           key={i}
                           onClick={() => { setColorInput(c); copyToClipboard(c, `${scheme.id}-${i}`); }}
+                          title={`Hacé clic para seleccionar ${c} o copiarlo`}
                           style={{ flex: 1, height: '36px', backgroundColor: c, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                         >
                           {copiedCode === `${scheme.id}-${i}` && <Check size={13} color="#08080A" />}
@@ -710,9 +809,19 @@ export default function ToolsSection() {
                   </div>
                 ))}
               </div>
+
+              <button
+                className="btn btn-ghost btn-sm"
+                onClick={() => copyToClipboard(bulkHarmoniesStr, 'bulk-harmonies')}
+                style={{ marginTop: '1rem', width: '100%', justifyContent: 'center', border: '1px dashed var(--border-strong)' }}
+              >
+                {copiedCode === 'bulk-harmonies' ? <Check size={14} color="var(--accent)" /> : <Copy size={14} />}
+                <span>{copiedCode === 'bulk-harmonies' ? '¡Todas las Armonías Copiadas!' : 'Copiar Todas las Armonías'}</span>
+              </button>
             </ToolCard>
 
-            <ToolCard icon={ScanEye} title="Vista Rápida de Daltonismo" description="Simulación automática en tiempo real del color activo bajo distintos tipos de daltonismo.">
+            {/* Colorblind Quick Preview */}
+            <ToolCard icon={ScanEye} title="Vista Rápida de Daltonismo" description="Simulación automática en tiempo real del color activo bajo distintos tipos de daltonismo con botones de copia.">
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                 {colorblindSwatches.map((cb) => (
                   <div key={cb.id} style={{
@@ -722,15 +831,32 @@ export default function ToolsSection() {
                   }}>
                     <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{cb.label}</span>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                      <span className="font-mono" style={{ fontSize: '0.75rem', color: 'var(--text-disabled)' }}>{cb.hex}</span>
+                      <span className="font-mono" style={{ fontSize: '0.78rem', color: 'var(--accent)', fontWeight: 600 }}>{cb.hex}</span>
                       <div
                         onClick={() => setColorInput(cb.hex)}
-                        style={{ width: '26px', height: '26px', borderRadius: 'var(--radius-sm)', backgroundColor: cb.hex, border: '1px solid var(--border-subtle)', cursor: 'pointer' }}
+                        title="Hacé clic para cargar este color simulado"
+                        style={{ width: '24px', height: '24px', borderRadius: 'var(--radius-sm)', backgroundColor: cb.hex, border: '1px solid var(--border-subtle)', cursor: 'pointer' }}
                       />
+                      <button
+                        className="btn btn-ghost btn-sm"
+                        onClick={() => copyToClipboard(cb.hex, `cb-${cb.id}`)}
+                        title="Copiar HEX simulado"
+                      >
+                        {copiedCode === `cb-${cb.id}` ? <Check size={14} color="var(--accent)" /> : <Copy size={14} />}
+                      </button>
                     </div>
                   </div>
                 ))}
               </div>
+
+              <button
+                className="btn btn-ghost btn-sm"
+                onClick={() => copyToClipboard(bulkColorblindStr, 'bulk-cb')}
+                style={{ marginTop: '1rem', width: '100%', justifyContent: 'center', border: '1px dashed var(--border-strong)' }}
+              >
+                {copiedCode === 'bulk-cb' ? <Check size={14} color="var(--accent)" /> : <Copy size={14} />}
+                <span>{copiedCode === 'bulk-cb' ? '¡Todas las Simulaciones Copiadas!' : 'Copiar Todas las Simulaciones de Daltonismo'}</span>
+              </button>
             </ToolCard>
           </div>
         </div>
@@ -760,7 +886,6 @@ export default function ToolsSection() {
                   ))}
                 </div>
 
-                {/* Bulk Copy Block for Palette */}
                 <div style={{ backgroundColor: 'var(--bg-surface-2)', padding: '1rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-subtle)' }}>
                   <FieldLabel accent>Copiar Todos los Colores Extraídos en Bloque</FieldLabel>
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '0.5rem', marginTop: '0.6rem' }}>
@@ -853,7 +978,6 @@ export default function ToolsSection() {
               </div>
               <textarea readOnly value={optimizedSvg} className="input font-mono" rows={10} style={{ width: '100%', fontSize: '0.82rem', lineHeight: 1.4, backgroundColor: 'var(--bg-surface-2)', marginBottom: '1rem' }} />
               
-              {/* Live Graphic SVG Preview Box */}
               <FieldLabel accent>Vista Previa Gráfica en Tiempo Real</FieldLabel>
               <div
                 style={{
@@ -1143,7 +1267,6 @@ export default function ToolsSection() {
       {/* TAB 6: TIPOGRAFÍA & PAPEL EN 4 COLUMNAS (2x2) CON MUESTRARIOS VISUALES ------------- */}
       {activeTab === 'type' && (
         <div style={gridStyle4Col}>
-          {/* Card 1: Escala Tipográfica Modular con Muestrario Visual en Vivo */}
           <ToolCard icon={Type} title="Escala Tipográfica Modular" description="Jerarquía modular escalada dinámicamente con muestras en vivo.">
             <div style={{ display: 'flex', gap: '0.8rem', marginBottom: '1rem' }}>
               <div style={{ flex: 1 }}>
@@ -1163,7 +1286,6 @@ export default function ToolsSection() {
               </div>
             </div>
 
-            {/* Live Visual Specimen Hierarchy */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem', backgroundColor: 'var(--bg-surface-2)', padding: '0.8rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-subtle)' }}>
               {fontScaleList.map((item) => (
                 <div key={item.step} style={{ borderBottom: '1px solid var(--border-subtle)', paddingBottom: '0.5rem' }}>
@@ -1179,7 +1301,6 @@ export default function ToolsSection() {
             </div>
           </ToolCard>
 
-          {/* Card 2: Calculadora PX a REM & Line-Height con Diagrama Explicativo */}
           <ToolCard icon={Ruler} title="Calculadoras PX → REM & Interlineado" description="Conversor y estimador de interlineado (Line-Height) óptimo con diagrama visual.">
             <div style={{ marginBottom: '1.2rem' }}>
               <FieldLabel>Conversor PX → REM</FieldLabel>
@@ -1206,7 +1327,6 @@ export default function ToolsSection() {
               </div>
             </div>
 
-            {/* Visual Line-Height Diagram Specimen */}
             <div style={{ backgroundColor: 'var(--bg-surface-2)', padding: '0.8rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-subtle)' }}>
               <span style={{ fontSize: '0.72rem', color: 'var(--text-disabled)', display: 'block', marginBottom: '0.4rem' }}>Diagrama de Interlineado ({lhRatio}x):</span>
               <div style={{ fontSize: `${lhFontSize}px`, lineHeight: `${lhPx}px`, color: 'var(--text-primary)', borderLeft: '3px solid var(--accent)', paddingLeft: '0.6rem' }}>
@@ -1216,7 +1336,6 @@ export default function ToolsSection() {
             </div>
           </ToolCard>
 
-          {/* Card 3: Formatos de Papel Estándar (ISO 216 & US) con Escala Gráfica */}
           <ToolCard icon={Printer} title="Formatos de Papel (ISO 216 & US)" description="Dimensiones físicas en mm, resolución a 300 DPI y escala visual comparativa.">
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', marginBottom: '1rem' }}>
               {PAPER_SIZES.map((paper) => (
@@ -1232,7 +1351,6 @@ export default function ToolsSection() {
               ))}
             </div>
 
-            {/* Visual Paper Scale Diagram Specimen */}
             <div style={{ backgroundColor: 'var(--bg-surface-2)', padding: '0.8rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-subtle)', textAlign: 'center' }}>
               <span style={{ fontSize: '0.72rem', color: 'var(--text-disabled)', display: 'block', marginBottom: '0.4rem' }}>Escala Visual de Tamaños de Papel:</span>
               <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'center', gap: '0.4rem', height: '60px' }}>
@@ -1245,7 +1363,6 @@ export default function ToolsSection() {
             </div>
           </ToolCard>
 
-          {/* Card 4: Contador de Palabras & Límites de Redes Sociales */}
           <ToolCard icon={Type} title="Contador & Límites Redes Sociales" description="Analizador con medidores de longitud en tiempo real para publicaciones de redes.">
             <textarea
               value={wcText}
@@ -1267,7 +1384,6 @@ export default function ToolsSection() {
               </div>
             </div>
 
-            {/* Social Media Character Limit Indicators */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
               {wcStats.limits.map((l) => (
                 <div key={l.platform} style={{ backgroundColor: 'var(--bg-surface-2)', padding: '0.4rem 0.6rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-subtle)' }}>
