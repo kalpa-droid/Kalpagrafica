@@ -1,25 +1,31 @@
 // =============================================================================
 // KALPAGRÁFICA — Utilidades de Color (equivalente nativo a `dt colour`,
 // `dt harmony`, `dt colorblind`, `dt contrast`, `dt tailwind-shades`, `dt pantone`)
-// Sin dependencias externas — todo en JS puro con soporte Pantone PMS Coated.
+// Sin dependencias externas — todo en JS puro con soporte Pantone PMS Coated (C) & Uncoated (U).
 // =============================================================================
 
-import { PANTONE_COATED_DB } from './pantoneData';
+import { PANTONE_COATED_DB, PANTONE_UNCOATED_DB } from './pantoneData';
 
-// Cache array of Pantone objects for fast scanning
-const PANTONE_LIST = PANTONE_COATED_DB.map((entry) => {
-  const [code, hex] = entry.split(':');
-  const cleanHex = hex.toUpperCase();
-  const r = parseInt(cleanHex.substring(0, 2), 16);
-  const g = parseInt(cleanHex.substring(2, 4), 16);
-  const b = parseInt(cleanHex.substring(4, 6), 16);
-  return {
-    code: `Pantone ${code.replace('-', ' ')}`,
-    rawCode: code.toLowerCase(),
-    hex: `#${cleanHex}`,
-    r, g, b
-  };
-});
+function parsePantoneDb(db, typeSuffix) {
+  return db.map((entry) => {
+    const [code, hex] = entry.split(':');
+    const cleanHex = hex.toUpperCase();
+    const r = parseInt(cleanHex.substring(0, 2), 16);
+    const g = parseInt(cleanHex.substring(2, 4), 16);
+    const b = parseInt(cleanHex.substring(4, 6), 16);
+    return {
+      code: `Pantone ${code.replace('-', ' ')}`,
+      rawCode: code.toLowerCase(),
+      hex: `#${cleanHex}`,
+      r, g, b,
+      typeSuffix
+    };
+  });
+}
+
+const PANTONE_COATED_LIST = parsePantoneDb(PANTONE_COATED_DB, 'C');
+const PANTONE_UNCOATED_LIST = parsePantoneDb(PANTONE_UNCOATED_DB, 'U');
+const PANTONE_ALL_LIST = [...PANTONE_COATED_LIST, ...PANTONE_UNCOATED_LIST];
 
 export function normalizeHex(hex) {
   let clean = (hex || '').replace('#', '').trim();
@@ -121,18 +127,17 @@ export function approxOklch(r, g, b) {
   return `oklch(${l} ${c} ${h})`;
 }
 
-// Búsqueda de coincidencia Pantone PMS Coated (con distancia visual ponderada)
-export function findClosestPantone(r, g, b) {
-  let bestMatch = PANTONE_LIST[0];
+// Búsqueda en lista de Pantone con distancia de color perceptualmente ponderada
+function findClosestInList(list, r, g, b) {
+  let bestMatch = list[0];
   let minDistance = Infinity;
 
-  for (let i = 0; i < PANTONE_LIST.length; i++) {
-    const p = PANTONE_LIST[i];
+  for (let i = 0; i < list.length; i++) {
+    const p = list[i];
     const rMean = (r + p.r) / 2;
     const dR = r - p.r;
     const dG = g - p.g;
     const dB = b - p.b;
-    // Perceptual color distance formula
     const dist = Math.sqrt((2 + rMean / 256) * dR * dR + 4 * dG * dG + (2 + (255 - rMean) / 256) * dB * dB);
 
     if (dist < minDistance) {
@@ -150,7 +155,26 @@ export function findClosestPantone(r, g, b) {
   };
 }
 
-// Universal Multiformat Color Parser (HEX 6/8 dígitos, RGB, HSL, CMYK, OKLCH, Pantone)
+// Búsqueda dual para Coated (Papel Brillante) y Uncoated (Papel Mate/Obra)
+export function findClosestPantone(r, g, b) {
+  const coated = findClosestInList(PANTONE_COATED_LIST, r, g, b);
+  const uncoated = findClosestInList(PANTONE_UNCOATED_LIST, r, g, b);
+
+  return {
+    coated: {
+      ...coated,
+      paperType: 'Papel Estucado / Brillante (Coated)',
+      badge: 'Pantone C'
+    },
+    uncoated: {
+      ...uncoated,
+      paperType: 'Papel Obra / Mate (Uncoated)',
+      badge: 'Pantone U'
+    }
+  };
+}
+
+// Universal Multiformat Color Parser
 export function parseAnyColorInput(inputStr) {
   if (!inputStr || typeof inputStr !== 'string') return null;
   const clean = inputStr.trim().toLowerCase();
@@ -159,13 +183,13 @@ export function parseAnyColorInput(inputStr) {
   const pMatch = clean.match(/(?:pantone|pms)?\s*([0-9]{3,4})\s*([ca-z])?/);
   if (pMatch && pMatch[1]) {
     const codeQuery = `${pMatch[1]}-${pMatch[2] || 'c'}`;
-    const pFound = PANTONE_LIST.find((p) => p.rawCode === codeQuery || p.rawCode.startsWith(pMatch[1]));
+    const pFound = PANTONE_ALL_LIST.find((p) => p.rawCode === codeQuery || p.rawCode.startsWith(pMatch[1]));
     if (pFound) {
       return { r: pFound.r, g: pFound.g, b: pFound.b, a: 1, source: 'pantone' };
     }
   }
 
-  // 2. HEX 3, 4, 6, 8 digits (with or without #)
+  // 2. HEX 3, 4, 6, 8 digits
   const hexMatch = clean.match(/^#?([0-9a-f]{3,8})$/);
   if (hexMatch) {
     let h = hexMatch[1];
@@ -183,7 +207,7 @@ export function parseAnyColorInput(inputStr) {
     }
   }
 
-  // 3. RGB / RGBA: e.g. "rgb(255, 212, 42)", "255, 212, 42", "255 212 42"
+  // 3. RGB / RGBA
   const rgbMatch = clean.match(/rgba?\s*\(?\s*(\d{1,3})\s*[\s,]+\s*(\d{1,3})\s*[\s,]+\s*(\d{1,3})/);
   if (rgbMatch) {
     return {
@@ -195,7 +219,7 @@ export function parseAnyColorInput(inputStr) {
     };
   }
 
-  // 4. HSL / HSLA: e.g. "hsl(47, 100%, 58%)", "47 100% 58%"
+  // 4. HSL / HSLA
   const hslMatch = clean.match(/hsla?\s*\(?\s*(\d{1,3})\s*[\s,]+\s*(\d{1,3})%?\s*[\s,]+\s*(\d{1,3})%?/);
   if (hslMatch) {
     const h = parseInt(hslMatch[1], 10);
@@ -205,7 +229,7 @@ export function parseAnyColorInput(inputStr) {
     return { ...rgb, a: 1, source: 'hsl' };
   }
 
-  // 5. CMYK: e.g. "cmyk(0, 17, 84, 0)", "cmyk(0%, 17%, 84%, 0%)", "0, 17, 84, 0"
+  // 5. CMYK
   const cmykMatch = clean.match(/cmyk\s*\(?\s*(\d{1,3})%?\s*[\s,]+\s*(\d{1,3})%?\s*[\s,]+\s*(\d{1,3})%?\s*[\s,]+\s*(\d{1,3})%?/);
   if (cmykMatch) {
     const c = parseInt(cmykMatch[1], 10);
@@ -216,13 +240,12 @@ export function parseAnyColorInput(inputStr) {
     return { ...rgb, a: 1, source: 'cmyk' };
   }
 
-  // 6. OKLCH: e.g. "oklch(0.85 0.18 85)"
+  // 6. OKLCH
   const oklchMatch = clean.match(/oklch\s*\(\s*([\d\.]+)\s+([\d\.]+)\s+([\d\.]+)\s*\)/);
   if (oklchMatch) {
     const l = parseFloat(oklchMatch[1]);
     const c = parseFloat(oklchMatch[2]);
     const h = parseFloat(oklchMatch[3]);
-    // Rough OKLCH to RGB conversion
     const rgb = hslToRgb(h, Math.min(100, c * 300), Math.min(100, l * 100));
     return { ...rgb, a: 1, source: 'oklch' };
   }

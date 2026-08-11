@@ -99,11 +99,11 @@ export default function ToolsSection() {
   };
 
   // ---------------------------------------------------------------------
-  // TAB 1 — COLOR MULTIFORMATO, PANTONE, PALETAS TAILWIND, ARMONÍAS Y DALTONISMO
+  // TAB 1 — COLOR MULTIFORMATO, PANTONE COATED/UNCOATED, PALETAS TAILWIND, ARMONÍAS Y DALTONISMO
   // ---------------------------------------------------------------------
   const [colorInput, setColorInput] = useState('#BAFDC1');
 
-  // Universal parser + instant auto-updating for all 4 downstream panels
+  // Universal parser + instant auto-updating for all downstream panels including dual Pantone (C & U)
   const colorData = useMemo(() => {
     const parsed = parseAnyColorInput(colorInput) || { r: 186, g: 253, b: 193, a: 1 };
     const { r, g, b, a } = parsed;
@@ -122,10 +122,7 @@ export default function ToolsSection() {
       hsl: `hsl(${h}, ${s}%, ${l}%)`,
       cmyk: `cmyk(${c}%, ${m}%, ${y}%, ${k}%)`,
       oklch: approxOklch(r, g, b),
-      pantoneName: pantoneMatch.code,
-      pantoneHex: pantoneMatch.hex,
-      pantoneSimilarity: pantoneMatch.similarity,
-      pantoneDeltaE: pantoneMatch.deltaE,
+      pantone: pantoneMatch,
       r, g, b, a: a !== undefined ? a : 1, h, s, l, c, m, y, k
     };
   }, [colorInput]);
@@ -425,7 +422,7 @@ export default function ToolsSection() {
 
         <p style={{ color: 'var(--text-secondary)', fontSize: '1.05rem', lineHeight: 1.6 }}>
           Suite utilitaria 100% nativa (sin subir tus archivos a ningún servidor) para diseñadores y desarrolladores:
-          colorimetría OKLCH, coincidencia Pantone PMS, paletas, daltonismo, recorte social, favicons, conversión de formato, marca de agua,
+          colorimetría OKLCH, coincidencia de Guías Pantone PMS Coated (brillante) y Uncoated (mate), paletas, daltonismo, recorte social, favicons, conversión de formato, marca de agua,
           tipografía y los comandos equivalentes para la terminal <strong style={{ color: 'var(--accent)' }}>delphitools-cli</strong>.
         </p>
       </div>
@@ -457,155 +454,295 @@ export default function ToolsSection() {
         })}
       </div>
 
-      {/* TAB 1: COLOR MULTIFORMATO, PANTONE, PALETAS TAILWIND, ARMONÍAS Y DALTONISMO ------------ */}
+      {/* TAB 1: COLOR MULTIFORMATO, PANTONE COATED/UNCOATED, PALETAS TAILWIND, ARMONÍAS Y DALTONISMO ------------ */}
       {activeTab === 'colour' && (
-        <div style={gridStyle}>
-          <ToolCard icon={Palette} title="Conversor de Color Multi-Espacio">
-            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1.5rem' }}>
-              <input
-                type="color"
-                value={colorData.hex}
-                onChange={(e) => setColorInput(e.target.value)}
-                style={{ width: '60px', height: '60px', borderRadius: 'var(--radius-md)', border: '2px solid var(--accent)', cursor: 'pointer', backgroundColor: 'transparent' }}
-                title="Seleccionar color con el cuentagotas"
-              />
-              <div style={{ flex: 1 }}>
-                <FieldLabel>Pegá o escribí tu color (HEX 6/8d, RGB, HSL, CMYK, OKLCH o Pantone)</FieldLabel>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+          {/* Top Row: Converter + Pantone Cards */}
+          <div style={gridStyle}>
+            {/* Color Converter Card */}
+            <ToolCard icon={Palette} title="Conversor de Color Multi-Espacio">
+              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1.5rem' }}>
                 <input
-                  type="text"
-                  value={colorInput}
+                  type="color"
+                  value={colorData.hex}
                   onChange={(e) => setColorInput(e.target.value)}
-                  placeholder="ej: ffd42aff, #ffd42a, rgb(255,212,42), cmyk(0,17,84,0), Pantone 115 C..."
-                  className="input font-mono"
-                  style={{ width: '100%', fontSize: '1rem', fontWeight: 700 }}
+                  style={{ width: '60px', height: '60px', borderRadius: 'var(--radius-md)', border: '2px solid var(--accent)', cursor: 'pointer', backgroundColor: 'transparent' }}
+                  title="Seleccionar color con el cuentagotas"
                 />
+                <div style={{ flex: 1 }}>
+                  <FieldLabel>Pegá o escribí tu color (HEX 6/8d, RGB, HSL, CMYK, OKLCH o Pantone)</FieldLabel>
+                  <input
+                    type="text"
+                    value={colorInput}
+                    onChange={(e) => setColorInput(e.target.value)}
+                    placeholder="ej: ffd42aff, #ffd42a, rgb(255,212,42), cmyk(0,17,84,0), Pantone 115 C..."
+                    className="input font-mono"
+                    style={{ width: '100%', fontSize: '1rem', fontWeight: 700 }}
+                  />
+                </div>
               </div>
-            </div>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-              {[
-                { label: 'HEX (6 dígitos)', val: colorData.hex },
-                { label: 'HEX (8 dígitos con Alfa)', val: colorData.hex8 },
-                { label: 'RGB', val: colorData.rgb },
-                { label: 'HSL', val: colorData.hsl },
-                { label: 'CMYK', val: colorData.cmyk },
-                { label: 'OKLCH', val: colorData.oklch },
-                { 
-                  label: 'Coincidencia Pantone PMS Coated', 
-                  val: `${colorData.pantoneName} (${colorData.pantoneHex}) — ${colorData.pantoneSimilarity} de coincidencia`,
-                  customColor: colorData.pantoneHex
-                }
-              ].map((fmt) => (
-                <div key={fmt.label} style={{
-                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                  backgroundColor: 'var(--bg-surface-2)', padding: '0.65rem 0.9rem',
-                  borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-subtle)'
-                }}>
-                  <div style={{ flex: 1, paddingRight: '0.5rem' }}>
-                    <span className="font-mono" style={{ fontSize: '0.72rem', color: 'var(--text-disabled)', display: 'block' }}>{fmt.label}</span>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                      {fmt.customColor && (
-                        <div style={{ width: '16px', height: '16px', borderRadius: '4px', backgroundColor: fmt.customColor, border: '1px solid var(--border-subtle)' }} />
-                      )}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                {[
+                  { label: 'HEX (6 dígitos)', val: colorData.hex },
+                  { label: 'HEX (8 dígitos con Alfa)', val: colorData.hex8 },
+                  { label: 'RGB', val: colorData.rgb },
+                  { label: 'HSL', val: colorData.hsl },
+                  { label: 'CMYK', val: colorData.cmyk },
+                  { label: 'OKLCH', val: colorData.oklch }
+                ].map((fmt) => (
+                  <div key={fmt.label} style={{
+                    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                    backgroundColor: 'var(--bg-surface-2)', padding: '0.65rem 0.9rem',
+                    borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-subtle)'
+                  }}>
+                    <div style={{ flex: 1, paddingRight: '0.5rem' }}>
+                      <span className="font-mono" style={{ fontSize: '0.72rem', color: 'var(--text-disabled)', display: 'block' }}>{fmt.label}</span>
                       <strong className="font-mono" style={{ fontSize: '0.88rem', color: 'var(--accent)', wordBreak: 'break-all' }}>{fmt.val}</strong>
                     </div>
+                    <button className="btn btn-ghost btn-sm" onClick={() => copyToClipboard(fmt.val, fmt.label)} title="Copiar valor">
+                      {copiedCode === fmt.label ? <Check size={15} color="var(--accent)" /> : <Copy size={15} />}
+                    </button>
                   </div>
-                  <button className="btn btn-ghost btn-sm" onClick={() => copyToClipboard(fmt.val, fmt.label)} title="Copiar valor">
-                    {copiedCode === fmt.label ? <Check size={15} color="var(--accent)" /> : <Copy size={15} />}
-                  </button>
-                </div>
-              ))}
-            </div>
-
-            <div style={{
-              marginTop: '1.5rem', padding: '0.9rem', borderRadius: 'var(--radius-md)',
-              backgroundColor: 'var(--bg-surface-2)', border: '1px solid var(--border-subtle)',
-              display: 'flex', alignItems: 'center', justifyContent: 'space-between'
-            }}>
-              <div>
-                <span style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', display: 'block' }}>Ratio de Contraste vs Fondo Oscuro</span>
-                <strong className="font-mono" style={{ fontSize: '1.15rem', color: Number(contrastVsDark) >= 4.5 ? 'var(--accent)' : '#F87171' }}>
-                  {contrastVsDark}:1 {Number(contrastVsDark) >= 4.5 ? '✓ (AA/AAA Pass)' : '⚠ (Bajo Contraste)'}
-                </strong>
+                ))}
               </div>
-            </div>
-          </ToolCard>
 
-          <ToolCard icon={Layers} title="Escala de Sombras Tailwind (50 — 950)" description="Se actualiza automáticamente al escribir o seleccionar cualquier color base. Hacé clic en cualquier sombra para aplicarla a todo el sistema.">
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-              {tailwindShades.map((shade) => (
+              <div style={{
+                marginTop: '1.5rem', padding: '0.9rem', borderRadius: 'var(--radius-md)',
+                backgroundColor: 'var(--bg-surface-2)', border: '1px solid var(--border-subtle)',
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between'
+              }}>
+                <div>
+                  <span style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', display: 'block' }}>Ratio de Contraste vs Fondo Oscuro</span>
+                  <strong className="font-mono" style={{ fontSize: '1.15rem', color: Number(contrastVsDark) >= 4.5 ? 'var(--accent)' : '#F87171' }}>
+                    {contrastVsDark}:1 {Number(contrastVsDark) >= 4.5 ? '✓ (AA/AAA Pass)' : '⚠ (Bajo Contraste)'}
+                  </strong>
+                </div>
+              </div>
+            </ToolCard>
+
+            {/* Dedicated Pantone Coated vs Uncoated Showcase Card */}
+            <ToolCard
+              icon={Printer}
+              title="Coincidencias de Guía Pantone® PMS (Fórmula Imprenta)"
+              description="Comparativa técnica del color activo según el soporte de papel impreso: Coated (C) para papel brillante / estucado vs Uncoated (U) para papel obra / mate."
+            >
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1.2rem' }}>
+                {/* Coated Card (C) */}
                 <div
-                  key={shade.weight}
                   onClick={() => {
-                    setColorInput(shade.hex);
-                    copyToClipboard(shade.hex, `shade-${shade.weight}`);
+                    setColorInput(colorData.pantone.coated.hex);
+                    copyToClipboard(colorData.pantone.coated.code, 'p-coated');
                   }}
-                  className="shade-item"
-                  title="Hacé clic para seleccionar esta sombra como color activo y copiar su HEX"
+                  title="Hacé clic para cargar este color Coated y copiar su código"
                   style={{
-                    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                    backgroundColor: shade.hex, color: shade.weight < 500 ? '#08080A' : '#FFFFFF',
-                    padding: '0.6rem 1rem', borderRadius: 'var(--radius-sm)', cursor: 'pointer',
-                    fontWeight: 600, fontSize: '0.85rem', transition: 'transform 0.15s ease'
+                    backgroundColor: 'var(--bg-surface-2)',
+                    borderRadius: 'var(--radius-md)',
+                    border: '1px solid var(--border-subtle)',
+                    padding: '1.2rem',
+                    cursor: 'pointer',
+                    transition: 'transform 0.2s ease, border-color 0.2s ease',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    textAlign: 'center'
                   }}
                 >
-                  <span className="font-mono">{shade.weight}</span>
-                  <span className="font-mono">{shade.hex}</span>
-                  {copiedCode === `shade-${shade.weight}` ? <Check size={15} /> : <Copy size={15} style={{ opacity: 0.7 }} />}
-                </div>
-              ))}
-            </div>
-          </ToolCard>
+                  {/* Centered Color Block */}
+                  <div style={{
+                    width: '100%',
+                    height: '95px',
+                    borderRadius: 'var(--radius-sm)',
+                    backgroundColor: colorData.pantone.coated.hex,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    marginBottom: '1rem',
+                    boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
+                    border: '1px solid rgba(255,255,255,0.1)',
+                    position: 'relative'
+                  }}>
+                    <span className="font-mono" style={{
+                      backgroundColor: 'rgba(8,8,10,0.85)',
+                      color: '#FFFFFF',
+                      padding: '0.25rem 0.65rem',
+                      borderRadius: 'var(--radius-full)',
+                      fontSize: '0.78rem',
+                      fontWeight: 700,
+                      letterSpacing: '0.05em'
+                    }}>
+                      {colorData.pantone.coated.badge}
+                    </span>
+                  </div>
 
-          <ToolCard icon={Droplet} title="Generador de Armonías Cromáticas" description="Esquemas calculados automáticamente en la rueda cromática HSL. Hacé clic en cualquier color para seleccionarlo como activo.">
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.1rem' }}>
-              {harmonies.map((scheme) => (
-                <div key={scheme.id}>
-                  <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '0.4rem' }}>{scheme.label}</span>
-                  <div style={{ display: 'flex', borderRadius: 'var(--radius-sm)', overflow: 'hidden', border: '1px solid var(--border-subtle)' }}>
-                    {scheme.colors.map((c, i) => (
+                  {/* Clean Multi-line Typography */}
+                  <div style={{ width: '100%' }}>
+                    <strong className="font-headline" style={{ fontSize: '1.15rem', color: 'var(--accent)', display: 'block', marginBottom: '0.2rem' }}>
+                      {colorData.pantone.coated.code}
+                    </strong>
+                    <span style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '0.8rem', lineHeight: 1.4 }}>
+                      {colorData.pantone.coated.paperType}
+                    </span>
+                    
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', alignItems: 'center' }}>
+                      <span className="font-mono" style={{ fontSize: '0.78rem', backgroundColor: 'var(--bg-base)', padding: '0.25rem 0.6rem', borderRadius: '4px', border: '1px solid var(--border-subtle)', color: 'var(--text-primary)', width: '100%' }}>
+                        HEX {colorData.pantone.coated.hex}
+                      </span>
+                      <span className="font-mono" style={{ fontSize: '0.78rem', backgroundColor: 'var(--accent-muted)', padding: '0.25rem 0.6rem', borderRadius: '4px', border: '1px solid rgba(186,253,193,0.3)', color: 'var(--accent)', fontWeight: 700, width: '100%' }}>
+                        {colorData.pantone.coated.similarity} coincidencia
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Uncoated Card (U) */}
+                <div
+                  onClick={() => {
+                    setColorInput(colorData.pantone.uncoated.hex);
+                    copyToClipboard(colorData.pantone.uncoated.code, 'p-uncoated');
+                  }}
+                  title="Hacé clic para cargar este color Uncoated y copiar su código"
+                  style={{
+                    backgroundColor: 'var(--bg-surface-2)',
+                    borderRadius: 'var(--radius-md)',
+                    border: '1px solid var(--border-subtle)',
+                    padding: '1.2rem',
+                    cursor: 'pointer',
+                    transition: 'transform 0.2s ease, border-color 0.2s ease',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    textAlign: 'center'
+                  }}
+                >
+                  {/* Centered Color Block */}
+                  <div style={{
+                    width: '100%',
+                    height: '95px',
+                    borderRadius: 'var(--radius-sm)',
+                    backgroundColor: colorData.pantone.uncoated.hex,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    marginBottom: '1rem',
+                    boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
+                    border: '1px solid rgba(255,255,255,0.1)',
+                    position: 'relative'
+                  }}>
+                    <span className="font-mono" style={{
+                      backgroundColor: 'rgba(8,8,10,0.85)',
+                      color: '#FFFFFF',
+                      padding: '0.25rem 0.65rem',
+                      borderRadius: 'var(--radius-full)',
+                      fontSize: '0.78rem',
+                      fontWeight: 700,
+                      letterSpacing: '0.05em'
+                    }}>
+                      {colorData.pantone.uncoated.badge}
+                    </span>
+                  </div>
+
+                  {/* Clean Multi-line Typography */}
+                  <div style={{ width: '100%' }}>
+                    <strong className="font-headline" style={{ fontSize: '1.15rem', color: 'var(--accent)', display: 'block', marginBottom: '0.2rem' }}>
+                      {colorData.pantone.uncoated.code}
+                    </strong>
+                    <span style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '0.8rem', lineHeight: 1.4 }}>
+                      {colorData.pantone.uncoated.paperType}
+                    </span>
+                    
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', alignItems: 'center' }}>
+                      <span className="font-mono" style={{ fontSize: '0.78rem', backgroundColor: 'var(--bg-base)', padding: '0.25rem 0.6rem', borderRadius: '4px', border: '1px solid var(--border-subtle)', color: 'var(--text-primary)', width: '100%' }}>
+                        HEX {colorData.pantone.uncoated.hex}
+                      </span>
+                      <span className="font-mono" style={{ fontSize: '0.78rem', backgroundColor: 'var(--accent-muted)', padding: '0.25rem 0.6rem', borderRadius: '4px', border: '1px solid rgba(186,253,193,0.3)', color: 'var(--accent)', fontWeight: 700, width: '100%' }}>
+                        {colorData.pantone.uncoated.similarity} coincidencia
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </ToolCard>
+          </div>
+
+          {/* Bottom Row: Tailwind Shades, Harmonies & Colorblind */}
+          <div style={gridStyle}>
+            <ToolCard icon={Layers} title="Escala de Sombras Tailwind (50 — 950)" description="Se actualiza automáticamente al escribir o seleccionar cualquier color base. Hacé clic en cualquier sombra para aplicarla a todo el sistema.">
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                {tailwindShades.map((shade) => (
+                  <div
+                    key={shade.weight}
+                    onClick={() => {
+                      setColorInput(shade.hex);
+                      copyToClipboard(shade.hex, `shade-${shade.weight}`);
+                    }}
+                    className="shade-item"
+                    title="Hacé clic para seleccionar esta sombra como color activo y copiar su HEX"
+                    style={{
+                      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                      backgroundColor: shade.hex, color: shade.weight < 500 ? '#08080A' : '#FFFFFF',
+                      padding: '0.6rem 1rem', borderRadius: 'var(--radius-sm)', cursor: 'pointer',
+                      fontWeight: 600, fontSize: '0.85rem', transition: 'transform 0.15s ease'
+                    }}
+                  >
+                    <span className="font-mono">{shade.weight}</span>
+                    <span className="font-mono">{shade.hex}</span>
+                    {copiedCode === `shade-${shade.weight}` ? <Check size={15} /> : <Copy size={15} style={{ opacity: 0.7 }} />}
+                  </div>
+                ))}
+              </div>
+            </ToolCard>
+
+            <ToolCard icon={Droplet} title="Generador de Armonías Cromáticas" description="Esquemas calculados automáticamente en la rueda cromática HSL. Hacé clic en cualquier color para seleccionarlo como activo.">
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '1.1rem' }}>
+                {harmonies.map((scheme) => (
+                  <div key={scheme.id}>
+                    <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '0.4rem' }}>{scheme.label}</span>
+                    <div style={{ display: 'flex', borderRadius: 'var(--radius-sm)', overflow: 'hidden', border: '1px solid var(--border-subtle)' }}>
+                      {scheme.colors.map((c, i) => (
+                        <div
+                          key={i}
+                          onClick={() => {
+                            setColorInput(c);
+                            copyToClipboard(c, `${scheme.id}-${i}`);
+                          }}
+                          title={`Hacé clic para seleccionar ${c} como activo y copiarlo`}
+                          style={{ flex: 1, height: '40px', backgroundColor: c, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                        >
+                          {copiedCode === `${scheme.id}-${i}` && <Check size={14} color="#08080A" />}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </ToolCard>
+
+            <ToolCard icon={ScanEye} title="Vista Rápida de Daltonismo" description="Simulación automática en tiempo real del color activo bajo distintos tipos de daltonismo.">
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                {colorblindSwatches.map((cb) => (
+                  <div key={cb.id} style={{
+                    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                    backgroundColor: 'var(--bg-surface-2)', padding: '0.6rem 1rem',
+                    borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-subtle)'
+                  }}>
+                    <span style={{ fontSize: '0.82rem', color: 'var(--text-secondary)' }}>{cb.label}</span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                      <span className="font-mono" style={{ fontSize: '0.78rem', color: 'var(--text-disabled)' }}>{cb.hex}</span>
                       <div
-                        key={i}
-                        onClick={() => {
-                          setColorInput(c);
-                          copyToClipboard(c, `${scheme.id}-${i}`);
-                        }}
-                        title={`Hacé clic para seleccionar ${c} como activo y copiarlo`}
-                        style={{ flex: 1, height: '40px', backgroundColor: c, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                      >
-                        {copiedCode === `${scheme.id}-${i}` && <Check size={14} color="#08080A" />}
-                      </div>
-                    ))}
+                        onClick={() => setColorInput(cb.hex)}
+                        title="Hacé clic para seleccionar este color simulado"
+                        style={{ width: '28px', height: '28px', borderRadius: 'var(--radius-sm)', backgroundColor: cb.hex, border: '1px solid var(--border-subtle)', cursor: 'pointer' }}
+                      />
+                    </div>
                   </div>
-                </div>
-              ))}
-            </div>
-          </ToolCard>
-
-          <ToolCard icon={ScanEye} title="Vista Rápida de Daltonismo" description="Simulación automática en tiempo real del color activo bajo distintos tipos de daltonismo.">
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-              {colorblindSwatches.map((cb) => (
-                <div key={cb.id} style={{
-                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                  backgroundColor: 'var(--bg-surface-2)', padding: '0.6rem 1rem',
-                  borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-subtle)'
-                }}>
-                  <span style={{ fontSize: '0.82rem', color: 'var(--text-secondary)' }}>{cb.label}</span>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-                    <span className="font-mono" style={{ fontSize: '0.78rem', color: 'var(--text-disabled)' }}>{cb.hex}</span>
-                    <div
-                      onClick={() => setColorInput(cb.hex)}
-                      title="Hacé clic para seleccionar este color simulado"
-                      style={{ width: '28px', height: '28px', borderRadius: 'var(--radius-sm)', backgroundColor: cb.hex, border: '1px solid var(--border-subtle)', cursor: 'pointer' }}
-                    />
-                  </div>
-                </div>
-              ))}
-              <p style={{ fontSize: '0.75rem', color: 'var(--text-disabled)', marginTop: '0.4rem' }}>
-                Para simular daltonismo sobre una imagen completa, usá la pestaña "Paleta & Daltonismo".
-              </p>
-            </div>
-          </ToolCard>
+                ))}
+                <p style={{ fontSize: '0.75rem', color: 'var(--text-disabled)', marginTop: '0.4rem' }}>
+                  Para simular daltonismo sobre una imagen completa, usá la pestaña "Paleta & Daltonismo".
+                </p>
+              </div>
+            </ToolCard>
+          </div>
         </div>
       )}
 
@@ -1026,8 +1163,8 @@ export default function ToolsSection() {
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
             {[
-              { cmd: 'dt colour ffd42aff', desc: 'Convierte ffd42aff a RGB, HSL, CMYK, OKLCH y su Pantone más cercano' },
-              { cmd: 'dt pantone 115-c', desc: 'Muestra la ficha técnica Pantone PMS con su equivalencia HEX y RGB' },
+              { cmd: 'dt colour ffd42aff', desc: 'Convierte ffd42aff a RGB, HSL, CMYK, OKLCH y sus Coincidencias Pantone Coated/Uncoated' },
+              { cmd: 'dt pantone 115-c', desc: 'Muestra la ficha técnica Pantone PMS Coated (brillante) vs Uncoated (mate)' },
               { cmd: 'dt tailwind-shades #BAFDC1', desc: 'Genera las 11 sombras de 50 a 950 para Tailwind CSS' },
               { cmd: 'dt harmony #BAFDC1', desc: 'Genera esquemas complementarios, análogos, triádicos y tetrádicos' },
               { cmd: 'dt colorblind --type protanopia logo.png', desc: 'Simula el efecto de protanopía sobre una imagen' },
