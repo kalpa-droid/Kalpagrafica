@@ -20,11 +20,11 @@ export default function ToolsSection() {
 
   const TABS = [
     { id: 'colour', label: 'Color & Armonías', icon: Palette },
+    { id: 'type', label: 'Tipografía & Papel', icon: Ruler },
     { id: 'analysis', label: 'Paleta & Daltonismo', icon: ScanEye },
     { id: 'svg', label: 'Optimizador SVG', icon: Code },
     { id: 'social', label: 'Social Cropper', icon: Crop },
     { id: 'assets', label: 'Favicon, Formato & Marca', icon: FileImage },
-    { id: 'type', label: 'Tipografía & Papel', icon: Ruler },
     { id: 'cli', label: 'Comandos CLI', icon: Terminal }
   ];
 

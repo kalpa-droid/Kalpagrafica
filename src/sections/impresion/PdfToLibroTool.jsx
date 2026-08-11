@@ -2,6 +2,115 @@ import React, { useState } from 'react';
 import { BookOpen, Download, AlertCircle, CheckCircle } from 'lucide-react';
 import { pdfToLibro } from './pdfToLibro';
 
+function BookletDiagram({ mode, fotocopiaStart, excludeStr }) {
+  return (
+    <div style={{
+      backgroundColor: 'var(--bg-surface-2)',
+      borderRadius: 'var(--radius-md)',
+      border: '1.5px solid var(--accent)',
+      padding: '1.2rem',
+      marginBottom: '1.5rem',
+      boxShadow: '0 4px 15px rgba(0,0,0,0.3)'
+    }}>
+      <div style={{ fontSize: '0.78rem', color: 'var(--accent)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.8rem', textAlign: 'center' }}>
+        Diagrama Técnico de Imposición en Hoja A4 Doble Cara (A5 Cosido)
+      </div>
+
+      <div style={{ display: 'flex', gap: '1.2rem', flexWrap: 'wrap', justifyContent: 'center', alignItems: 'center' }}>
+        {/* HOJA 1: FRENTE (Tapa / Portada) */}
+        <div style={{ textAlign: 'center' }}>
+          <span style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '0.3rem', fontWeight: 600 }}>
+            Pliego 1: FRENTE (Exterior)
+          </span>
+          <div style={{
+            width: '210px', height: '135px', backgroundColor: 'rgba(186, 253, 193, 0.05)',
+            border: '2px solid var(--accent)', borderRadius: '4px', position: 'relative', display: 'flex'
+          }}>
+            {/* Lomo Central */}
+            <div style={{
+              position: 'absolute', left: '50%', top: 0, bottom: 0, width: 0,
+              borderLeft: '2px dashed var(--accent)', opacity: 0.7
+            }} />
+            <span style={{ position: 'absolute', left: '50%', top: '35%', transform: 'translateX(-50%) rotate(-90deg)', fontSize: '0.55rem', color: 'var(--accent)', fontWeight: 700, backgroundColor: 'var(--bg-surface-2)', padding: '0 2px' }}>
+              LOMO / DOBLEZ
+            </span>
+
+            {/* Mitad Izquierda (Contraportada) */}
+            <div style={{ flex: 1, padding: '0.5rem', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', borderRight: '1px dashed rgba(186,253,193,0.3)' }}>
+              <span className="font-mono" style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', fontWeight: 700 }}>
+                Página N
+              </span>
+              <span style={{ fontSize: '0.62rem', color: 'var(--text-disabled)' }}>Contraportada</span>
+            </div>
+
+            {/* Mitad Derecha (Portada - Página 1) */}
+            <div style={{ flex: 1, padding: '0.5rem', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(186, 253, 193, 0.18)' }}>
+              <span className="font-mono" style={{ fontSize: '0.8rem', color: 'var(--accent)', fontWeight: 800 }}>
+                Página 1 ★
+              </span>
+              <span style={{ fontSize: '0.62rem', color: 'var(--accent)', fontWeight: 600 }}>
+                {mode === 'fotocopia' && fotocopiaStart === 'derecha' ? 'Portada Fotocopia' : 'Portada (Tapa)'}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* HOJA 1: DORSO (Reverso - Página 2) */}
+        <div style={{ textAlign: 'center' }}>
+          <span style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '0.3rem', fontWeight: 600 }}>
+            Pliego 1: DORSO (Reverso)
+          </span>
+          <div style={{
+            width: '210px', height: '135px', backgroundColor: 'rgba(186, 253, 193, 0.05)',
+            border: '2px solid var(--border-subtle)', borderRadius: '4px', position: 'relative', display: 'flex'
+          }}>
+            {/* Lomo Central */}
+            <div style={{
+              position: 'absolute', left: '50%', top: 0, bottom: 0, width: 0,
+              borderLeft: '2px dashed var(--border-strong)', opacity: 0.7
+            }} />
+
+            {/* Mitad Izquierda (Página 2 Interior) */}
+            <div style={{ flex: 1, padding: '0.5rem', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(186, 253, 193, 0.18)', borderRight: '1px dashed rgba(186,253,193,0.3)' }}>
+              <span className="font-mono" style={{ fontSize: '0.8rem', color: 'var(--accent)', fontWeight: 800 }}>
+                Página 2 ★
+              </span>
+              <span style={{ fontSize: '0.62rem', color: 'var(--accent)', fontWeight: 600 }}>Interior Izq.</span>
+            </div>
+
+            {/* Mitad Derecha (Página N-1) */}
+            <div style={{ flex: 1, padding: '0.5rem', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center' }}>
+              <span className="font-mono" style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', fontWeight: 700 }}>
+                Página N-1
+              </span>
+              <span style={{ fontSize: '0.62rem', color: 'var(--text-disabled)' }}>Interior Der.</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Resumen de configuración activa */}
+      <div style={{ marginTop: '1rem', paddingTop: '0.8rem', borderTop: '1px dashed var(--border-subtle)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem', fontSize: '0.75rem' }}>
+        <div>
+          <span style={{ color: 'var(--text-disabled)' }}>Modo Activo: </span>
+          <strong style={{ color: 'var(--accent)' }}>
+            {mode === 'fotocopia' ? `Fotocopia Libro Abierto (${fotocopiaStart === 'derecha' ? 'Pág 1 a la Derecha' : 'Pág 1 a la Izquierda'})` : 'PDF Normal A4/A5'}
+          </strong>
+        </div>
+
+        {excludeStr && (
+          <div>
+            <span style={{ color: 'var(--text-disabled)' }}>Excluyendo: </span>
+            <span className="font-mono" style={{ color: '#F87171', backgroundColor: 'rgba(248,113,113,0.15)', padding: '2px 6px', borderRadius: '4px', fontWeight: 700 }}>
+              {excludeStr}
+            </span>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export default function PdfToLibroTool() {
   const [file, setFile] = useState(null);
   const [mode, setMode] = useState('normal'); // 'normal' | 'fotocopia'
@@ -125,6 +234,9 @@ export default function PdfToLibroTool() {
           Permite omitir portadas en blanco o páginas innecesarias antes de armar los pliegos de encuadernación.
         </div>
       </div>
+
+      {/* DIAGRAMA TÉCNICO INTERACTIVO DE IMPOSICIÓN */}
+      <BookletDiagram mode={mode} fotocopiaStart={fotocopiaStart} excludeStr={excludeStr} />
 
       {/* Carga de archivo */}
       <div
