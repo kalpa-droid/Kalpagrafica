@@ -139,7 +139,6 @@ function BookletDiagram({ mode, hasCover, coverSide, hasRefPage, refPdfPage, ref
   );
 }
 
-
 export default function PdfToLibroTool() {
   const [file, setFile] = useState(null);
   const [mode, setMode] = useState('normal'); // 'normal' | 'fotocopia'
@@ -150,7 +149,8 @@ export default function PdfToLibroTool() {
   const [hasRefPage, setHasRefPage] = useState(true);
   const [refPdfPage, setRefPdfPage] = useState('');
   const [refBookPage, setRefBookPage] = useState('');
-  const [refPageSide, setRefPageSide] = useState('derecha'); // 'derecha' | 'izquierda' — solo editable manualmente en modo Fotocopia
+  const [refPageSide, setRefPageSide] = useState('derecha'); // 'derecha' | 'izquierda'
+  const [pageRotations, setPageRotations] = useState({}); // { [pageNum]: degrees }
 
   // En modo Normal el lado no se mira, se calcula: página impar del PDF = derecha, par = izquierda.
   const autoRefPageSide = Number(refPdfPage) % 2 !== 0 ? 'derecha' : 'izquierda';
@@ -172,6 +172,14 @@ export default function PdfToLibroTool() {
     setErrorMsg('');
     setSuccess(false);
     setFile(selected);
+    setPageRotations({});
+  };
+
+  const handleRotatePage = (pageNum, angleDelta) => {
+    setPageRotations(prev => ({
+      ...prev,
+      [pageNum]: ((prev[pageNum] || 0) + angleDelta) % 360
+    }));
   };
 
   const handleGenerate = async () => {
@@ -188,7 +196,8 @@ export default function PdfToLibroTool() {
         coverSide,
         refPdfPage: Number(refPdfPage) || 0,
         refBookPage: Number(refBookPage) || 0,
-        refPageSide: effectiveRefPageSide
+        refPageSide: effectiveRefPageSide,
+        pageRotations
       };
 
       const result = await pdfToLibro(file, mode, options, (msg, pct) => {
@@ -256,13 +265,15 @@ export default function PdfToLibroTool() {
         </div>
       </div>
 
-      {/* VISOR INTERACTIVO DE PÁGINAS FÍSICAS (FILMSTRIP / THUMBNAILS) */}
+      {/* VISOR INTERACTIVO DE PÁGINAS FÍSICAS (FILMSTRIP / THUMBNAILS WITH ROTATION) */}
       {file && (
         <PdfPreviewStrip
           file={file}
           selectedPdfPage={Number(refPdfPage) || 0}
           onSelectPage={handleSelectPageFromViewer}
           mode={mode}
+          pageRotations={pageRotations}
+          onRotatePage={handleRotatePage}
         />
       )}
 
@@ -283,23 +294,28 @@ export default function PdfToLibroTool() {
         </div>
       </div>
 
-      {/* 2. Pregunta de Tapa aislada */}
+      {/* 2. Pregunta de Tapa aislada (Diferenciada Normal vs Fotocopia) */}
       <div style={{ marginBottom: '1.2rem', backgroundColor: 'var(--bg-surface-2)', padding: '1rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-subtle)' }}>
-        <label style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', fontSize: '0.85rem', color: 'var(--accent)', fontWeight: 700, cursor: 'pointer', marginBottom: hasCover ? '0.6rem' : 0 }}>
-          <input type="checkbox" checked={hasCover} onChange={(e) => setHasCover(e.target.checked)} style={{ accentColor: 'var(--accent)', width: '16px', height: '16px' }} />
-          <span>2. Diagnóstico: ¿Tu PDF subido incluye Tapa / Carátula aislada en la página 1?</span>
-        </label>
-
-        {hasCover && (
-          <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', marginTop: '0.5rem', paddingLeft: '1.6rem' }}>
-            <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.82rem', color: 'var(--text-primary)', cursor: 'pointer' }}>
-              <input type="radio" name="coverSide" value="derecha" checked={coverSide === 'derecha'} onChange={() => setCoverSide('derecha')} style={{ accentColor: 'var(--accent)' }} />
-              <span>Tapa del PDF en el lado DERECHO (Estructura Estándar)</span>
+        {mode === 'normal' ? (
+          <label style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', fontSize: '0.85rem', color: 'var(--accent)', fontWeight: 700, cursor: 'pointer' }}>
+            <input type="checkbox" checked={hasCover} onChange={(e) => setHasCover(e.target.checked)} style={{ accentColor: 'var(--accent)', width: '16px', height: '16px' }} />
+            <span>2. Diagnóstico: ¿La Página 1 de tu PDF es la Tapa / Carátula principal del libro?</span>
+          </label>
+        ) : (
+          <div>
+            <label style={{ fontSize: '0.85rem', color: 'var(--accent)', fontWeight: 700, display: 'block', marginBottom: '0.6rem' }}>
+              2. Diagnóstico de Tapa: En la 1ª hoja escaneada de tu fotocopia, ¿de qué lado está la Tapa / Portada?
             </label>
-            <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.82rem', color: 'var(--text-primary)', cursor: 'pointer' }}>
-              <input type="radio" name="coverSide" value="izquierda" checked={coverSide === 'izquierda'} onChange={() => setCoverSide('izquierda')} style={{ accentColor: 'var(--accent)' }} />
-              <span>Tapa del PDF en el lado IZQUIERDO (PDF Invertido / Manga)</span>
-            </label>
+            <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.82rem', color: 'var(--text-primary)', cursor: 'pointer' }}>
+                <input type="radio" name="coverSide" value="derecha" checked={coverSide === 'derecha'} onChange={() => setCoverSide('derecha')} style={{ accentColor: 'var(--accent)' }} />
+                <span>En la mitad DERECHA (Portada exterior estándar)</span>
+              </label>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.82rem', color: 'var(--text-primary)', cursor: 'pointer' }}>
+                <input type="radio" name="coverSide" value="izquierda" checked={coverSide === 'izquierda'} onChange={() => setCoverSide('izquierda')} style={{ accentColor: 'var(--accent)' }} />
+                <span>En la mitad IZQUIERDA (Página 1 a la izquierda)</span>
+              </label>
+            </div>
           </div>
         )}
       </div>

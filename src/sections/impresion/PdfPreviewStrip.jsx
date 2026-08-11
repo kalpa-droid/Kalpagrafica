@@ -1,8 +1,8 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { Eye, ChevronLeft, ChevronRight, CheckCircle2 } from 'lucide-react';
+import { Eye, ChevronLeft, ChevronRight, CheckCircle2, RotateCw, RefreshCw } from 'lucide-react';
 import { inyectarPDFjs } from './pdfToLibro';
 
-function ThumbnailCard({ pdfDoc, pageNum, isSelected, onSelect }) {
+function ThumbnailCard({ pdfDoc, pageNum, isSelected, onSelect, mode, rotation = 0, onRotate }) {
   const [thumbUrl, setThumbUrl] = useState(null);
   const [loading, setLoading] = useState(true);
   const cardRef = useRef(null);
@@ -14,10 +14,20 @@ function ThumbnailCard({ pdfDoc, pageNum, isSelected, onSelect }) {
     const renderThumbnail = async () => {
       if (!pdfDoc) return;
       try {
+        setLoading(true);
         const page = await pdfDoc.getPage(pageNum);
         if (isCancelled) return;
 
-        const viewport = page.getViewport({ scale: 0.25 }); // Escala baja para thumbnail ultra liviano
+        const rawViewport = page.getViewport({ scale: 0.25 });
+        const isFotocopia = mode === 'fotocopia';
+        const isVertical = rawViewport.height > rawViewport.width;
+
+        // Si es fotocopia y la página viene vertical, rotarla automáticamente 90°
+        let autoAngle = (isFotocopia && isVertical) ? 90 : 0;
+        const totalAngle = (autoAngle + rotation) % 360;
+
+        const viewport = page.getViewport({ scale: 0.25, rotation: totalAngle });
+
         const canvas = document.createElement('canvas');
         canvas.width = viewport.width;
         canvas.height = viewport.height;
@@ -28,7 +38,7 @@ function ThumbnailCard({ pdfDoc, pageNum, isSelected, onSelect }) {
         await page.render({ canvasContext: ctx, viewport }).promise;
 
         if (!isCancelled) {
-          setThumbUrl(canvas.toDataURL('image/jpeg', 0.8));
+          setThumbUrl(canvas.toDataURL('image/jpeg', 0.82));
           setLoading(false);
         }
 
@@ -41,7 +51,6 @@ function ThumbnailCard({ pdfDoc, pageNum, isSelected, onSelect }) {
       }
     };
 
-    // Usar IntersectionObserver para lazy loading (no renderizar 300 páginas de golpe)
     if ('IntersectionObserver' in window && cardRef.current) {
       observer = new IntersectionObserver((entries) => {
         entries.forEach((entry) => {
@@ -60,19 +69,17 @@ function ThumbnailCard({ pdfDoc, pageNum, isSelected, onSelect }) {
       isCancelled = true;
       if (observer && cardRef.current) observer.unobserve(cardRef.current);
     };
-  }, [pdfDoc, pageNum]);
+  }, [pdfDoc, pageNum, mode, rotation]);
 
   return (
     <div
       ref={cardRef}
-      onClick={() => onSelect(pageNum)}
       style={{
         flexShrink: 0,
-        width: '110px',
+        width: '120px',
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
-        cursor: 'pointer',
         padding: '0.4rem',
         borderRadius: 'var(--radius-sm)',
         backgroundColor: isSelected ? 'rgba(186, 253, 193, 0.12)' : 'var(--bg-surface-2)',
@@ -81,18 +88,22 @@ function ThumbnailCard({ pdfDoc, pageNum, isSelected, onSelect }) {
         boxShadow: isSelected ? '0 0 10px rgba(186, 253, 193, 0.3)' : 'none'
       }}
     >
-      <div style={{
-        width: '98px',
-        height: '130px',
-        backgroundColor: 'var(--bg-surface)',
-        borderRadius: '3px',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        overflow: 'hidden',
-        position: 'relative',
-        border: '1px solid var(--border-subtle)'
-      }}>
+      <div
+        onClick={() => onSelect(pageNum)}
+        style={{
+          width: '108px',
+          height: '135px',
+          backgroundColor: 'var(--bg-surface)',
+          borderRadius: '3px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          overflow: 'hidden',
+          position: 'relative',
+          cursor: 'pointer',
+          border: '1px solid var(--border-subtle)'
+        }}
+      >
         {loading ? (
           <span style={{ fontSize: '0.65rem', color: 'var(--text-disabled)' }}>Cargando...</span>
         ) : (
@@ -105,16 +116,58 @@ function ThumbnailCard({ pdfDoc, pageNum, isSelected, onSelect }) {
         )}
       </div>
 
-      <div style={{ marginTop: '0.4rem', textAlign: 'center' }}>
-        <span className="font-mono" style={{ fontSize: '0.72rem', fontWeight: 800, color: isSelected ? 'var(--accent)' : 'var(--text-primary)' }}>
+      <div style={{ marginTop: '0.3rem', width: '100%', textAlign: 'center' }}>
+        <span className="font-mono" style={{ fontSize: '0.72rem', fontWeight: 800, color: isSelected ? 'var(--accent)' : 'var(--text-primary)', display: 'block' }}>
           Pág {pageNum}
         </span>
+
+        {/* Botones de giro manual per-página (solo visible en modo Fotocopia) */}
+        {mode === 'fotocopia' && (
+          <div style={{ display: 'flex', gap: '0.3rem', justifyContent: 'center', marginTop: '0.3rem' }}>
+            <button
+              onClick={(e) => { e.stopPropagation(); onRotate(pageNum, 90); }}
+              title="Girar 90° a la derecha"
+              style={{
+                backgroundColor: 'var(--bg-surface)',
+                border: '1px solid var(--border-subtle)',
+                borderRadius: '3px',
+                padding: '2px 5px',
+                fontSize: '0.65rem',
+                color: 'var(--text-secondary)',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '2px'
+              }}
+            >
+              <RotateCw size={10} /> 90°
+            </button>
+            <button
+              onClick={(e) => { e.stopPropagation(); onRotate(pageNum, 180); }}
+              title="Girar 180° (Corregir pata para arriba)"
+              style={{
+                backgroundColor: 'var(--bg-surface)',
+                border: '1px solid var(--border-subtle)',
+                borderRadius: '3px',
+                padding: '2px 5px',
+                fontSize: '0.65rem',
+                color: 'var(--text-secondary)',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '2px'
+              }}
+            >
+              <RefreshCw size={10} /> 180°
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );
 }
 
-export default function PdfPreviewStrip({ file, selectedPdfPage, onSelectPage, mode }) {
+export default function PdfPreviewStrip({ file, selectedPdfPage, onSelectPage, mode, pageRotations = {}, onRotatePage }) {
   const [pdfDoc, setPdfDoc] = useState(null);
   const [numPages, setNumPages] = useState(0);
   const [loadingDoc, setLoadingDoc] = useState(false);
@@ -190,7 +243,7 @@ export default function PdfPreviewStrip({ file, selectedPdfPage, onSelectPage, m
           </span>
         </div>
         <span style={{ fontSize: '0.72rem', color: 'var(--text-disabled)' }}>
-          Hacé clic en cualquier página para seleccionarla en el diagnóstico
+          Hacé clic en la página del visor donde aparece el primer número impreso. {mode === 'fotocopia' && 'Podés girar 90° o 180° cualquier hoja escaneada al revés.'}
         </span>
       </div>
 
@@ -245,6 +298,9 @@ export default function PdfPreviewStrip({ file, selectedPdfPage, onSelectPage, m
                 pageNum={pageNum}
                 isSelected={selectedPdfPage === pageNum}
                 onSelect={onSelectPage}
+                mode={mode}
+                rotation={pageRotations[pageNum] || 0}
+                onRotate={onRotatePage}
               />
             ))}
           </div>

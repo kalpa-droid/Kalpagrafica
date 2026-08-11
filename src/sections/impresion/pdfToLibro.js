@@ -21,7 +21,8 @@ async function procesarComoImagenes(file, mode, options = {}, onProgress) {
     coverSide = 'derecha',
     refPdfPage = 0,
     refBookPage = 0,
-    refPageSide = 'derecha'
+    refPageSide = 'derecha',
+    pageRotations = {}
   } = options;
 
   const newPdf = await PDFDocument.create();
@@ -52,7 +53,8 @@ async function procesarComoImagenes(file, mode, options = {}, onProgress) {
     }
 
     const page = await pdf.getPage(pageNum);
-    const viewport = page.getViewport({ scale: 300 / 72 });
+    const userRotation = pageRotations[pageNum] || 0;
+    const viewport = page.getViewport({ scale: 300 / 72, rotation: userRotation });
 
     const tempCanvas = document.createElement('canvas');
     tempCanvas.width = viewport.width;
