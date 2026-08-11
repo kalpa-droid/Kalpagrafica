@@ -1,6 +1,6 @@
 import { PDFDocument, PageSizes } from 'pdf-lib';
 
-async function inyectarPDFjs() {
+export async function inyectarPDFjs() {
   if (window.pdfjsLib) return;
   return new Promise((resolve, reject) => {
     const script = document.createElement('script');
