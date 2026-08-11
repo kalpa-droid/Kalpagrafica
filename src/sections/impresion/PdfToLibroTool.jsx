@@ -491,18 +491,112 @@ export default function PdfToLibroTool() {
 
             {mode === 'fotocopia' && (
               <div style={{ marginTop: '0.8rem', paddingTop: '0.8rem', borderTop: '1px dashed var(--border-subtle)' }}>
-                <span style={{ fontSize: '0.82rem', color: 'var(--text-primary)', fontWeight: 600, display: 'block', marginBottom: '0.4rem' }}>
-                  En esta hoja escaneada, ¿de qué lado está la página con el número {refBookPage || 'impreso'}?
+                <span style={{ fontSize: '0.85rem', color: 'var(--accent)', fontWeight: 700, display: 'block', marginBottom: '0.6rem' }}>
+                  👉 Tocá del lado donde viste el número {refBookPage || 'impreso'}:
                 </span>
-                <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
-                  <label style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.82rem', color: 'var(--text-primary)', cursor: 'pointer' }}>
-                    <input type="radio" name="refPageSide" value="derecha" checked={refPageSide === 'derecha'} onChange={() => setRefPageSide('derecha')} style={{ accentColor: 'var(--accent)' }} />
-                    <span>En la mitad DERECHA</span>
-                  </label>
-                  <label style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.82rem', color: 'var(--text-primary)', cursor: 'pointer' }}>
-                    <input type="radio" name="refPageSide" value="izquierda" checked={refPageSide === 'izquierda'} onChange={() => setRefPageSide('izquierda')} style={{ accentColor: 'var(--accent)' }} />
-                    <span>En la mitad IZQUIERDA</span>
-                  </label>
+                <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', flexWrap: 'wrap' }}>
+                  {/* MITAD IZQUIERDA */}
+                  <div
+                    onClick={() => setRefPageSide('izquierda')}
+                    style={{
+                      flex: '1 1 160px',
+                      maxWidth: '220px',
+                      padding: '0.8rem',
+                      borderRadius: 'var(--radius-md)',
+                      border: `2px solid ${refPageSide === 'izquierda' ? 'var(--accent)' : 'var(--border-subtle)'}`,
+                      backgroundColor: refPageSide === 'izquierda' ? 'rgba(186,253,193,0.1)' : 'var(--bg-surface-2)',
+                      cursor: 'pointer',
+                      textAlign: 'center',
+                      transition: 'all 0.2s ease',
+                      boxShadow: refPageSide === 'izquierda' ? '0 0 12px rgba(186,253,193,0.2)' : 'none'
+                    }}
+                  >
+                    <div style={{
+                      width: '100%',
+                      height: '75px',
+                      border: '1.5px solid var(--border-strong)',
+                      borderRadius: '4px',
+                      display: 'flex',
+                      overflow: 'hidden',
+                      marginBottom: '0.5rem',
+                      backgroundColor: '#18181c'
+                    }}>
+                      {/* Left half highlighted */}
+                      <div style={{
+                        flex: 1,
+                        borderRight: '1.5px dashed var(--border-subtle)',
+                        backgroundColor: refPageSide === 'izquierda' ? 'var(--accent)' : 'rgba(255,255,255,0.05)',
+                        color: refPageSide === 'izquierda' ? '#0a0a0c' : 'var(--accent)',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontWeight: 800,
+                        fontSize: '0.82rem'
+                      }}>
+                        <span>Pág {refBookPage || 'X'}</span>
+                        <span style={{ fontSize: '0.6rem', opacity: 0.85 }}>◄ IZQUIERDA</span>
+                      </div>
+                      {/* Right half inactive */}
+                      <div style={{ flex: 1, backgroundColor: 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-disabled)', fontSize: '0.68rem' }}>
+                        Derecha
+                      </div>
+                    </div>
+                    <div style={{ fontSize: '0.82rem', fontWeight: 700, color: refPageSide === 'izquierda' ? 'var(--accent)' : 'var(--text-primary)' }}>
+                      Mitad IZQUIERDA
+                    </div>
+                  </div>
+
+                  {/* MITAD DERECHA */}
+                  <div
+                    onClick={() => setRefPageSide('derecha')}
+                    style={{
+                      flex: '1 1 160px',
+                      maxWidth: '220px',
+                      padding: '0.8rem',
+                      borderRadius: 'var(--radius-md)',
+                      border: `2px solid ${refPageSide === 'derecha' ? 'var(--accent)' : 'var(--border-subtle)'}`,
+                      backgroundColor: refPageSide === 'derecha' ? 'rgba(186,253,193,0.1)' : 'var(--bg-surface-2)',
+                      cursor: 'pointer',
+                      textAlign: 'center',
+                      transition: 'all 0.2s ease',
+                      boxShadow: refPageSide === 'derecha' ? '0 0 12px rgba(186,253,193,0.2)' : 'none'
+                    }}
+                  >
+                    <div style={{
+                      width: '100%',
+                      height: '75px',
+                      border: '1.5px solid var(--border-strong)',
+                      borderRadius: '4px',
+                      display: 'flex',
+                      overflow: 'hidden',
+                      marginBottom: '0.5rem',
+                      backgroundColor: '#18181c'
+                    }}>
+                      {/* Left half inactive */}
+                      <div style={{ flex: 1, borderRight: '1.5px dashed var(--border-subtle)', backgroundColor: 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-disabled)', fontSize: '0.68rem' }}>
+                        Izquierda
+                      </div>
+                      {/* Right half highlighted */}
+                      <div style={{
+                        flex: 1,
+                        backgroundColor: refPageSide === 'derecha' ? 'var(--accent)' : 'rgba(255,255,255,0.05)',
+                        color: refPageSide === 'derecha' ? '#0a0a0c' : 'var(--accent)',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontWeight: 800,
+                        fontSize: '0.82rem'
+                      }}>
+                        <span>Pág {refBookPage || 'X'}</span>
+                        <span style={{ fontSize: '0.6rem', opacity: 0.85 }}>DERECHA ►</span>
+                      </div>
+                    </div>
+                    <div style={{ fontSize: '0.82rem', fontWeight: 700, color: refPageSide === 'derecha' ? 'var(--accent)' : 'var(--text-primary)' }}>
+                      Mitad DERECHA
+                    </div>
+                  </div>
                 </div>
               </div>
             )}
@@ -544,18 +638,102 @@ export default function PdfToLibroTool() {
               </label>
             ) : (
               <div>
-                <span style={{ fontSize: '0.82rem', color: 'var(--accent)', fontWeight: 700, display: 'block', marginBottom: '0.4rem' }}>
-                  En la 1ª hoja escaneada de tu fotocopia, ¿de qué lado está la Tapa / Portada?
+                <span style={{ fontSize: '0.85rem', color: 'var(--accent)', fontWeight: 700, display: 'block', marginBottom: '0.6rem' }}>
+                  👉 Tocá del lado donde está la Tapa / Portada en la 1ª hoja escaneada:
                 </span>
-                <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
-                  <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.82rem', color: 'var(--text-primary)', cursor: 'pointer' }}>
-                    <input type="radio" name="coverSide" value="derecha" checked={coverSide === 'derecha'} onChange={() => setCoverSide('derecha')} style={{ accentColor: 'var(--accent)' }} />
-                    <span>En la mitad DERECHA (Portada exterior estándar)</span>
-                  </label>
-                  <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.82rem', color: 'var(--text-primary)', cursor: 'pointer' }}>
-                    <input type="radio" name="coverSide" value="izquierda" checked={coverSide === 'izquierda'} onChange={() => setCoverSide('izquierda')} style={{ accentColor: 'var(--accent)' }} />
-                    <span>En la mitad IZQUIERDA</span>
-                  </label>
+                <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', flexWrap: 'wrap' }}>
+                  {/* MITAD IZQUIERDA */}
+                  <div
+                    onClick={() => setCoverSide('izquierda')}
+                    style={{
+                      flex: '1 1 160px',
+                      maxWidth: '220px',
+                      padding: '0.8rem',
+                      borderRadius: 'var(--radius-md)',
+                      border: `2px solid ${coverSide === 'izquierda' ? 'var(--accent)' : 'var(--border-subtle)'}`,
+                      backgroundColor: coverSide === 'izquierda' ? 'rgba(186,253,193,0.1)' : 'var(--bg-surface-2)',
+                      cursor: 'pointer',
+                      textAlign: 'center',
+                      transition: 'all 0.2s ease'
+                    }}
+                  >
+                    <div style={{
+                      width: '100%',
+                      height: '70px',
+                      border: '1.5px solid var(--border-strong)',
+                      borderRadius: '4px',
+                      display: 'flex',
+                      overflow: 'hidden',
+                      marginBottom: '0.4rem',
+                      backgroundColor: '#18181c'
+                    }}>
+                      <div style={{
+                        flex: 1,
+                        borderRight: '1.5px dashed var(--border-subtle)',
+                        backgroundColor: coverSide === 'izquierda' ? 'var(--accent)' : 'rgba(255,255,255,0.05)',
+                        color: coverSide === 'izquierda' ? '#0a0a0c' : 'var(--accent)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontWeight: 800,
+                        fontSize: '0.78rem'
+                      }}>
+                        TAPA ◄
+                      </div>
+                      <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-disabled)', fontSize: '0.68rem' }}>
+                        Hoja 1
+                      </div>
+                    </div>
+                    <div style={{ fontSize: '0.8rem', fontWeight: 700, color: coverSide === 'izquierda' ? 'var(--accent)' : 'var(--text-primary)' }}>
+                      Mitad IZQUIERDA
+                    </div>
+                  </div>
+
+                  {/* MITAD DERECHA */}
+                  <div
+                    onClick={() => setCoverSide('derecha')}
+                    style={{
+                      flex: '1 1 160px',
+                      maxWidth: '220px',
+                      padding: '0.8rem',
+                      borderRadius: 'var(--radius-md)',
+                      border: `2px solid ${coverSide === 'derecha' ? 'var(--accent)' : 'var(--border-subtle)'}`,
+                      backgroundColor: coverSide === 'derecha' ? 'rgba(186,253,193,0.1)' : 'var(--bg-surface-2)',
+                      cursor: 'pointer',
+                      textAlign: 'center',
+                      transition: 'all 0.2s ease'
+                    }}
+                  >
+                    <div style={{
+                      width: '100%',
+                      height: '70px',
+                      border: '1.5px solid var(--border-strong)',
+                      borderRadius: '4px',
+                      display: 'flex',
+                      overflow: 'hidden',
+                      marginBottom: '0.4rem',
+                      backgroundColor: '#18181c'
+                    }}>
+                      <div style={{ flex: 1, borderRight: '1.5px dashed var(--border-subtle)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-disabled)', fontSize: '0.68rem' }}>
+                        Hoja 1
+                      </div>
+                      <div style={{
+                        flex: 1,
+                        backgroundColor: coverSide === 'derecha' ? 'var(--accent)' : 'rgba(255,255,255,0.05)',
+                        color: coverSide === 'derecha' ? '#0a0a0c' : 'var(--accent)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontWeight: 800,
+                        fontSize: '0.78rem'
+                      }}>
+                        ► TAPA
+                      </div>
+                    </div>
+                    <div style={{ fontSize: '0.8rem', fontWeight: 700, color: coverSide === 'derecha' ? 'var(--accent)' : 'var(--text-primary)' }}>
+                      Mitad DERECHA
+                    </div>
+                  </div>
                 </div>
               </div>
             )}
