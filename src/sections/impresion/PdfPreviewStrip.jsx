@@ -1,8 +1,8 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { Eye, ChevronLeft, ChevronRight, CheckCircle2, RotateCw, RefreshCw } from 'lucide-react';
+import { Eye, ChevronLeft, ChevronRight, CheckCircle2, RotateCw, RefreshCw, Scissors } from 'lucide-react';
 import { inyectarPDFjs } from './pdfToLibro';
 
-function ThumbnailCard({ pdfDoc, pageNum, isSelected, onSelect, mode, rotation = 0, onRotate }) {
+function ThumbnailCard({ pdfDoc, pageNum, isSelected, onSelect, mode, rotation = 0, onRotate, splitOffset = 50, onAdjustSplit }) {
   const [thumbUrl, setThumbUrl] = useState(null);
   const [loading, setLoading] = useState(true);
   const cardRef = useRef(null);
@@ -76,7 +76,7 @@ function ThumbnailCard({ pdfDoc, pageNum, isSelected, onSelect, mode, rotation =
       ref={cardRef}
       style={{
         flexShrink: 0,
-        width: '120px',
+        width: '125px',
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
@@ -91,8 +91,8 @@ function ThumbnailCard({ pdfDoc, pageNum, isSelected, onSelect, mode, rotation =
       <div
         onClick={() => onSelect(pageNum)}
         style={{
-          width: '108px',
-          height: '135px',
+          width: '112px',
+          height: '138px',
           backgroundColor: 'var(--bg-surface)',
           borderRadius: '3px',
           display: 'flex',
@@ -109,8 +109,25 @@ function ThumbnailCard({ pdfDoc, pageNum, isSelected, onSelect, mode, rotation =
         ) : (
           <img src={thumbUrl} alt={`Página física ${pageNum}`} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
         )}
+
+        {/* Línea de corte central (solo en modo Fotocopia) */}
+        {mode === 'fotocopia' && !loading && (
+          <div style={{
+            position: 'absolute',
+            left: `${splitOffset}%`,
+            top: 0,
+            bottom: 0,
+            width: 0,
+            borderLeft: '1.5px dashed #F87171',
+            pointerEvents: 'none',
+            zIndex: 1
+          }}>
+            <span style={{ position: 'absolute', top: 0, left: '-6px', fontSize: '0.55rem', color: '#F87171', backgroundColor: 'rgba(0,0,0,0.8)', padding: '1px' }}>✂</span>
+          </div>
+        )}
+
         {isSelected && (
-          <div style={{ position: 'absolute', top: '3px', right: '3px', backgroundColor: 'var(--accent)', borderRadius: '50%', padding: '2px' }}>
+          <div style={{ position: 'absolute', top: '3px', right: '3px', backgroundColor: 'var(--accent)', borderRadius: '50%', padding: '2px', zIndex: 2 }}>
             <CheckCircle2 size={12} color="#000" />
           </div>
         )}
@@ -121,45 +138,69 @@ function ThumbnailCard({ pdfDoc, pageNum, isSelected, onSelect, mode, rotation =
           Pág {pageNum}
         </span>
 
-        {/* Botones de giro manual per-página (solo visible en modo Fotocopia) */}
+        {/* Botones de giro y ajuste fino de corte (solo en modo Fotocopia) */}
         {mode === 'fotocopia' && (
-          <div style={{ display: 'flex', gap: '0.3rem', justifyContent: 'center', marginTop: '0.3rem' }}>
-            <button
-              onClick={(e) => { e.stopPropagation(); onRotate(pageNum, 90); }}
-              title="Girar 90° a la derecha"
-              style={{
-                backgroundColor: 'var(--bg-surface)',
-                border: '1px solid var(--border-subtle)',
-                borderRadius: '3px',
-                padding: '2px 5px',
-                fontSize: '0.65rem',
-                color: 'var(--text-secondary)',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '2px'
-              }}
-            >
-              <RotateCw size={10} /> 90°
-            </button>
-            <button
-              onClick={(e) => { e.stopPropagation(); onRotate(pageNum, 180); }}
-              title="Girar 180° (Corregir pata para arriba)"
-              style={{
-                backgroundColor: 'var(--bg-surface)',
-                border: '1px solid var(--border-subtle)',
-                borderRadius: '3px',
-                padding: '2px 5px',
-                fontSize: '0.65rem',
-                color: 'var(--text-secondary)',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '2px'
-              }}
-            >
-              <RefreshCw size={10} /> 180°
-            </button>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem', marginTop: '0.3rem' }}>
+            {/* Control de rotación */}
+            <div style={{ display: 'flex', gap: '0.2rem', justifyContent: 'center' }}>
+              <button
+                onClick={(e) => { e.stopPropagation(); onRotate(pageNum, 90); }}
+                title="Girar 90° a la derecha"
+                style={{
+                  backgroundColor: 'var(--bg-surface)',
+                  border: '1px solid var(--border-subtle)',
+                  borderRadius: '3px',
+                  padding: '2px 4px',
+                  fontSize: '0.62rem',
+                  color: 'var(--text-secondary)',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '2px'
+                }}
+              >
+                <RotateCw size={9} /> 90°
+              </button>
+              <button
+                onClick={(e) => { e.stopPropagation(); onRotate(pageNum, 180); }}
+                title="Girar 180° (Corregir pata para arriba)"
+                style={{
+                  backgroundColor: 'var(--bg-surface)',
+                  border: '1px solid var(--border-subtle)',
+                  borderRadius: '3px',
+                  padding: '2px 4px',
+                  fontSize: '0.62rem',
+                  color: 'var(--text-secondary)',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '2px'
+                }}
+              >
+                <RefreshCw size={9} /> 180°
+              </button>
+            </div>
+
+            {/* Control de ajuste fino del punto de corte */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '3px', backgroundColor: 'var(--bg-surface)', padding: '2px 4px', borderRadius: '3px', border: '1px solid var(--border-subtle)' }}>
+              <button
+                onClick={(e) => { e.stopPropagation(); onAdjustSplit(pageNum, Math.max(35, splitOffset - 2)); }}
+                title="Mover línea de corte a la izquierda (-2%)"
+                style={{ background: 'none', border: 'none', color: '#F87171', fontWeight: 800, cursor: 'pointer', fontSize: '0.7rem', padding: '0 2px' }}
+              >
+                ◄
+              </button>
+              <span className="font-mono" style={{ fontSize: '0.62rem', color: '#F87171', fontWeight: 700 }}>
+                ✂ {splitOffset}%
+              </span>
+              <button
+                onClick={(e) => { e.stopPropagation(); onAdjustSplit(pageNum, Math.min(65, splitOffset + 2)); }}
+                title="Mover línea de corte a la derecha (+2%)"
+                style={{ background: 'none', border: 'none', color: '#F87171', fontWeight: 800, cursor: 'pointer', fontSize: '0.7rem', padding: '0 2px' }}
+              >
+                ►
+              </button>
+            </div>
           </div>
         )}
       </div>
@@ -167,7 +208,7 @@ function ThumbnailCard({ pdfDoc, pageNum, isSelected, onSelect, mode, rotation =
   );
 }
 
-export default function PdfPreviewStrip({ file, selectedPdfPage, onSelectPage, mode, pageRotations = {}, onRotatePage }) {
+export default function PdfPreviewStrip({ file, selectedPdfPage, onSelectPage, mode, pageRotations = {}, onRotatePage, pageSplitOffsets = {}, onAdjustSplitPage }) {
   const [pdfDoc, setPdfDoc] = useState(null);
   const [numPages, setNumPages] = useState(0);
   const [loadingDoc, setLoadingDoc] = useState(false);
@@ -243,7 +284,7 @@ export default function PdfPreviewStrip({ file, selectedPdfPage, onSelectPage, m
           </span>
         </div>
         <span style={{ fontSize: '0.72rem', color: 'var(--text-disabled)' }}>
-          Hacé clic en la página del visor donde aparece el primer número impreso. {mode === 'fotocopia' && 'Podés girar 90° o 180° cualquier hoja escaneada al revés.'}
+          Hacé clic en la página donde arranca el libro. {mode === 'fotocopia' && 'Podés girar u ajustar la línea de corte ✂ roja en cualquier hoja.'}
         </span>
       </div>
 
@@ -301,6 +342,8 @@ export default function PdfPreviewStrip({ file, selectedPdfPage, onSelectPage, m
                 mode={mode}
                 rotation={pageRotations[pageNum] || 0}
                 onRotate={onRotatePage}
+                splitOffset={pageSplitOffsets[pageNum] !== undefined ? pageSplitOffsets[pageNum] : 50}
+                onAdjustSplit={onAdjustSplitPage}
               />
             ))}
           </div>

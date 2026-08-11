@@ -22,7 +22,8 @@ async function procesarComoImagenes(file, mode, options = {}, onProgress) {
     refPdfPage = 0,
     refBookPage = 0,
     refPageSide = 'derecha',
-    pageRotations = {}
+    pageRotations = {},
+    pageSplitOffsets = {}
   } = options;
 
   const newPdf = await PDFDocument.create();
@@ -82,42 +83,46 @@ async function procesarComoImagenes(file, mode, options = {}, onProgress) {
         finalCtx.drawImage(tempCanvas, -tempCanvas.width / 2, -tempCanvas.height / 2);
       }
 
-      const halfW = finalCanvas.width / 2;
+      const splitPct = ((pageSplitOffsets[pageNum] !== undefined) ? pageSplitOffsets[pageNum] : 50) / 100;
+      const fullW = finalCanvas.width;
       const fullH = finalCanvas.height;
+      const splitX = Math.round(fullW * splitPct);
+      const leftW = splitX;
+      const rightW = fullW - splitX;
 
       if (isFirstProcessedSheet && (fotocopiaStart === 'derecha' || (hasCover && coverSide === 'derecha'))) {
         const rightCanvas = document.createElement('canvas');
-        rightCanvas.width = halfW; rightCanvas.height = fullH;
-        rightCanvas.getContext('2d').drawImage(finalCanvas, halfW, 0, halfW, fullH, 0, 0, halfW, fullH);
+        rightCanvas.width = rightW; rightCanvas.height = fullH;
+        rightCanvas.getContext('2d').drawImage(finalCanvas, splitX, 0, rightW, fullH, 0, 0, rightW, fullH);
 
         const rightImg = await newPdf.embedJpg(rightCanvas.toDataURL('image/jpeg', 0.92));
-        const pageR = newPdf.addPage([halfW, fullH]);
-        pageR.drawImage(rightImg, { x: 0, y: 0, width: halfW, height: fullH });
+        const pageR = newPdf.addPage([rightW, fullH]);
+        pageR.drawImage(rightImg, { x: 0, y: 0, width: rightW, height: fullH });
 
         rightCanvas.width = 0; rightCanvas.height = 0;
 
         // Si se requiere ajuste detrás de la tapa, se inserta 1 hoja A5 en blanco inmediatamente
         if (needBlankPageBehindCover) {
-          const blankPage = newPdf.addPage([halfW, fullH]);
+          const blankPage = newPdf.addPage([rightW, fullH]);
           blankPage.drawRectangle({ x: 0, y: 0, width: 0, height: 0 });
         }
       } else {
         const leftCanvas = document.createElement('canvas');
-        leftCanvas.width = halfW; leftCanvas.height = fullH;
-        leftCanvas.getContext('2d').drawImage(finalCanvas, 0, 0, halfW, fullH, 0, 0, halfW, fullH);
+        leftCanvas.width = leftW; leftCanvas.height = fullH;
+        leftCanvas.getContext('2d').drawImage(finalCanvas, 0, 0, leftW, fullH, 0, 0, leftW, fullH);
 
         const rightCanvas = document.createElement('canvas');
-        rightCanvas.width = halfW; rightCanvas.height = fullH;
-        rightCanvas.getContext('2d').drawImage(finalCanvas, halfW, 0, halfW, fullH, 0, 0, halfW, fullH);
+        rightCanvas.width = rightW; rightCanvas.height = fullH;
+        rightCanvas.getContext('2d').drawImage(finalCanvas, splitX, 0, rightW, fullH, 0, 0, rightW, fullH);
 
         const leftImg = await newPdf.embedJpg(leftCanvas.toDataURL('image/jpeg', 0.92));
         const rightImg = await newPdf.embedJpg(rightCanvas.toDataURL('image/jpeg', 0.92));
 
-        const pageL = newPdf.addPage([halfW, fullH]);
-        pageL.drawImage(leftImg, { x: 0, y: 0, width: halfW, height: fullH });
+        const pageL = newPdf.addPage([leftW, fullH]);
+        pageL.drawImage(leftImg, { x: 0, y: 0, width: leftW, height: fullH });
 
-        const pageR = newPdf.addPage([halfW, fullH]);
-        pageR.drawImage(rightImg, { x: 0, y: 0, width: halfW, height: fullH });
+        const pageR = newPdf.addPage([rightW, fullH]);
+        pageR.drawImage(rightImg, { x: 0, y: 0, width: rightW, height: fullH });
 
         leftCanvas.width = 0; leftCanvas.height = 0;
         rightCanvas.width = 0; rightCanvas.height = 0;

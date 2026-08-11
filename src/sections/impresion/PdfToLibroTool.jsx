@@ -151,6 +151,7 @@ export default function PdfToLibroTool() {
   const [refBookPage, setRefBookPage] = useState('');
   const [refPageSide, setRefPageSide] = useState('derecha'); // 'derecha' | 'izquierda'
   const [pageRotations, setPageRotations] = useState({}); // { [pageNum]: degrees }
+  const [pageSplitOffsets, setPageSplitOffsets] = useState({}); // { [pageNum]: percentage }
 
   // En modo Normal el lado no se mira, se calcula: página impar del PDF = derecha, par = izquierda.
   const autoRefPageSide = Number(refPdfPage) % 2 !== 0 ? 'derecha' : 'izquierda';
@@ -173,12 +174,20 @@ export default function PdfToLibroTool() {
     setSuccess(false);
     setFile(selected);
     setPageRotations({});
+    setPageSplitOffsets({});
   };
 
   const handleRotatePage = (pageNum, angleDelta) => {
     setPageRotations(prev => ({
       ...prev,
       [pageNum]: ((prev[pageNum] || 0) + angleDelta) % 360
+    }));
+  };
+
+  const handleAdjustSplitPage = (pageNum, newPct) => {
+    setPageSplitOffsets(prev => ({
+      ...prev,
+      [pageNum]: newPct
     }));
   };
 
@@ -197,7 +206,8 @@ export default function PdfToLibroTool() {
         refPdfPage: Number(refPdfPage) || 0,
         refBookPage: Number(refBookPage) || 0,
         refPageSide: effectiveRefPageSide,
-        pageRotations
+        pageRotations,
+        pageSplitOffsets
       };
 
       const result = await pdfToLibro(file, mode, options, (msg, pct) => {
@@ -265,7 +275,7 @@ export default function PdfToLibroTool() {
         </div>
       </div>
 
-      {/* VISOR INTERACTIVO DE PÁGINAS FÍSICAS (FILMSTRIP / THUMBNAILS WITH ROTATION) */}
+      {/* VISOR INTERACTIVO DE PÁGINAS FÍSICAS (FILMSTRIP / THUMBNAILS WITH ROTATION & SPLIT CROP ADJUSTMENT) */}
       {file && (
         <PdfPreviewStrip
           file={file}
@@ -274,6 +284,8 @@ export default function PdfToLibroTool() {
           mode={mode}
           pageRotations={pageRotations}
           onRotatePage={handleRotatePage}
+          pageSplitOffsets={pageSplitOffsets}
+          onAdjustSplitPage={handleAdjustSplitPage}
         />
       )}
 
