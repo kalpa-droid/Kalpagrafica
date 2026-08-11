@@ -37,15 +37,78 @@ export function svgToImage(svgText) {
 }
 
 export function recolorSvgText(svgText, targetColor) {
-  const fills = (svgText.match(/fill=[\"\']([^\"\']+)[\"\']/gi) || []);
-  const strokes = (svgText.match(/stroke=[\"\']([^\"\']+)[\"\']/gi) || []);
-  const isMultiColor = (new Set([...fills, ...strokes])).size > 1;
+  if (!svgText || typeof svgText !== 'string') {
+    return { svgText: '', isMultiColor: false };
+  }
 
-  let clean = svgText;
-  clean = clean.replace(/fill=[\"\'](?!none)[^\"\']+[\"\']/gi, `fill="${targetColor}"`);
-  clean = clean.replace(/stroke=[\"\'](?!none)[^\"\']+[\"\']/gi, `stroke="${targetColor}"`);
+  const originalFills = (svgText.match(/fill\s*[:=]\s*["']?([^;}"'\s>]+)/gi) || []);
+  const originalStrokes = (svgText.match(/stroke\s*[:=]\s*["']?([^;}"'\s>]+)/gi) || []);
+  const isMultiColor = (new Set([...originalFills, ...originalStrokes])).size > 1;
 
-  return { svgText: clean, isMultiColor };
+  try {
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(svgText, 'image/svg+xml');
+
+    if (doc.querySelector('parsererror')) {
+      let clean = svgText;
+      clean = clean.replace(/fill\s*=\s*["'](?!none)[^"']+["']/gi, `fill="${targetColor}"`);
+      clean = clean.replace(/stroke\s*=\s*["'](?!none)[^"']+["']/gi, `stroke="${targetColor}"`);
+      clean = clean.replace(/fill\s*:\s*(?!none)[^;}"']+/gi, `fill:${targetColor}`);
+      clean = clean.replace(/stroke\s*:\s*(?!none)[^;}"']+/gi, `stroke:${targetColor}`);
+      return { svgText: clean, isMultiColor };
+    }
+
+    const shapeSelector = 'path, circle, rect, polygon, ellipse, line, polyline, g, text, tspan, use, svg';
+    const elements = doc.querySelectorAll(shapeSelector);
+
+    elements.forEach((el) => {
+      // 1. Reemplaza estilos en línea style="..."
+      const styleAttr = el.getAttribute('style');
+      if (styleAttr) {
+        let newStyle = styleAttr;
+        newStyle = newStyle.replace(/fill\s*:\s*(?!none)[^;}"']+/gi, `fill:${targetColor}`);
+        newStyle = newStyle.replace(/stroke\s*:\s*(?!none)[^;}"']+/gi, `stroke:${targetColor}`);
+        el.setAttribute('style', newStyle);
+      }
+
+      // 2. Reemplaza o agrega atributo fill si no es 'none'
+      const fill = el.getAttribute('fill');
+      if (fill && fill.toLowerCase() !== 'none') {
+        el.setAttribute('fill', targetColor);
+      } else if (!fill && !el.getAttribute('stroke') && (el.tagName.toLowerCase() === 'path' || el.tagName.toLowerCase() === 'polygon' || el.tagName.toLowerCase() === 'circle' || el.tagName.toLowerCase() === 'rect')) {
+        // En la especificación SVG, las figuras sin fill ni stroke toman fill negro por defecto
+        el.setAttribute('fill', targetColor);
+      }
+
+      // 3. Reemplaza atributo stroke si no es 'none'
+      const stroke = el.getAttribute('stroke');
+      if (stroke && stroke.toLowerCase() !== 'none') {
+        el.setAttribute('stroke', targetColor);
+      }
+    });
+
+    // 4. Procesa reglas en bloques de estilo <style>...</style>
+    const styleTags = doc.querySelectorAll('style');
+    styleTags.forEach((styleTag) => {
+      let cssText = styleTag.textContent;
+      cssText = cssText.replace(/fill\s*:\s*(?!none)[^;}"']+/gi, `fill:${targetColor}`);
+      cssText = cssText.replace(/stroke\s*:\s*(?!none)[^;}"']+/gi, `stroke:${targetColor}`);
+      styleTag.textContent = cssText;
+    });
+
+    const serializer = new XMLSerializer();
+    const cleanSvg = serializer.serializeToString(doc.documentElement);
+
+    return { svgText: cleanSvg, isMultiColor };
+  } catch (err) {
+    console.error('Error recoloring SVG:', err);
+    let clean = svgText;
+    clean = clean.replace(/fill\s*=\s*["'](?!none)[^"']+["']/gi, `fill="${targetColor}"`);
+    clean = clean.replace(/stroke\s*=\s*["'](?!none)[^"']+["']/gi, `stroke="${targetColor}"`);
+    clean = clean.replace(/fill\s*:\s*(?!none)[^;}"']+/gi, `fill:${targetColor}`);
+    clean = clean.replace(/stroke\s*:\s*(?!none)[^;}"']+/gi, `stroke:${targetColor}`);
+    return { svgText: clean, isMultiColor };
+  }
 }
 
 export function downloadCanvas(canvas, filename, type = 'image/png', quality) {
