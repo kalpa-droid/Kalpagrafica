@@ -257,22 +257,7 @@ export default function PdfToLibroTool() {
             <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', alignItems: 'center' }}>
               <div style={{ flex: 1, minWidth: '180px' }}>
                 <span style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '0.3rem' }}>
-                  En la página del PDF N°:
-                </span>
-                <input
-                  type="number"
-                  min={1}
-                  placeholder="ej. 6"
-                  value={refPdfPage}
-                  onChange={(e) => setRefPdfPage(e.target.value)}
-                  className="input font-mono"
-                  style={{ width: '100%', fontSize: '0.85rem' }}
-                />
-              </div>
-
-              <div style={{ flex: 1, minWidth: '180px' }}>
-                <span style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '0.3rem' }}>
-                  Aparece el número del Libro N°:
+                  El primer número de tu documento/libro que aparece es el:
                 </span>
                 <input
                   type="number"
@@ -280,6 +265,21 @@ export default function PdfToLibroTool() {
                   placeholder="ej. 8"
                   value={refBookPage}
                   onChange={(e) => setRefBookPage(e.target.value)}
+                  className="input font-mono"
+                  style={{ width: '100%', fontSize: '0.85rem' }}
+                />
+              </div>
+
+              <div style={{ flex: 1, minWidth: '180px' }}>
+                <span style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '0.3rem' }}>
+                  y se encuentra en el PDF en la página número:
+                </span>
+                <input
+                  type="number"
+                  min={1}
+                  placeholder="ej. 6"
+                  value={refPdfPage}
+                  onChange={(e) => setRefPdfPage(e.target.value)}
                   className="input font-mono"
                   style={{ width: '100%', fontSize: '0.85rem' }}
                 />
