@@ -147,7 +147,7 @@ export default function PdfToLibroTool() {
   // Opciones de Tapa y Foliado
   const [hasCover, setHasCover] = useState(true);
   const [coverSide, setCoverSide] = useState('derecha'); // 'derecha' | 'izquierda'
-  const [hasRefPage, setHasRefPage] = useState(false);
+  const [hasRefPage, setHasRefPage] = useState(true);
   const [refPdfPage, setRefPdfPage] = useState('');
   const [refBookPage, setRefBookPage] = useState('');
   const [refPageSide, setRefPageSide] = useState('derecha'); // 'derecha' | 'izquierda' — solo editable manualmente en modo Fotocopia
@@ -306,81 +306,78 @@ export default function PdfToLibroTool() {
 
       {/* 3. Pregunta de Sincronización del Foliado (Libro vs PDF/Fotocopia) */}
       <div style={{ marginBottom: '1.2rem', backgroundColor: 'var(--bg-surface-2)', padding: '1rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-subtle)' }}>
-        <label style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', fontSize: '0.85rem', color: 'var(--accent)', fontWeight: 700, cursor: 'pointer', marginBottom: hasRefPage ? '0.8rem' : 0 }}>
-          <input type="checkbox" checked={hasRefPage} onChange={(e) => setHasRefPage(e.target.checked)} style={{ accentColor: 'var(--accent)', width: '16px', height: '16px' }} />
-          <span>Sincronizar número de página impreso en el libro con {mode === 'fotocopia' ? 'la hoja escaneada' : 'la página del PDF'}</span>
+        <label style={{ fontSize: '0.85rem', color: 'var(--accent)', fontWeight: 700, display: 'block', marginBottom: '0.8rem' }}>
+          3. Diagnóstico del Foliado: Sincronizar número impreso con {mode === 'fotocopia' ? 'la hoja escaneada' : 'la página del PDF'}:
         </label>
 
-        {hasRefPage && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem', paddingLeft: '1.6rem', marginTop: '0.4rem' }}>
-            <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', alignItems: 'flex-end' }}>
-              <div style={{ flex: 1, minWidth: '160px' }}>
-                <span style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '0.3rem' }}>
-                  El primer número de tu documento/libro que aparece es el:
-                </span>
-                <input
-                  type="number"
-                  min={1}
-                  placeholder="ej. 8"
-                  value={refBookPage}
-                  onChange={(e) => setRefBookPage(e.target.value)}
-                  className="input font-mono"
-                  style={{ width: '100%', fontSize: '0.85rem' }}
-                />
-              </div>
-
-              <div style={{ flex: 1, minWidth: '160px' }}>
-                <span style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '0.3rem' }}>
-                  y se encuentra en {mode === 'fotocopia' ? 'la hoja escaneada número' : 'el PDF en la página número'}:
-                </span>
-                <input
-                  type="number"
-                  min={1}
-                  placeholder="ej. 6"
-                  value={refPdfPage}
-                  onChange={(e) => setRefPdfPage(e.target.value)}
-                  className="input font-mono"
-                  style={{ width: '100%', fontSize: '0.85rem' }}
-                />
-              </div>
-
-              <div style={{ flex: 1, minWidth: '160px' }}>
-                <span style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '0.3rem' }}>
-                  ...y ese número aparece del lado:
-                </span>
-                {mode === 'fotocopia' ? (
-                  <div style={{ display: 'flex', gap: '0.8rem', flexWrap: 'wrap', height: '38px', alignItems: 'center' }}>
-                    <label style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.8rem', color: 'var(--text-primary)', cursor: 'pointer' }}>
-                      <input type="radio" name="refPageSide" value="derecha" checked={refPageSide === 'derecha'} onChange={() => setRefPageSide('derecha')} style={{ accentColor: 'var(--accent)' }} />
-                      <span>Derecho</span>
-                    </label>
-                    <label style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.8rem', color: 'var(--text-primary)', cursor: 'pointer' }}>
-                      <input type="radio" name="refPageSide" value="izquierda" checked={refPageSide === 'izquierda'} onChange={() => setRefPageSide('izquierda')} style={{ accentColor: 'var(--accent)' }} />
-                      <span>Izquierdo</span>
-                    </label>
-                  </div>
-                ) : (
-                  <div className="input font-mono" style={{ height: '38px', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: 'var(--bg-surface-2)', fontWeight: 700, color: 'var(--accent)', fontSize: '0.85rem' }}>
-                    {Number(refPdfPage) > 0 ? (effectiveRefPageSide === 'derecha' ? 'Derecho (auto)' : 'Izquierdo (auto)') : '—'}
-                  </div>
-                )}
-              </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
+          <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', alignItems: 'flex-end' }}>
+            <div style={{ flex: 1, minWidth: '160px' }}>
+              <span style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '0.3rem' }}>
+                El primer número de tu documento/libro que aparece es el:
+              </span>
+              <input
+                type="number"
+                min={1}
+                placeholder="ej. 8"
+                value={refBookPage}
+                onChange={(e) => setRefBookPage(e.target.value)}
+                className="input font-mono"
+                style={{ width: '100%', fontSize: '0.85rem' }}
+              />
             </div>
 
-            {mode === 'normal' ? (
-              <p style={{ fontSize: '0.74rem', color: 'var(--text-disabled)', margin: 0, lineHeight: 1.5 }}>
-                No hace falta que lo mires vos: en un PDF normal ves una página a la vez, así que no hay "lado" visible en la hoja.
-                El lado se calcula solo a partir de la posición de esa página dentro del PDF — página <strong>impar</strong> de tu PDF ={' '}
-                <strong>derecha</strong>, página <strong>par</strong> = <strong>izquierda</strong> (así es como va a quedar una vez impreso).
-              </p>
-            ) : (
-              <p style={{ fontSize: '0.74rem', color: 'var(--text-disabled)', margin: 0, lineHeight: 1.5 }}>
-                Acá sí lo tenés que mirar vos: en una fotocopia de libro abierto, cada hoja escaneada ya muestra <strong>dos páginas juntas en una sola imagen</strong>.
-                Fijate en cuál de las dos mitades de esa imagen aparece el número que escribiste arriba.
-              </p>
-            )}
+            <div style={{ flex: 1, minWidth: '160px' }}>
+              <span style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '0.3rem' }}>
+                y se encuentra en {mode === 'fotocopia' ? 'la hoja escaneada número' : 'el PDF en la página número'}:
+              </span>
+              <input
+                type="number"
+                min={1}
+                placeholder="ej. 6"
+                value={refPdfPage}
+                onChange={(e) => setRefPdfPage(e.target.value)}
+                className="input font-mono"
+                style={{ width: '100%', fontSize: '0.85rem' }}
+              />
+            </div>
+
+            <div style={{ flex: 1, minWidth: '160px' }}>
+              <span style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '0.3rem' }}>
+                ...y ese número aparece del lado:
+              </span>
+              {mode === 'fotocopia' ? (
+                <div style={{ display: 'flex', gap: '0.8rem', flexWrap: 'wrap', height: '38px', alignItems: 'center' }}>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.8rem', color: 'var(--text-primary)', cursor: 'pointer' }}>
+                    <input type="radio" name="refPageSide" value="derecha" checked={refPageSide === 'derecha'} onChange={() => setRefPageSide('derecha')} style={{ accentColor: 'var(--accent)' }} />
+                    <span>Derecho</span>
+                  </label>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.8rem', color: 'var(--text-primary)', cursor: 'pointer' }}>
+                    <input type="radio" name="refPageSide" value="izquierda" checked={refPageSide === 'izquierda'} onChange={() => setRefPageSide('izquierda')} style={{ accentColor: 'var(--accent)' }} />
+                    <span>Izquierdo</span>
+                  </label>
+                </div>
+              ) : (
+                <div className="input font-mono" style={{ height: '38px', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: 'var(--bg-surface-2)', fontWeight: 700, color: 'var(--accent)', fontSize: '0.85rem' }}>
+                  {Number(refPdfPage) > 0 ? (effectiveRefPageSide === 'derecha' ? 'Derecho (auto)' : 'Izquierdo (auto)') : '—'}
+                </div>
+              )}
+            </div>
           </div>
-        )}
+
+          {mode === 'normal' ? (
+            <p style={{ fontSize: '0.74rem', color: 'var(--text-disabled)', margin: 0, lineHeight: 1.5 }}>
+              No hace falta que lo mires vos: en un PDF normal ves una página a la vez, así que no hay "lado" visible en la hoja.
+              El lado se calcula solo a partir de la posición de esa página dentro del PDF — página <strong>impar</strong> de tu PDF ={' '}
+              <strong>derecha</strong>, página <strong>par</strong> = <strong>izquierda</strong> (así es como va a quedar una vez impreso).
+            </p>
+          ) : (
+            <p style={{ fontSize: '0.74rem', color: 'var(--text-disabled)', margin: 0, lineHeight: 1.5 }}>
+              Acá sí lo tenés que mirar vos: en una fotocopia de libro abierto, cada hoja escaneada ya muestra <strong>dos páginas juntas en una sola imagen</strong>.
+              Fijate en cuál de las dos mitades de esa imagen aparece el número que escribiste arriba.
+            </p>
+          )}
+        </div>
       </div>
 
       {/* DIAGRAMA TÉCNICO INTERACTIVO COMPARATIVO ANTES / DESPUÉS */}
