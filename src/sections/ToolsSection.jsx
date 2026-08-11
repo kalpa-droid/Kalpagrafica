@@ -777,6 +777,13 @@ export default function ToolsSection() {
           colorimetría OKLCH, coincidencia Pantone PMS Coated (brillante) y Uncoated (mate), paletas, daltonismo descargable, recorte social WebP, favicons vectoriales, marca de agua SVG,
           escala tipográfica visual interactiva con 15 presets reales y el paquete ejecutable <strong style={{ color: 'var(--accent)' }}>@kalpa-droid/delphitools</strong> en la terminal.
         </p>
+
+        <div style={{ marginTop: '1rem', fontSize: '0.82rem', color: 'var(--text-disabled)', backgroundColor: 'var(--bg-surface)', padding: '0.5rem 1rem', borderRadius: 'var(--radius-full)', display: 'inline-flex', alignItems: 'center', gap: '0.4rem', border: '1px solid var(--border-subtle)' }}>
+          <span>Herramientas inspiradas en el software libre de</span>
+          <a href="https://delphi.tools/" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--accent)', textDecoration: 'underline', fontWeight: 600 }}>delphi.tools</a>
+          <span>por</span>
+          <a href="https://github.com/1612elphi/delphitools" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--text-primary)', textDecoration: 'none', fontWeight: 600 }}>@1612elphi</a>
+        </div>
       </div>
 
       <div style={{ display: 'flex', justifyContent: 'center', gap: '0.6rem', flexWrap: 'wrap', marginBottom: '2.5rem' }}>

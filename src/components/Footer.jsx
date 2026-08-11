@@ -125,7 +125,7 @@ export default function Footer({ onNavigate }) {
         color: 'var(--text-disabled)'
       }}>
         <div>
-          © 2026 <strong>Kalpagráfica</strong> | Fundador: José Ramiro Burgos. Modo Nocturno v7.0.
+          © 2026 <strong>Kalpagráfica</strong> | Fundador: José Ramiro Burgos. Herramientas basadas en <a href="https://delphi.tools/" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--accent)', textDecoration: 'underline' }}>delphi.tools</a> (@1612elphi).
         </div>
         <div style={{ fontStyle: 'italic', color: 'var(--luxury)' }}>
           "Kalpa": El inmenso ciclo de creación y evolución atemporal.

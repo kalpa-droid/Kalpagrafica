@@ -61,6 +61,12 @@ dt contrast #BAFDC1 #111114
 
 ---
 
+## 🙏 Créditos & Reconocimiento Open Source
+
+Esta suite utilitaria está basada e inspirada en el proyecto de software libre [delphi.tools](https://delphi.tools/) desarrollado por [@1612elphi](https://github.com/1612elphi/delphitools).
+
+---
+
 ## 🛡️ Licencia
 
 MIT © Kalpagráfica
