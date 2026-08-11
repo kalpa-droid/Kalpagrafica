@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import {
   Wrench, Palette, Check, Copy, Download,
-  Terminal, Layers, Type, Maximize2, Code, Upload, Crop, Droplet,
+  Terminal, Layers, Type, Code, Upload, Crop, Droplet,
   FileImage, Printer, Ruler, ScanEye, Stamp, RefreshCw, Eye, Sparkles, Layout
 } from 'lucide-react';
 import {
@@ -121,15 +121,19 @@ const TYPE_PRESETS = [
 ];
 
 // -----------------------------------------------------------------------------
-// DATASET DE LÍMITES EN REDES SOCIALES (17 PLATAFORMAS CON 50+ CAMPOS)
+// DATASET DE LÍMITES EN REDES SOCIALES (17 PLATAFORMAS CON DETALLES DE META SUITE & REELS)
 // -----------------------------------------------------------------------------
 const SOCIAL_LIMITS_DB = [
   {
     id: 'facebook',
-    name: 'Facebook',
+    name: 'Facebook (incl. Meta Business Suite & Reels)',
     fields: [
-      { label: 'Publicación de Texto (Post)', limit: 63206, truncate: 140 },
-      { label: 'Descripción de Video', limit: 63206, truncate: 140 },
+      { label: 'Publicación de Texto / Post', limit: 63206, truncate: 140 },
+      { label: 'Texto / Descripción de Reel', limit: 63206, truncate: 140 },
+      { label: 'Título del Reel (Meta Business Suite)', limit: 255 },
+      { label: 'Prueba A/B Títulos de Reel (Opciones)', limit: 255 },
+      { label: 'Título de Video Convencional', limit: 255 },
+      { label: 'Descripción de Video Convencional', limit: 63206, truncate: 140 },
       { label: 'Comentario', limit: 8000 },
       { label: 'Nombre de Página', limit: 50 },
       { label: 'Nombre de Grupo', limit: 75 },
@@ -140,9 +144,9 @@ const SOCIAL_LIMITS_DB = [
   },
   {
     id: 'instagram',
-    name: 'Instagram',
+    name: 'Instagram (incl. Reels)',
     fields: [
-      { label: 'Pie de Foto / Caption', limit: 2200, truncate: 125 },
+      { label: 'Pie de Foto / Caption (Feed & Reels)', limit: 2200, truncate: 125 },
       { label: 'Biografía (Bio)', limit: 150 },
       { label: 'Comentario', limit: 2200 },
       { label: 'Descripción de Reels', limit: 2200, truncate: 125 },
@@ -641,7 +645,7 @@ export default function ToolsSection() {
   };
 
   // ---------------------------------------------------------------------
-  // TAB 6 — TIPOGRAFÍA & PAPEL EN 2 FILAS DE 3 COLUMNAS CON PRESETS REALES Y MOCKUP
+  // TAB 6 — TIPOGRAFÍA & PAPEL CON PRESETS REALES Y MOCKUP VISUAL
   // ---------------------------------------------------------------------
   const [selectedPresetId, setSelectedPresetId] = useState('mod-balanced');
   const [baseFontSize, setBaseFontSize] = useState(16);
@@ -661,7 +665,6 @@ export default function ToolsSection() {
     if (p.lhRatio) setLhRatio(p.lhRatio);
   };
 
-  // Escala tipográfica calculada (H1 a Small)
   const fontSizesResolved = useMemo(() => {
     if (activeTypePreset.type === 'fixed') {
       return {
@@ -730,15 +733,6 @@ export default function ToolsSection() {
     { name: 'A2', mm: '420 × 594 mm', px300: '4961 × 7016 px', w: 85, h: 120 }
   ];
 
-  // Calculadora Aspect Ratio Personalizada
-  const [baseWidth, setBaseWidth] = useState(1920);
-  const [baseHeight, setBaseHeight] = useState(1080);
-  const [newWidth, setNewWidth] = useState(1080);
-  const calculatedHeight = useMemo(() => {
-    if (!baseWidth || !baseHeight || !newWidth) return 0;
-    return Math.round((newWidth * baseHeight) / baseWidth);
-  }, [baseWidth, baseHeight, newWidth]);
-
   // ---------------------------------------------------------------------
   const TABS = [
     { id: 'colour', label: 'Color & Armonías', icon: Palette },
@@ -751,6 +745,7 @@ export default function ToolsSection() {
   ];
 
   const gridStyle3Col = { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1.5rem' };
+  const gridStyle2Col = { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '1.5rem' };
 
   return (
     <section className="section-container" style={{ paddingTop: '3rem', paddingBottom: '5rem' }}>
@@ -1540,7 +1535,7 @@ export default function ToolsSection() {
         </div>
       )}
 
-      {/* TAB 6: TIPOGRAFÍA & PAPEL EN 2 FILAS DE 3 COLUMNAS CON PRESETS REALES Y MOCKUP VISUAL ------------- */}
+      {/* TAB 6: TIPOGRAFÍA & PAPEL EN 2 FILAS CON PRESETS REALES, MOCKUP VISUAL Y REDES ------------- */}
       {activeTab === 'type' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
           {/* Fila 1 — 3 Columnas: Escala Tipográfica (Presets), Calculadoras PX/REM, Mockup Visual Unificado */}
@@ -1675,8 +1670,8 @@ export default function ToolsSection() {
             </ToolCard>
           </div>
 
-          {/* Fila 2 — 3 Columnas: Formatos de Papel Proporcionales, Contador Redes 17 Plataformas, Aspect Ratio */}
-          <div style={gridStyle3Col}>
+          {/* Fila 2 — 2 Columnas de Ancho Completo: Formatos de Papel Proporcionales, Contador Redes 17 Plataformas & Meta Suite */}
+          <div style={gridStyle2Col}>
             {/* Col 1: Formatos de Papel (ISO 216 & US) con Proporciones mm Reales */}
             <ToolCard icon={Printer} title="Formatos de Papel (Escala mm Real)" description="Proporciones geométricas exactas basadas en dimensiones físicas en milímetros.">
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem', marginBottom: '1.2rem' }}>
@@ -1724,8 +1719,8 @@ export default function ToolsSection() {
               </div>
             </ToolCard>
 
-            {/* Col 2: Contador & Límites Redes Sociales (17 Plataformas) */}
-            <ToolCard icon={Type} title="Contador & Límites Redes Sociales (17)" description="Medición en tiempo real con más de 50 campos oficializados de redes sociales (2025-2026).">
+            {/* Col 2: Contador & Límites Redes Sociales (17 Plataformas + Meta Business Suite & Reels A/B) */}
+            <ToolCard icon={Type} title="Contador & Límites Redes Sociales (17 Redes & Meta Suite)" description="Medición en tiempo real con campos oficiales de Meta Business Suite, Reels A/B Testing, Instagram, TikTok, YouTube y más (2025-2026).">
               <div style={{ marginBottom: '0.8rem' }}>
                 <FieldLabel accent>Filtrar por Plataforma de Red Social</FieldLabel>
                 <select
@@ -1734,7 +1729,7 @@ export default function ToolsSection() {
                   className="input font-mono"
                   style={{ width: '100%', fontSize: '0.85rem' }}
                 >
-                  <option value="all">📱 Todas las Plataformas (17 Redes)</option>
+                  <option value="all">📱 Todas las Plataformas (17 Redes & Meta Suite)</option>
                   {SOCIAL_LIMITS_DB.map((plat) => (
                     <option key={plat.id} value={plat.id}>{plat.name}</option>
                   ))}
@@ -1769,7 +1764,7 @@ export default function ToolsSection() {
                 </div>
               </div>
 
-              <div style={{ maxHeight: '240px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '0.6rem', paddingRight: '0.2rem' }}>
+              <div style={{ maxHeight: '280px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '0.6rem', paddingRight: '0.2rem' }}>
                 {filteredSocialPlatforms.map((plat) => (
                   <div key={plat.id} style={{ backgroundColor: 'var(--bg-surface-2)', padding: '0.6rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-subtle)' }}>
                     <strong style={{ fontSize: '0.78rem', color: 'var(--accent)', display: 'block', marginBottom: '0.4rem' }}>{plat.name}</strong>
@@ -1797,34 +1792,6 @@ export default function ToolsSection() {
                     </div>
                   </div>
                 ))}
-              </div>
-            </ToolCard>
-
-            {/* Col 3: Calculadora de Aspect Ratio Reubicada */}
-            <ToolCard icon={Maximize2} title="Calculadora de Aspect Ratio" description="Calculá proporciones proporcionales de pantalla para diseño digital e impreso.">
-              <div style={{ marginBottom: '1rem' }}>
-                <FieldLabel>Dimensiones Originales (W1 × H1)</FieldLabel>
-                <div style={{ display: 'flex', gap: '0.6rem' }}>
-                  <input type="number" value={baseWidth} onChange={(e) => setBaseWidth(Number(e.target.value))} className="input font-mono" placeholder="1920" />
-                  <input type="number" value={baseHeight} onChange={(e) => setBaseHeight(Number(e.target.value))} className="input font-mono" placeholder="1080" />
-                </div>
-              </div>
-
-              <div style={{ marginBottom: '1rem' }}>
-                <FieldLabel>Nuevo Ancho (W2) → Alto Resultante (H2)</FieldLabel>
-                <div style={{ display: 'flex', gap: '0.6rem', alignItems: 'center' }}>
-                  <input type="number" value={newWidth} onChange={(e) => setNewWidth(Number(e.target.value))} className="input font-mono" placeholder="1080" />
-                  <div className="input font-mono" style={{ backgroundColor: 'var(--bg-surface-2)', fontWeight: 700, color: 'var(--accent)', textAlign: 'center', flex: 1 }}>
-                    {calculatedHeight} px
-                  </div>
-                </div>
-              </div>
-
-              <div style={{ backgroundColor: 'var(--bg-surface-2)', padding: '0.8rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-subtle)', textAlign: 'center' }}>
-                <span style={{ fontSize: '0.72rem', color: 'var(--text-disabled)', display: 'block', marginBottom: '0.3rem' }}>Relación de Aspecto Resultante:</span>
-                <strong className="font-mono" style={{ fontSize: '1.1rem', color: 'var(--accent)' }}>
-                  {(baseWidth / (baseHeight || 1)).toFixed(2)} : 1
-                </strong>
               </div>
             </ToolCard>
           </div>
