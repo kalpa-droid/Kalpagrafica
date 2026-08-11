@@ -2,7 +2,7 @@ import React, { useState, useMemo, useRef, useEffect } from 'react';
 import {
   Wrench, Palette, Check, Copy, Download,
   Terminal, Layers, Type, Code, Upload, Crop, Droplet,
-  FileImage, Printer, Ruler, ScanEye, Stamp, RefreshCw, Eye, Sparkles, Layout
+  FileImage, Printer, Ruler, ScanEye, Stamp, RefreshCw, Eye, Sparkles, Layout, Maximize2
 } from 'lucide-react';
 import {
   hexToRgb, rgbToHex, rgbToHsl, rgbToCmyk, cmykToRgb, approxOklch, contrastRatio,
@@ -93,6 +93,21 @@ function UploadZone({ onFile, hint, fileName, accept = "image/*" }) {
     </div>
   );
 }
+
+// -----------------------------------------------------------------------------
+// PRESETS DE SOCIAL CROPPER (SAFE TOP LEVEL CONSTANT)
+// -----------------------------------------------------------------------------
+const SOCIAL_PRESETS = [
+  { id: 'square', label: 'Instagram Post / Avatar', ratio: '1:1', w: 1080, h: 1080 },
+  { id: 'portrait', label: 'Instagram Portrait', ratio: '4:5', w: 1080, h: 1350 },
+  { id: 'landscape', label: 'YouTube / Banner', ratio: '16:9', w: 1920, h: 1080 },
+  { id: 'story', label: 'TikTok / Reels / Stories', ratio: '9:16', w: 1080, h: 1920 },
+  { id: 'linkedin_banner', label: 'Portada LinkedIn', ratio: '4:1', w: 1584, h: 396 },
+  { id: 'twitter_header', label: 'Encabezado Twitter / X', ratio: '3:1', w: 1500, h: 500 },
+  { id: 'threads_card', label: 'Tarjeta Threads / Bluesky', ratio: '1.91:1', w: 1200, h: 630 },
+  { id: 'pinterest_pin', label: 'Pinterest Pin', ratio: '2:3', w: 1000, h: 1500 },
+  { id: 'etsy_banner', label: 'Banner Tienda Etsy', ratio: '8:1', w: 3360, h: 840 }
+];
 
 // -----------------------------------------------------------------------------
 // DATASET TIPOGRÁFICO DE PRESETS (15 PRESETS INVESTIGADOS EN 3 CATEGORÍAS)
@@ -340,7 +355,7 @@ export default function ToolsSection() {
   }, [colorInput]);
 
   const tailwindShades = useMemo(() => generateTailwindShades(colorData.r, colorData.g, colorData.b), [colorData]);
-  const harmonies = useMemo(() => generateHarmonies(colorData.hex), [colorData.hex]);
+  const harmonies = useMemo(() => generateHarmonies(colorData.hex), [colorData]);
   const contrastVsDark = useMemo(
     () => contrastRatio({ r: colorData.r, g: colorData.g, b: colorData.b }, BG_DARK_RGB).toFixed(2),
     [colorData]
@@ -444,18 +459,6 @@ export default function ToolsSection() {
   // ---------------------------------------------------------------------
   // TAB 4 — SOCIAL CROPPER MULTI-PRESETS Y WEBP / CALIDAD DE COMPRESIÓN
   // ---------------------------------------------------------------------
-  const SOCIAL_PRESETS = [
-    { id: 'square', label: 'Instagram Post / Avatar', ratio: '1:1', w: 1080, h: 1080 },
-    { id: 'portrait', label: 'Instagram Portrait', ratio: '4:5', w: 1080, h: 1350 },
-    { id: 'landscape', label: 'YouTube / Banner', ratio: '16:9', w: 1920, h: 1080 },
-    { id: 'story', label: 'TikTok / Reels / Stories', ratio: '9:16', w: 1080, h: 1920 },
-    { id: 'linkedin_banner', label: 'Portada LinkedIn', ratio: '4:1', w: 1584, h: 396 },
-    { id: 'twitter_header', label: 'Encabezado Twitter / X', ratio: '3:1', w: 1500, h: 500 },
-    { id: 'threads_card', label: 'Tarjeta Threads / Bluesky', ratio: '1.91:1', w: 1200, h: 630 },
-    { id: 'pinterest_pin', label: 'Pinterest Pin', ratio: '2:3', w: 1000, h: 1500 },
-    { id: 'etsy_banner', label: 'Banner Tienda Etsy', ratio: '8:1', w: 3360, h: 840 }
-  ];
-
   const [socialImg, setSocialImg] = useState(null);
   const [socialFileName, setSocialFileName] = useState('');
   const [socialPreset, setSocialPreset] = useState('square');
@@ -466,7 +469,10 @@ export default function ToolsSection() {
   const [cropFormat, setCropFormat] = useState('image/webp');
   const [cropQuality, setCropQuality] = useState(0.9);
   const socialCanvasRef = useRef(null);
-  const preset = SOCIAL_PRESETS.find((p) => p.id === socialPreset);
+
+  const preset = useMemo(() => {
+    return SOCIAL_PRESETS.find((p) => p.id === socialPreset) || SOCIAL_PRESETS[0];
+  }, [socialPreset]);
 
   const handleSocialUpload = async (file) => {
     const { img } = await loadImageFromFile(file);
@@ -475,7 +481,7 @@ export default function ToolsSection() {
   };
 
   useEffect(() => {
-    if (!socialImg || !socialCanvasRef.current) return;
+    if (!socialImg || !socialCanvasRef.current || !preset) return;
     const canvas = socialCanvasRef.current;
     const previewScale = Math.min(1, 480 / Math.max(preset.w, preset.h));
     canvas.width = Math.round(preset.w * previewScale);
@@ -485,7 +491,7 @@ export default function ToolsSection() {
   }, [socialImg, preset, offsetX, offsetY, matteColor, useMatte]);
 
   const downloadSocialCrop = () => {
-    if (!socialImg) return;
+    if (!socialImg || !preset) return;
     const canvas = document.createElement('canvas');
     canvas.width = preset.w;
     canvas.height = preset.h;
@@ -1263,7 +1269,7 @@ export default function ToolsSection() {
 
       {/* TAB 4: SOCIAL CROPPER MULTI-PRESETS Y WEBP / COMPRESIÓN -------------------- */}
       {activeTab === 'social' && (
-        <div style={gridStyle3Col}>
+        <div style={gridStyle2Col}>
           <ToolCard icon={Crop} title="Social Cropper" description="Recorte multiformato para todas las redes sociales con exportación en WEBP comprimido o PNG original.">
             <UploadZone onFile={handleSocialUpload} fileName={socialFileName} hint="El recorte se calcula sobre tu imagen original" />
 
@@ -1314,7 +1320,7 @@ export default function ToolsSection() {
 
             <button className="btn btn-primary" onClick={downloadSocialCrop} disabled={!socialImg} style={{ width: '100%', justifyContent: 'center' }}>
               <Download size={16} />
-              <span>Descargar {preset.w}×{preset.h}px ({cropFormat.split('/')[1].toUpperCase()})</span>
+              <span>Descargar {preset ? `${preset.w}×${preset.h}px` : ''} ({cropFormat.split('/')[1].toUpperCase()})</span>
             </button>
           </ToolCard>
 
@@ -1323,7 +1329,7 @@ export default function ToolsSection() {
               <canvas ref={socialCanvasRef} style={{ width: '100%', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-subtle)', backgroundColor: 'var(--bg-surface-2)' }} />
             ) : (
               <div style={{ padding: '3rem 1rem', textAlign: 'center', color: 'var(--text-disabled)', fontSize: '0.85rem', border: '1px dashed var(--border-subtle)', borderRadius: 'var(--radius-md)' }}>
-                Subí una imagen para ver la vista previa
+                Subí una imagen en el panel izquierdo para ver el lienzo de recorte en tiempo real
               </div>
             )}
           </ToolCard>
