@@ -228,18 +228,18 @@ export default function PdfToLibroTool() {
       <div style={{ marginBottom: '1.2rem', backgroundColor: 'var(--bg-surface-2)', padding: '1rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-subtle)' }}>
         <label style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', fontSize: '0.85rem', color: 'var(--accent)', fontWeight: 700, cursor: 'pointer', marginBottom: hasCover ? '0.6rem' : 0 }}>
           <input type="checkbox" checked={hasCover} onChange={(e) => setHasCover(e.target.checked)} style={{ accentColor: 'var(--accent)', width: '16px', height: '16px' }} />
-          <span>¿El PDF incluye Tapa / Carátula aislada?</span>
+          <span>2. Diagnóstico: ¿Tu PDF subido incluye Tapa / Carátula aislada en la página 1?</span>
         </label>
 
         {hasCover && (
           <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', marginTop: '0.5rem', paddingLeft: '1.6rem' }}>
             <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.82rem', color: 'var(--text-primary)', cursor: 'pointer' }}>
               <input type="radio" name="coverSide" value="derecha" checked={coverSide === 'derecha'} onChange={() => setCoverSide('derecha')} style={{ accentColor: 'var(--accent)' }} />
-              <span>Tapa en el lado DERECHO (Portada exterior recomendada)</span>
+              <span>Tapa del PDF en el lado DERECHO (Estructura Estándar)</span>
             </label>
             <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.82rem', color: 'var(--text-primary)', cursor: 'pointer' }}>
               <input type="radio" name="coverSide" value="izquierda" checked={coverSide === 'izquierda'} onChange={() => setCoverSide('izquierda')} style={{ accentColor: 'var(--accent)' }} />
-              <span>Tapa en el lado IZQUIERDO</span>
+              <span>Tapa del PDF en el lado IZQUIERDO (PDF Invertido / Manga)</span>
             </label>
           </div>
         )}
