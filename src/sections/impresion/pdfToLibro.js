@@ -14,6 +14,65 @@ export async function inyectarPDFjs() {
   });
 }
 
+export async function crearCanvasTapaCustom(coverConfig) {
+  if (!coverConfig) return null;
+  const width = 1748;
+  const height = 2480;
+  const canvas = document.createElement('canvas');
+  canvas.width = width;
+  canvas.height = height;
+  const ctx = canvas.getContext('2d');
+
+  if (coverConfig.type === 'upload' && coverConfig.imageUri) {
+    const img = new Image();
+    img.src = coverConfig.imageUri;
+    await new Promise((res) => { img.onload = res; img.onerror = res; });
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, width, height);
+    const scale = Math.min(width / (img.width || width), height / (img.height || height));
+    const w = (img.width || width) * scale;
+    const h = (img.height || height) * scale;
+    ctx.drawImage(img, (width - w) / 2, (height - h) / 2, w, h);
+  } else if (coverConfig.type === 'template') {
+    const { title = '', author = '', publisher = '', bgColor = '#1a1a2e', textColor = '#bafdc1', bgImageUri } = coverConfig;
+    ctx.fillStyle = bgColor || '#1a1a2e';
+    ctx.fillRect(0, 0, width, height);
+
+    if (bgImageUri) {
+      const img = new Image();
+      img.src = bgImageUri;
+      await new Promise((res) => { img.onload = res; img.onerror = res; });
+      ctx.globalAlpha = 0.35;
+      ctx.drawImage(img, 0, 0, width, height);
+      ctx.globalAlpha = 1.0;
+    }
+
+    ctx.strokeStyle = textColor || '#bafdc1';
+    ctx.lineWidth = 12;
+    ctx.strokeRect(80, 80, width - 160, height - 160);
+
+    ctx.fillStyle = textColor || '#bafdc1';
+    ctx.textAlign = 'center';
+
+    if (title) {
+      ctx.font = 'bold 110px Georgia, serif';
+      ctx.fillText(title.toUpperCase(), width / 2, height * 0.4, width - 240);
+    }
+
+    if (author) {
+      ctx.font = '500 65px sans-serif';
+      ctx.fillText(author, width / 2, height * 0.52);
+    }
+
+    if (publisher) {
+      ctx.font = '400 45px sans-serif';
+      ctx.fillText(publisher.toUpperCase(), width / 2, height * 0.88);
+    }
+  }
+
+  return canvas;
+}
+
 async function procesarComoImagenes(file, mode, options = {}, onProgress) {
   const {
     fotocopiaStart = 'derecha',
@@ -23,7 +82,8 @@ async function procesarComoImagenes(file, mode, options = {}, onProgress) {
     refBookPage = 0,
     refPageSide = 'derecha',
     pageRotations = {},
-    pageSplitOffsets = {}
+    pageSplitOffsets = {},
+    customCover = null
   } = options;
 
   const newPdf = await PDFDocument.create();
@@ -37,9 +97,26 @@ async function procesarComoImagenes(file, mode, options = {}, onProgress) {
 
   let isFirstProcessedSheet = true;
 
+  // Si se generó o subió una Tapa Custom, se inserta en la Página 1
+  let effectiveRefPdfPage = refPdfPage;
+  if (!hasCover && customCover && (customCover.type === 'upload' || customCover.type === 'template')) {
+    const coverCanvas = await crearCanvasTapaCustom(customCover);
+    if (coverCanvas) {
+      const coverImg = await newPdf.embedJpg(coverCanvas.toDataURL('image/jpeg', 0.92));
+      const pageC = newPdf.addPage([coverCanvas.width, coverCanvas.height]);
+      pageC.drawImage(coverImg, { x: 0, y: 0, width: coverCanvas.width, height: coverCanvas.height });
+      coverCanvas.width = 0; coverCanvas.height = 0;
+
+      // Al haber agregado la tapa al inicio, la página del PDF desplaza su índice +1
+      if (effectiveRefPdfPage > 0) {
+        effectiveRefPdfPage += 1;
+      }
+    }
+  }
+
   // Evaluar si se requiere una página en blanco de ajuste justo detrás de la tapa
   let needBlankPageBehindCover = false;
-  if (refPdfPage > 0 && refBookPage > 0) {
+  if (effectiveRefPdfPage > 0 && refBookPage > 0) {
     const isBookPageOdd = refBookPage % 2 !== 0;
     const expectedSide = isBookPageOdd ? 'derecha' : 'izquierda';
     if (refPageSide !== expectedSide) {

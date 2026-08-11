@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
-import { BookOpen, Download, AlertCircle, CheckCircle, FileCheck, Info } from 'lucide-react';
-import { pdfToLibro } from './pdfToLibro';
+import React, { useState, useEffect, useRef } from 'react';
+import { BookOpen, Download, AlertCircle, CheckCircle, FileCheck, Info, Upload, Palette, Image as ImageIcon, Layers } from 'lucide-react';
+import { pdfToLibro, crearCanvasTapaCustom } from './pdfToLibro';
 import PdfPreviewStrip from './PdfPreviewStrip';
 
 function PageSlot({ label, sub, side, highlight }) {
@@ -28,13 +28,14 @@ function PageSlot({ label, sub, side, highlight }) {
   );
 }
 
-function BookletDiagram({ mode, hasCover, coverSide, hasRefPage, refPdfPage, refBookPage, refPageSide }) {
+function BookletDiagram({ mode, hasCover, coverSide, hasRefPage, refPdfPage, refBookPage, refPageSide, hasCustomCover }) {
   const isFotocopia = mode === 'fotocopia';
 
   const isBookPageOdd = refBookPage > 0 ? refBookPage % 2 !== 0 : true;
   const expectedSide = isBookPageOdd ? 'derecha' : 'izquierda';
   const hasValidRef = hasRefPage && refPdfPage > 0 && refBookPage > 0;
   const needAdjustment = hasValidRef && refPageSide !== expectedSide;
+  const showCoverSlot = hasCover || hasCustomCover;
 
   return (
     <div style={{
@@ -58,10 +59,12 @@ function BookletDiagram({ mode, hasCover, coverSide, hasRefPage, refPdfPage, ref
           </span>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
-            {hasCover ? (
+            {showCoverSlot ? (
               <div style={{ textAlign: 'center' }}>
-                <span style={{ fontSize: '0.68rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '0.2rem' }}>Primera hoja</span>
-                <PageSlot label="TAPA ★" sub={`Lado ${coverSide}`} side={coverSide} highlight />
+                <span style={{ fontSize: '0.68rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '0.2rem' }}>
+                  {hasCustomCover ? 'Tapa Generada' : 'Primera hoja'}
+                </span>
+                <PageSlot label={hasCustomCover ? 'TAPA CREADA ★' : 'TAPA ★'} sub={`Lado ${coverSide}`} side={coverSide} highlight />
               </div>
             ) : (
               <div style={{ fontSize: '0.75rem', color: 'var(--text-disabled)' }}>Sin tapa aislada — arranca directo en contenido.</div>
@@ -152,6 +155,17 @@ export default function PdfToLibroTool() {
   const [pageRotations, setPageRotations] = useState({}); // { [pageNum]: degrees }
   const [pageSplitOffsets, setPageSplitOffsets] = useState({}); // { [pageNum]: percentage }
 
+  // Opciones de Tapa Personalizada (si el PDF no incluye tapa)
+  const [customCoverType, setCustomCoverType] = useState('upload'); // 'upload' | 'template'
+  const [customCoverUploadUri, setCustomCoverUploadUri] = useState(null);
+  const [templateTitle, setTemplateTitle] = useState('');
+  const [templateAuthor, setTemplateAuthor] = useState('');
+  const [templatePublisher, setTemplatePublisher] = useState('');
+  const [templateBgColor, setTemplateBgColor] = useState('#1a1a2e');
+  const [templateTextColor, setTemplateTextColor] = useState('#bafdc1');
+  const [templateBgImageUri, setTemplateBgImageUri] = useState(null);
+  const [coverPreviewUrl, setCoverPreviewUrl] = useState(null);
+
   const autoRefPageSide = Number(refPdfPage) % 2 !== 0 ? 'derecha' : 'izquierda';
   const effectiveRefPageSide = mode === 'fotocopia' ? refPageSide : autoRefPageSide;
 
@@ -160,6 +174,35 @@ export default function PdfToLibroTool() {
   const [progressPct, setProgressPct] = useState(0);
   const [success, setSuccess] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
+
+  // Generar vista previa en tiempo real de la Tapa Custom
+  useEffect(() => {
+    if (hasCover) {
+      setCoverPreviewUrl(null);
+      return;
+    }
+    let isCancelled = false;
+    const generatePreview = async () => {
+      const config = customCoverType === 'upload'
+        ? { type: 'upload', imageUri: customCoverUploadUri }
+        : {
+            type: 'template',
+            title: templateTitle,
+            author: templateAuthor,
+            publisher: templatePublisher,
+            bgColor: templateBgColor,
+            textColor: templateTextColor,
+            bgImageUri: templateBgImageUri
+          };
+      const canvas = await crearCanvasTapaCustom(config);
+      if (canvas && !isCancelled) {
+        setCoverPreviewUrl(canvas.toDataURL('image/jpeg', 0.8));
+        canvas.width = 0; canvas.height = 0;
+      }
+    };
+    generatePreview();
+    return () => { isCancelled = true; };
+  }, [hasCover, customCoverType, customCoverUploadUri, templateTitle, templateAuthor, templatePublisher, templateBgColor, templateTextColor, templateBgImageUri]);
 
   const handleFileChange = (e) => {
     const selected = e.target.files[0];
@@ -173,6 +216,26 @@ export default function PdfToLibroTool() {
     setFile(selected);
     setPageRotations({});
     setPageSplitOffsets({});
+  };
+
+  const handleCoverUpload = (e) => {
+    const imgFile = e.target.files[0];
+    if (!imgFile) return;
+    const reader = new FileReader();
+    reader.onload = (evt) => {
+      setCustomCoverUploadUri(evt.target.result);
+    };
+    reader.readAsDataURL(imgFile);
+  };
+
+  const handleBgImageUpload = (e) => {
+    const imgFile = e.target.files[0];
+    if (!imgFile) return;
+    const reader = new FileReader();
+    reader.onload = (evt) => {
+      setTemplateBgImageUri(evt.target.result);
+    };
+    reader.readAsDataURL(imgFile);
   };
 
   const handleRotatePage = (pageNum, angleDelta) => {
@@ -198,6 +261,20 @@ export default function PdfToLibroTool() {
       setProgressPct(5);
       setProgressMsg('Preparando motor PDF...');
 
+      const customCoverConfig = !hasCover ? (
+        customCoverType === 'upload'
+          ? { type: 'upload', imageUri: customCoverUploadUri }
+          : {
+              type: 'template',
+              title: templateTitle,
+              author: templateAuthor,
+              publisher: templatePublisher,
+              bgColor: templateBgColor,
+              textColor: templateTextColor,
+              bgImageUri: templateBgImageUri
+            }
+      ) : null;
+
       const options = {
         hasCover,
         coverSide,
@@ -205,7 +282,8 @@ export default function PdfToLibroTool() {
         refBookPage: Number(refBookPage) || 0,
         refPageSide: effectiveRefPageSide,
         pageRotations,
-        pageSplitOffsets
+        pageSplitOffsets,
+        customCover: customCoverConfig
       };
 
       const result = await pdfToLibro(file, mode, options, (msg, pct) => {
@@ -235,9 +313,12 @@ export default function PdfToLibroTool() {
     }
   };
 
-  const handleSelectPageFromViewer = (pageNum) => {
+  const handleSelectPageFromViewer = (pageNum, bookNum) => {
     setHasRefPage(true);
     setRefPdfPage(String(pageNum));
+    if (bookNum) {
+      setRefBookPage(String(bookNum));
+    }
   };
 
   return (
@@ -292,23 +373,18 @@ export default function PdfToLibroTool() {
         </div>
       </div>
 
-      {/* MENSAJE INSTRUCTIVO CUANDO AÚN NO SE CARGÓ NINGÚN ARCHIVO */}
       {!file && (
         <div style={{ backgroundColor: 'var(--bg-surface-2)', padding: '1.5rem', borderRadius: 'var(--radius-md)', border: '1px dashed var(--border-subtle)', textAlign: 'center', marginBottom: '1.5rem' }}>
           <Info size={24} color="var(--accent)" style={{ marginBottom: '0.5rem' }} />
           <div style={{ fontSize: '0.88rem', color: 'var(--text-primary)', fontWeight: 600 }}>
-            Subí tu archivo PDF arriba para habilitar el Visor Interactivo y Diagnóstico del Libro
-          </div>
-          <div style={{ fontSize: '0.78rem', color: 'var(--text-disabled)', marginTop: '0.3rem' }}>
-            Podrás navegar por las páginas, rotar hojas desorientadas, ajustar líneas de corte y sincronizar la foliación directamente en el visor.
+            Subí tu archivo PDF arriba para habilitar la vista previa interactiva y el diagnóstico del libro
           </div>
         </div>
       )}
 
-      {/* PASO 2: VISOR INTERACTIVO Y DIAGNÓSTICO UNIFICADO (CUANDO HAY UN ARCHIVO CARGADO) */}
+      {/* PASO 2: VISOR INTERACTIVO Y DIAGNÓSTICO UNIFICADO */}
       {file && (
         <>
-          {/* VISOR DE MINIATURAS INTERACTIVO */}
           <PdfPreviewStrip
             file={file}
             selectedPdfPage={Number(refPdfPage) || 0}
@@ -318,39 +394,127 @@ export default function PdfToLibroTool() {
             onRotatePage={handleRotatePage}
             pageSplitOffsets={pageSplitOffsets}
             onAdjustSplitPage={handleAdjustSplitPage}
+            refBookPage={refBookPage}
           />
 
-          {/* PANEL DE DIAGNÓSTICO CONECTADO DIRECTAMENTE AL VISOR */}
           <div style={{ marginBottom: '1.5rem', backgroundColor: 'var(--bg-surface-2)', padding: '1.2rem', borderRadius: 'var(--radius-md)', border: '1.5px solid var(--accent)' }}>
             <div style={{ fontSize: '0.88rem', color: 'var(--accent)', fontWeight: 700, marginBottom: '0.8rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-              <CheckCircle size={16} /> 2. Diagnóstico de Foliado y Tapa (Integrado con el Visor)
+              <CheckCircle size={16} /> 2. Diagnóstico de Foliado y Tapa del Libro
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
 
-              {/* Tapa / Portada */}
-              {mode === 'normal' ? (
-                <label style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', fontSize: '0.85rem', color: 'var(--text-primary)', cursor: 'pointer', backgroundColor: 'var(--bg-surface)', padding: '0.7rem 1rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-subtle)' }}>
-                  <input type="checkbox" checked={hasCover} onChange={(e) => setHasCover(e.target.checked)} style={{ accentColor: 'var(--accent)', width: '16px', height: '16px' }} />
-                  <span>¿La Página 1 de tu PDF es la Tapa / Carátula principal del libro?</span>
-                </label>
-              ) : (
-                <div style={{ backgroundColor: 'var(--bg-surface)', padding: '0.7rem 1rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-subtle)' }}>
-                  <span style={{ fontSize: '0.82rem', color: 'var(--accent)', fontWeight: 700, display: 'block', marginBottom: '0.4rem' }}>
-                    En la 1ª hoja escaneada de tu fotocopia, ¿de qué lado está la Tapa / Portada?
-                  </span>
-                  <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
-                    <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.82rem', color: 'var(--text-primary)', cursor: 'pointer' }}>
-                      <input type="radio" name="coverSide" value="derecha" checked={coverSide === 'derecha'} onChange={() => setCoverSide('derecha')} style={{ accentColor: 'var(--accent)' }} />
-                      <span>En la mitad DERECHA (Portada exterior estándar)</span>
-                    </label>
-                    <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.82rem', color: 'var(--text-primary)', cursor: 'pointer' }}>
-                      <input type="radio" name="coverSide" value="izquierda" checked={coverSide === 'izquierda'} onChange={() => setCoverSide('izquierda')} style={{ accentColor: 'var(--accent)' }} />
-                      <span>En la mitad IZQUIERDA</span>
-                    </label>
+              {/* OPCIONES DE TAPA (SI INCLUYE O SI HAY QUE GENERAR TAPA) */}
+              <div style={{ backgroundColor: 'var(--bg-surface)', padding: '1rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-subtle)' }}>
+                {mode === 'normal' ? (
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', fontSize: '0.85rem', color: 'var(--text-primary)', cursor: 'pointer', fontWeight: 600 }}>
+                    <input type="checkbox" checked={hasCover} onChange={(e) => setHasCover(e.target.checked)} style={{ accentColor: 'var(--accent)', width: '16px', height: '16px' }} />
+                    <span>¿El PDF subido YA incluye Tapa / Carátula en la Página 1?</span>
+                  </label>
+                ) : (
+                  <div>
+                    <span style={{ fontSize: '0.82rem', color: 'var(--accent)', fontWeight: 700, display: 'block', marginBottom: '0.4rem' }}>
+                      En la 1ª hoja escaneada de tu fotocopia, ¿de qué lado está la Tapa / Portada?
+                    </span>
+                    <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
+                      <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.82rem', color: 'var(--text-primary)', cursor: 'pointer' }}>
+                        <input type="radio" name="coverSide" value="derecha" checked={coverSide === 'derecha'} onChange={() => setCoverSide('derecha')} style={{ accentColor: 'var(--accent)' }} />
+                        <span>En la mitad DERECHA (Portada exterior estándar)</span>
+                      </label>
+                      <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.82rem', color: 'var(--text-primary)', cursor: 'pointer' }}>
+                        <input type="radio" name="coverSide" value="izquierda" checked={coverSide === 'izquierda'} onChange={() => setCoverSide('izquierda')} style={{ accentColor: 'var(--accent)' }} />
+                        <span>En la mitad IZQUIERDA</span>
+                      </label>
+                    </div>
                   </div>
-                </div>
-              )}
+                )}
+
+                {/* SI NO TIENE TAPA -> SUITE DE CREACIÓN / CARGA DE TAPA */}
+                {!hasCover && (
+                  <div style={{ marginTop: '1rem', paddingTop: '1rem', borderTop: '1px dashed var(--border-subtle)' }}>
+                    <div style={{ fontSize: '0.82rem', color: 'var(--accent)', fontWeight: 700, marginBottom: '0.6rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                      <Layers size={15} /> 🎨 Tu PDF no tiene Tapa: Elegí cómo querés agregar la Portada Exterior
+                    </div>
+
+                    <div style={{ display: 'flex', gap: '1rem', marginBottom: '1rem' }}>
+                      <button
+                        onClick={() => setCustomCoverType('upload')}
+                        style={{
+                          flex: 1, padding: '0.6rem', borderRadius: 'var(--radius-sm)',
+                          backgroundColor: customCoverType === 'upload' ? 'rgba(186,253,193,0.15)' : 'var(--bg-surface-2)',
+                          border: `1.5px solid ${customCoverType === 'upload' ? 'var(--accent)' : 'var(--border-subtle)'}`,
+                          color: customCoverType === 'upload' ? 'var(--accent)' : 'var(--text-primary)',
+                          cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem', fontSize: '0.8rem', fontWeight: 600
+                        }}
+                      >
+                        <Upload size={14} /> Subir Imagen de Tapa
+                      </button>
+                      <button
+                        onClick={() => setCustomCoverType('template')}
+                        style={{
+                          flex: 1, padding: '0.6rem', borderRadius: 'var(--radius-sm)',
+                          backgroundColor: customCoverType === 'template' ? 'rgba(186,253,193,0.15)' : 'var(--bg-surface-2)',
+                          border: `1.5px solid ${customCoverType === 'template' ? 'var(--accent)' : 'var(--border-subtle)'}`,
+                          color: customCoverType === 'template' ? 'var(--accent)' : 'var(--text-primary)',
+                          cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem', fontSize: '0.8rem', fontWeight: 600
+                        }}
+                      >
+                        <Palette size={14} /> Crear Tapa con Plantilla
+                      </button>
+                    </div>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1rem', alignItems: 'start' }}>
+                      {/* Opciones del Formulario */}
+                      <div>
+                        {customCoverType === 'upload' ? (
+                          <div>
+                            <span style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '0.4rem' }}>
+                              Subir archivo de imagen (.jpg / .png):
+                            </span>
+                            <input type="file" accept="image/*" onChange={handleCoverUpload} className="input" style={{ width: '100%', fontSize: '0.8rem' }} />
+                          </div>
+                        ) : (
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
+                            <div>
+                              <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Título del Libro:</span>
+                              <input type="text" placeholder="Ej. MI LIBRO DE PRUEBA" value={templateTitle} onChange={(e) => setTemplateTitle(e.target.value)} className="input" style={{ width: '100%', fontSize: '0.82rem' }} />
+                            </div>
+                            <div>
+                              <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Autor:</span>
+                              <input type="text" placeholder="Ej. Juan Pérez" value={templateAuthor} onChange={(e) => setTemplateAuthor(e.target.value)} className="input" style={{ width: '100%', fontSize: '0.82rem' }} />
+                            </div>
+                            <div>
+                              <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Editorial / Sello:</span>
+                              <input type="text" placeholder="Ej. Editorial Kalpa" value={templatePublisher} onChange={(e) => setTemplatePublisher(e.target.value)} className="input" style={{ width: '100%', fontSize: '0.82rem' }} />
+                            </div>
+                            <div style={{ display: 'flex', gap: '0.8rem' }}>
+                              <div style={{ flex: 1 }}>
+                                <span style={{ fontSize: '0.72rem', color: 'var(--text-secondary)' }}>Fondo:</span>
+                                <input type="color" value={templateBgColor} onChange={(e) => setTemplateBgColor(e.target.value)} style={{ width: '100%', height: '32px', cursor: 'pointer' }} />
+                              </div>
+                              <div style={{ flex: 1 }}>
+                                <span style={{ fontSize: '0.72rem', color: 'var(--text-secondary)' }}>Texto:</span>
+                                <input type="color" value={templateTextColor} onChange={(e) => setTemplateTextColor(e.target.value)} style={{ width: '100%', height: '32px', cursor: 'pointer' }} />
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Vista Previa de la Tapa Creada */}
+                      {coverPreviewUrl && (
+                        <div style={{ textAlign: 'center' }}>
+                          <span style={{ fontSize: '0.72rem', color: 'var(--accent)', fontWeight: 700, display: 'block', marginBottom: '0.3rem' }}>
+                            Vista previa de Tapa A5
+                          </span>
+                          <img src={coverPreviewUrl} alt="Preview Tapa A5" style={{ width: '110px', height: '150px', border: '1px solid var(--accent)', borderRadius: '3px', objectFit: 'cover' }} />
+                        </div>
+                      )}
+                    </div>
+
+                  </div>
+                )}
+              </div>
 
               {/* Sincronización de Foliado desde la Selección del Visor */}
               <div style={{ backgroundColor: 'var(--bg-surface)', padding: '0.8rem 1rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-subtle)' }}>
@@ -430,6 +594,7 @@ export default function PdfToLibroTool() {
           refPdfPage={Number(refPdfPage) || 0}
           refBookPage={Number(refBookPage) || 0}
           refPageSide={effectiveRefPageSide}
+          hasCustomCover={!hasCover && (customCoverUploadUri || templateTitle)}
         />
       )}
 

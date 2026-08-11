@@ -1,8 +1,167 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { Eye, ChevronLeft, ChevronRight, CheckCircle2, RotateCw, RefreshCw, Scissors } from 'lucide-react';
+import { Eye, ChevronLeft, ChevronRight, CheckCircle2, RefreshCw, ZoomIn, X, Check } from 'lucide-react';
 import { inyectarPDFjs } from './pdfToLibro';
 
-function ThumbnailCard({ pdfDoc, pageNum, isSelected, onSelect, mode, rotation = 0, onRotate, splitOffset = 50, onAdjustSplit }) {
+function LightboxModal({ pdfDoc, pageNum, mode, rotation = 0, onSelect, onClose, initialBookPage = '' }) {
+  const [highResUrl, setHighResUrl] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [bookNumberInput, setBookNumberInput] = useState(initialBookPage);
+
+  useEffect(() => {
+    let isCancelled = false;
+    const renderHighRes = async () => {
+      if (!pdfDoc) return;
+      try {
+        setLoading(true);
+        const page = await pdfDoc.getPage(pageNum);
+        if (isCancelled) return;
+
+        const rawViewport = page.getViewport({ scale: 1.2 });
+        const isFotocopia = mode === 'fotocopia';
+        const isVertical = rawViewport.height > rawViewport.width;
+
+        let autoAngle = (isFotocopia && isVertical) ? 90 : 0;
+        const totalAngle = (autoAngle + rotation) % 360;
+
+        const viewport = page.getViewport({ scale: 1.2, rotation: totalAngle });
+        const canvas = document.createElement('canvas');
+        canvas.width = viewport.width;
+        canvas.height = viewport.height;
+        const ctx = canvas.getContext('2d');
+
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        await page.render({ canvasContext: ctx, viewport }).promise;
+
+        if (!isCancelled) {
+          setHighResUrl(canvas.toDataURL('image/jpeg', 0.9));
+          setLoading(false);
+        }
+        canvas.width = 0; canvas.height = 0;
+        page.cleanup();
+      } catch (err) {
+        console.error('Error al cargar pantalla completa:', err);
+      }
+    };
+    renderHighRes();
+    return () => { isCancelled = true; };
+  }, [pdfDoc, pageNum, mode, rotation]);
+
+  const handleConfirm = () => {
+    onSelect(pageNum, bookNumberInput);
+    onClose();
+  };
+
+  return (
+    <div style={{
+      position: 'fixed',
+      top: 0, left: 0, right: 0, bottom: 0,
+      backgroundColor: 'rgba(0,0,0,0.85)',
+      zIndex: 9999,
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: '1.5rem',
+      backdropFilter: 'blur(5px)'
+    }}>
+      {/* Botón cerrar */}
+      <button
+        onClick={onClose}
+        style={{
+          position: 'absolute', top: '20px', right: '20px',
+          backgroundColor: 'rgba(255,255,255,0.1)',
+          border: '1px solid var(--border-subtle)',
+          borderRadius: '50%', width: '36px', height: '36px',
+          color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center'
+        }}
+      >
+        <X size={20} />
+      </button>
+
+      {/* Imagen en Alta Resolución */}
+      <div style={{
+        maxHeight: '65vh',
+        maxWidth: '90vw',
+        overflow: 'auto',
+        marginBottom: '1.5rem',
+        borderRadius: 'var(--radius-md)',
+        boxShadow: '0 10px 30px rgba(0,0,0,0.5)',
+        backgroundColor: '#fff',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: '10px'
+      }}>
+        {loading ? (
+          <div style={{ color: '#000', padding: '2rem', fontSize: '0.9rem' }}>Cargando página en alta resolución...</div>
+        ) : (
+          <img src={highResUrl} alt={`Página física ${pageNum}`} style={{ maxHeight: '60vh', maxWidth: '100%', objectFit: 'contain' }} />
+        )}
+      </div>
+
+      {/* Barra de Confirmación e Inserción de Número Impreso */}
+      <div style={{
+        backgroundColor: 'var(--bg-surface-2)',
+        border: '1.5px solid var(--accent)',
+        borderRadius: 'var(--radius-md)',
+        padding: '1rem 1.5rem',
+        maxWidth: '520px',
+        width: '100%',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '0.8rem'
+      }}>
+        <div style={{ fontSize: '0.88rem', color: 'var(--accent)', fontWeight: 700, textAlign: 'center' }}>
+          ✓ Seleccionaste la Página N° {pageNum} del PDF
+        </div>
+
+        <div style={{ display: 'flex', gap: '0.8rem', alignItems: 'center' }}>
+          <span style={{ fontSize: '0.8rem', color: 'var(--text-primary)', flex: 1 }}>
+            ¿Qué número impreso ves en esta hoja?
+          </span>
+          <input
+            type="number"
+            min={1}
+            placeholder="ej. 1 o 8"
+            value={bookNumberInput}
+            onChange={(e) => setBookNumberInput(e.target.value)}
+            className="input font-mono"
+            style={{ width: '100px', fontSize: '0.9rem', textAlign: 'center' }}
+            autoFocus
+          />
+        </div>
+
+        <div style={{ display: 'flex', gap: '0.8rem' }}>
+          <button
+            onClick={handleConfirm}
+            className="btn btn-primary"
+            style={{ flex: 1, justifyContent: 'center' }}
+          >
+            <Check size={16} />
+            <span>Confirmar Selección</span>
+          </button>
+          <button
+            onClick={onClose}
+            style={{
+              backgroundColor: 'transparent',
+              border: '1px solid var(--border-subtle)',
+              color: 'var(--text-secondary)',
+              borderRadius: 'var(--radius-sm)',
+              padding: '0.5rem 1rem',
+              fontSize: '0.8rem',
+              cursor: 'pointer'
+            }}
+          >
+            Cancelar
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ThumbnailCard({ pdfDoc, pageNum, isSelected, onSelect, mode, rotation = 0, onRotate, splitOffset = 50, onAdjustSplit, onOpenLightbox }) {
   const [thumbUrl, setThumbUrl] = useState(null);
   const [loading, setLoading] = useState(true);
   const cardRef = useRef(null);
@@ -22,7 +181,6 @@ function ThumbnailCard({ pdfDoc, pageNum, isSelected, onSelect, mode, rotation =
         const isFotocopia = mode === 'fotocopia';
         const isVertical = rawViewport.height > rawViewport.width;
 
-        // Si es fotocopia y la página viene vertical, rotarla automáticamente 90°
         let autoAngle = (isFotocopia && isVertical) ? 90 : 0;
         const totalAngle = (autoAngle + rotation) % 360;
 
@@ -41,10 +199,7 @@ function ThumbnailCard({ pdfDoc, pageNum, isSelected, onSelect, mode, rotation =
           setThumbUrl(canvas.toDataURL('image/jpeg', 0.82));
           setLoading(false);
         }
-
-        // Limpieza de memoria RAM y VRAM
-        canvas.width = 0;
-        canvas.height = 0;
+        canvas.width = 0; canvas.height = 0;
         page.cleanup();
       } catch (err) {
         console.error(`Error al renderizar thumbnail de pág ${pageNum}:`, err);
@@ -89,7 +244,7 @@ function ThumbnailCard({ pdfDoc, pageNum, isSelected, onSelect, mode, rotation =
       }}
     >
       <div
-        onClick={() => onSelect(pageNum)}
+        onClick={() => onOpenLightbox(pageNum)}
         style={{
           width: '112px',
           height: '138px',
@@ -110,17 +265,24 @@ function ThumbnailCard({ pdfDoc, pageNum, isSelected, onSelect, mode, rotation =
           <img src={thumbUrl} alt={`Página física ${pageNum}`} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
         )}
 
+        {/* Overlay Botón Lupa Ampliar */}
+        <div style={{
+          position: 'absolute',
+          bottom: '4px', right: '4px',
+          backgroundColor: 'rgba(0,0,0,0.65)',
+          borderRadius: '3px', padding: '2px 4px',
+          display: 'flex', alignItems: 'center', gap: '2px',
+          color: '#fff', fontSize: '0.6rem'
+        }}>
+          <ZoomIn size={10} /> Ampliar
+        </div>
+
         {/* Línea de corte central (solo en modo Fotocopia) */}
         {mode === 'fotocopia' && !loading && (
           <div style={{
             position: 'absolute',
-            left: `${splitOffset}%`,
-            top: 0,
-            bottom: 0,
-            width: 0,
-            borderLeft: '1.5px dashed #F87171',
-            pointerEvents: 'none',
-            zIndex: 1
+            left: `${splitOffset}%`, top: 0, bottom: 0, width: 0,
+            borderLeft: '1.5px dashed #F87171', pointerEvents: 'none', zIndex: 1
           }}>
             <span style={{ position: 'absolute', top: 0, left: '-6px', fontSize: '0.55rem', color: '#F87171', backgroundColor: 'rgba(0,0,0,0.8)', padding: '1px' }}>✂</span>
           </div>
@@ -134,54 +296,31 @@ function ThumbnailCard({ pdfDoc, pageNum, isSelected, onSelect, mode, rotation =
       </div>
 
       <div style={{ marginTop: '0.3rem', width: '100%', textAlign: 'center' }}>
-        <span className="font-mono" style={{ fontSize: '0.72rem', fontWeight: 800, color: isSelected ? 'var(--accent)' : 'var(--text-primary)', display: 'block' }}>
-          Pág {pageNum}
-        </span>
 
-        {/* Botones de giro y ajuste fino de corte (solo en modo Fotocopia) */}
+        {/* Botón único Corregir Giro (180°) y Ajuste Fino de corte para Fotocopia */}
         {mode === 'fotocopia' && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem', marginTop: '0.3rem' }}>
-            {/* Control de rotación */}
-            <div style={{ display: 'flex', gap: '0.2rem', justifyContent: 'center' }}>
-              <button
-                onClick={(e) => { e.stopPropagation(); onRotate(pageNum, 90); }}
-                title="Girar 90° a la derecha"
-                style={{
-                  backgroundColor: 'var(--bg-surface)',
-                  border: '1px solid var(--border-subtle)',
-                  borderRadius: '3px',
-                  padding: '2px 4px',
-                  fontSize: '0.62rem',
-                  color: 'var(--text-secondary)',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '2px'
-                }}
-              >
-                <RotateCw size={9} /> 90°
-              </button>
-              <button
-                onClick={(e) => { e.stopPropagation(); onRotate(pageNum, 180); }}
-                title="Girar 180° (Corregir pata para arriba)"
-                style={{
-                  backgroundColor: 'var(--bg-surface)',
-                  border: '1px solid var(--border-subtle)',
-                  borderRadius: '3px',
-                  padding: '2px 4px',
-                  fontSize: '0.62rem',
-                  color: 'var(--text-secondary)',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '2px'
-                }}
-              >
-                <RefreshCw size={9} /> 180°
-              </button>
-            </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem', marginTop: '0.2rem' }}>
+            <button
+              onClick={(e) => { e.stopPropagation(); onRotate(pageNum, 180); }}
+              title="Corregir giro si la hoja quedó pata para arriba"
+              style={{
+                backgroundColor: 'var(--bg-surface)',
+                border: '1px solid var(--border-subtle)',
+                borderRadius: '3px',
+                padding: '2px 4px',
+                fontSize: '0.62rem',
+                color: 'var(--text-primary)',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '3px',
+                fontWeight: 600
+              }}
+            >
+              <RefreshCw size={9} color="var(--accent)" /> Corregir Giro
+            </button>
 
-            {/* Control de ajuste fino del punto de corte */}
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '3px', backgroundColor: 'var(--bg-surface)', padding: '2px 4px', borderRadius: '3px', border: '1px solid var(--border-subtle)' }}>
               <button
                 onClick={(e) => { e.stopPropagation(); onAdjustSplit(pageNum, Math.max(35, splitOffset - 2)); }}
@@ -208,11 +347,12 @@ function ThumbnailCard({ pdfDoc, pageNum, isSelected, onSelect, mode, rotation =
   );
 }
 
-export default function PdfPreviewStrip({ file, selectedPdfPage, onSelectPage, mode, pageRotations = {}, onRotatePage, pageSplitOffsets = {}, onAdjustSplitPage }) {
+export default function PdfPreviewStrip({ file, selectedPdfPage, onSelectPage, mode, pageRotations = {}, onRotatePage, pageSplitOffsets = {}, onAdjustSplitPage, refBookPage = '' }) {
   const [pdfDoc, setPdfDoc] = useState(null);
   const [numPages, setNumPages] = useState(0);
   const [loadingDoc, setLoadingDoc] = useState(false);
   const [error, setError] = useState('');
+  const [lightboxPageNum, setLightboxPageNum] = useState(null);
   const containerRef = useRef(null);
 
   useEffect(() => {
@@ -280,11 +420,11 @@ export default function PdfPreviewStrip({ file, selectedPdfPage, onSelectPage, m
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
           <Eye size={16} color="var(--accent)" />
           <span style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-            Visor de Páginas Físicas ({numPages} páginas)
+            Visor de Páginas del Documento ({numPages} páginas)
           </span>
         </div>
         <span style={{ fontSize: '0.72rem', color: 'var(--text-disabled)' }}>
-          Hacé clic en la página donde arranca el libro. {mode === 'fotocopia' && 'Podés girar u ajustar la línea de corte ✂ roja en cualquier hoja.'}
+          Hacé clic en cualquier página para ampliarla en pantalla completa y marcar el número impreso.
         </span>
       </div>
 
@@ -300,21 +440,12 @@ export default function PdfPreviewStrip({ file, selectedPdfPage, onSelectPage, m
           <button
             onClick={scrollLeft}
             style={{
-              position: 'absolute',
-              left: 0,
-              top: '50%',
-              transform: 'translateY(-50%)',
-              zIndex: 2,
-              backgroundColor: 'rgba(0,0,0,0.7)',
-              border: '1px solid var(--border-subtle)',
-              borderRadius: '50%',
-              width: '28px',
-              height: '28px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              color: 'var(--text-primary)',
-              cursor: 'pointer'
+              position: 'absolute', left: 0, top: '50%',
+              transform: 'translateY(-50%)', zIndex: 2,
+              backgroundColor: 'rgba(0,0,0,0.7)', border: '1px solid var(--border-subtle)',
+              borderRadius: '50%', width: '28px', height: '28px',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              color: 'var(--text-primary)', cursor: 'pointer'
             }}
           >
             <ChevronLeft size={16} />
@@ -324,12 +455,8 @@ export default function PdfPreviewStrip({ file, selectedPdfPage, onSelectPage, m
           <div
             ref={containerRef}
             style={{
-              display: 'flex',
-              gap: '0.7rem',
-              overflowX: 'auto',
-              padding: '0.5rem 2rem',
-              scrollBehavior: 'smooth',
-              scrollbarWidth: 'thin'
+              display: 'flex', gap: '0.7rem', overflowX: 'auto',
+              padding: '0.5rem 2rem', scrollBehavior: 'smooth', scrollbarWidth: 'thin'
             }}
           >
             {Array.from({ length: numPages }, (_, i) => i + 1).map((pageNum) => (
@@ -344,6 +471,7 @@ export default function PdfPreviewStrip({ file, selectedPdfPage, onSelectPage, m
                 onRotate={onRotatePage}
                 splitOffset={pageSplitOffsets[pageNum] !== undefined ? pageSplitOffsets[pageNum] : 50}
                 onAdjustSplit={onAdjustSplitPage}
+                onOpenLightbox={(p) => setLightboxPageNum(p)}
               />
             ))}
           </div>
@@ -352,26 +480,30 @@ export default function PdfPreviewStrip({ file, selectedPdfPage, onSelectPage, m
           <button
             onClick={scrollRight}
             style={{
-              position: 'absolute',
-              right: 0,
-              top: '50%',
-              transform: 'translateY(-50%)',
-              zIndex: 2,
-              backgroundColor: 'rgba(0,0,0,0.7)',
-              border: '1px solid var(--border-subtle)',
-              borderRadius: '50%',
-              width: '28px',
-              height: '28px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              color: 'var(--text-primary)',
-              cursor: 'pointer'
+              position: 'absolute', right: 0, top: '50%',
+              transform: 'translateY(-50%)', zIndex: 2,
+              backgroundColor: 'rgba(0,0,0,0.7)', border: '1px solid var(--border-subtle)',
+              borderRadius: '50%', width: '28px', height: '28px',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              color: 'var(--text-primary)', cursor: 'pointer'
             }}
           >
             <ChevronRight size={16} />
           </button>
         </div>
+      )}
+
+      {/* MODAL LIGHTBOX PANTALLA COMPLETA */}
+      {lightboxPageNum && (
+        <LightboxModal
+          pdfDoc={pdfDoc}
+          pageNum={lightboxPageNum}
+          mode={mode}
+          rotation={pageRotations[lightboxPageNum] || 0}
+          initialBookPage={selectedPdfPage === lightboxPageNum ? refBookPage : ''}
+          onClose={() => setLightboxPageNum(null)}
+          onSelect={(pNum, bNum) => onSelectPage(pNum, bNum)}
+        />
       )}
     </div>
   );
