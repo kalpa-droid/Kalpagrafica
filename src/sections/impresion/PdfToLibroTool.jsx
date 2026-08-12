@@ -163,6 +163,7 @@ export default function PdfToLibroTool() {
   const [pageRotations, setPageRotations] = useState({});
   const [pageSplitOffsets, setPageSplitOffsets] = useState({});
   const [deletedPages, setDeletedPages] = useState([]);
+  const [pageOrder, setPageOrder] = useState([]);
 
   // Opciones de Contratapa (Portada Posterior)
   const [hasBackCover, setHasBackCover] = useState(true);
@@ -207,6 +208,24 @@ export default function PdfToLibroTool() {
     setDeletedPages(prev =>
       prev.includes(pageNum) ? prev.filter(p => p !== pageNum) : [...prev, pageNum]
     );
+  };
+
+  const handleMovePage = (pageNum, direction) => {
+    setPageOrder(prev => {
+      const list = prev.length > 0 ? [...prev] : Array.from({ length: 500 }, (_, i) => i + 1);
+      const idx = list.indexOf(pageNum);
+      if (idx === -1) return prev;
+      if (direction === 'left' && idx > 0) {
+        const temp = list[idx];
+        list[idx] = list[idx - 1];
+        list[idx - 1] = temp;
+      } else if (direction === 'right' && idx < list.length - 1) {
+        const temp = list[idx];
+        list[idx] = list[idx + 1];
+        list[idx + 1] = temp;
+      }
+      return list;
+    });
   };
 
   // Generar vista previa en tiempo real de la Tapa Custom
@@ -279,8 +298,9 @@ export default function PdfToLibroTool() {
     setFile(selected);
     setPageRotations({});
     setPageSplitOffsets({});
-    // Avanzar a Etapa 2 (Fotocopia) o Etapa 3 (PDF Normal)
-    setActiveStep(mode === 'fotocopia' ? 2 : 3);
+    setDeletedPages([]);
+    setPageOrder([]);
+    setActiveStep(2);
   };
 
   const handleImageSelectForCropping = (e, targetKey, titleText) => {
@@ -373,7 +393,8 @@ export default function PdfToLibroTool() {
         customCover: customCoverConfig,
         customBackCover: customBackCoverConfig,
         paperSize,
-        deletedPages
+        deletedPages,
+        pageOrder
       };
 
       const result = await pdfToLibro(file, mode, options, (msg, pct) => {
@@ -425,10 +446,10 @@ export default function PdfToLibroTool() {
       <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.5rem', flexWrap: 'wrap' }}>
         {[
           { num: 1, label: '1. Archivo' },
-          ...(mode === 'fotocopia' ? [{ num: 2, label: '2. Giro y Corte' }] : []),
-          { num: 3, label: `${mode === 'fotocopia' ? '3' : '2'}. Foliado` },
-          { num: 4, label: `${mode === 'fotocopia' ? '4' : '3'}. Carátula` },
-          { num: 5, label: `${mode === 'fotocopia' ? '5' : '4'}. Generar` }
+          { num: 2, label: '2. Preparar Páginas' },
+          { num: 3, label: '3. Foliado' },
+          { num: 4, label: '4. Carátula' },
+          { num: 5, label: '5. Generar' }
         ].map((s) => (
           <div
             key={s.num}
@@ -482,7 +503,7 @@ export default function PdfToLibroTool() {
 
         <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', marginBottom: '1rem' }}>
           <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem', color: 'var(--text-primary)', cursor: 'pointer' }}>
-            <input type="radio" name="mode" value="normal" checked={mode === 'normal'} onChange={() => { setMode('normal'); if (file) setActiveStep(3); }} style={{ accentColor: 'var(--accent)' }} />
+            <input type="radio" name="mode" value="normal" checked={mode === 'normal'} onChange={() => { setMode('normal'); if (file) setActiveStep(2); }} style={{ accentColor: 'var(--accent)' }} />
             <span>PDF Normal (Páginas individuales)</span>
           </label>
           <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem', color: 'var(--text-primary)', cursor: 'pointer' }}>
@@ -517,12 +538,12 @@ export default function PdfToLibroTool() {
         </div>
       )}
 
-      {/* ETAPA 2: (SOLO FOTOCOPIA) GIRO Y CORTE DE HOJAS ESCANEADAS */}
-      {file && mode === 'fotocopia' && activeStep >= 2 && (
+      {/* ETAPA 2: PREPARACIÓN DE PÁGINAS (ORGANIZAR ⬅️ ➡️, ELIMINAR 🗑️, GIRAR 🔄 Y CORTAR ✂️) */}
+      {file && activeStep >= 2 && (
         <div style={{ marginBottom: '1.5rem', backgroundColor: 'var(--bg-surface-2)', padding: '1.2rem', borderRadius: 'var(--radius-md)', border: `1.5px solid ${activeStep === 2 ? 'var(--accent)' : 'var(--border-subtle)'}` }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.8rem' }}>
             <div style={{ fontSize: '0.88rem', color: 'var(--accent)', fontWeight: 700 }}>
-              2. Preparación de Hojas Escaneadas (Giro 🔄 y Recorte ✂)
+              2. Organizar y Ajustar Páginas (Reordenar ⬅️ ➡️, Eliminar 🗑️, Girar 🔄 y Cortar ✂️)
             </div>
             {activeStep > 2 && (
               <button onClick={() => setActiveStep(2)} style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
@@ -543,6 +564,9 @@ export default function PdfToLibroTool() {
             refBookPage={refBookPage}
             deletedPages={deletedPages}
             onDeletePage={handleToggleDeletePage}
+            pageOrder={pageOrder}
+            onMovePage={handleMovePage}
+            showFoliadoConfirm={false}
           />
 
           {activeStep === 2 && (
@@ -552,18 +576,18 @@ export default function PdfToLibroTool() {
               style={{ width: '100%', justifyContent: 'center', marginTop: '0.8rem' }}
             >
               <Check size={16} />
-              <span>✓ Confirmar Preparación de Hojas y Pasar a Foliado</span>
+              <span>✓ Confirmar Organización de Páginas y Pasar a Foliado</span>
             </button>
           )}
         </div>
       )}
 
-      {/* ETAPA 3: VISOR UNIFICADO DE FOLIADO Y SELECCIÓN DE PÁGINA */}
+      {/* ETAPA 3: FOLIADO DE REFERENCIA (IDENTIFICAR 1 SOLA PÁGINA) */}
       {file && activeStep >= 3 && (
         <div style={{ marginBottom: '1.5rem', backgroundColor: 'var(--bg-surface-2)', padding: '1.2rem', borderRadius: 'var(--radius-md)', border: `1.5px solid ${activeStep === 3 ? 'var(--accent)' : 'var(--border-subtle)'}` }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.8rem' }}>
             <div style={{ fontSize: '0.88rem', color: 'var(--accent)', fontWeight: 700 }}>
-              {mode === 'fotocopia' ? '3' : '2'}. Visor de Foliado (Página con Número)
+              3. Foliado de Referencia (Identificar 1 SOLA página con número impreso)
             </div>
             {activeStep > 3 && (
               <button onClick={() => setActiveStep(3)} style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
@@ -572,22 +596,31 @@ export default function PdfToLibroTool() {
             )}
           </div>
 
-          {/* Mostrar visor solo en modo PDF Normal o cuando estamos en etapa 3 */}
-          {mode === 'normal' && (
-            <PdfPreviewStrip
-              file={file}
-              selectedPdfPage={Number(refPdfPage) || 0}
-              onSelectPage={handleSelectPageFromViewer}
-              mode={mode}
-              pageRotations={pageRotations}
-              onRotatePage={handleRotatePage}
-              pageSplitOffsets={pageSplitOffsets}
-              onAdjustSplitPage={handleAdjustSplitPage}
-              refBookPage={refBookPage}
-              deletedPages={deletedPages}
-              onDeletePage={handleToggleDeletePage}
-            />
-          )}
+          <div style={{ backgroundColor: 'var(--bg-surface)', padding: '0.9rem 1.1rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-subtle)', marginBottom: '1rem' }}>
+            <div style={{ fontSize: '0.84rem', color: 'var(--accent)', fontWeight: 700, marginBottom: '0.4rem' }}>
+              💡 SÓLO REQUIERES IDENTIFICAR 1 SOLA PÁGINA:
+            </div>
+            <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', lineHeight: 1.4 }}>
+              Tocá cualquier página activa del visor donde veas un número impreso (ejemplo: la portada o la página 1). Con ese único dato la suite calculará automáticamente toda la secuencia del folleto.
+            </div>
+          </div>
+
+          <PdfPreviewStrip
+            file={file}
+            selectedPdfPage={Number(refPdfPage) || 0}
+            onSelectPage={handleSelectPageFromViewer}
+            mode={mode}
+            pageRotations={pageRotations}
+            onRotatePage={handleRotatePage}
+            pageSplitOffsets={pageSplitOffsets}
+            onAdjustSplitPage={handleAdjustSplitPage}
+            refBookPage={refBookPage}
+            deletedPages={deletedPages}
+            onDeletePage={handleToggleDeletePage}
+            pageOrder={pageOrder}
+            onMovePage={handleMovePage}
+            showFoliadoConfirm={true}
+          />
 
           {/* INSIGNIA DE ESTADO DE FOLIADO */}
           <div style={{ backgroundColor: 'var(--bg-surface)', padding: '0.9rem 1.1rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-subtle)', marginBottom: '1rem' }}>

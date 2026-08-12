@@ -171,7 +171,8 @@ async function procesarComoImagenes(file, mode, options = {}, onProgress) {
     customCover = null,
     customBackCover = null,
     paperSize = 'A4',
-    deletedPages = []
+    deletedPages = [],
+    pageOrder = []
   } = options;
 
   const coverCanvasSize = getCoverCanvasSize(paperSize);
@@ -214,14 +215,21 @@ async function procesarComoImagenes(file, mode, options = {}, onProgress) {
     }
   }
 
-  for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+  // Orden efectivo de iteración (reordenamiento manual si fue modificado)
+  const effectivePageOrder = (pageOrder && pageOrder.length > 0)
+    ? pageOrder
+    : Array.from({ length: pdf.numPages }, (_, i) => i + 1);
+
+  for (let idx = 0; idx < effectivePageOrder.length; idx++) {
+    const pageNum = effectivePageOrder[idx];
+
     // Si la página fue eliminada por el usuario desde el visor, la omitimos
     if (deletedPages && deletedPages.includes(pageNum)) {
       continue;
     }
     if (onProgress) {
-      const avance = 10 + Math.floor((pageNum / pdf.numPages) * 45);
-      onProgress(`Procesando página ${pageNum} de ${pdf.numPages}...`, avance);
+      const avance = 10 + Math.floor(((idx + 1) / effectivePageOrder.length) * 45);
+      onProgress(`Procesando página ${idx + 1} de ${effectivePageOrder.length}...`, avance);
     }
 
     const page = await pdf.getPage(pageNum);
