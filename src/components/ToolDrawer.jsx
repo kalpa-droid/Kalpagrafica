@@ -17,36 +17,33 @@ export default function ToolDrawer({ isOpen, onClose, onSelectTool }) {
     );
   });
 
-  // Helper para paleta de colores por categoría
+  // Helper para paleta de colores distintiva por categoría
   const getCategoryTheme = (category) => {
     if (category === 'Tools Impresión') {
       return {
-        badgeBg: 'rgba(186, 253, 193, 0.12)',
-        badgeColor: 'var(--accent)',
-        badgeBorder: '1px solid rgba(186, 253, 193, 0.3)',
-        iconBg: 'rgba(186, 253, 193, 0.15)',
-        iconColor: 'var(--accent)',
-        hoverBorder: 'var(--accent)'
+        badgeBg: 'rgba(186, 253, 193, 0.16)',
+        badgeColor: '#BAFDC1',
+        badgeBorder: '1px solid rgba(186, 253, 193, 0.4)',
+        iconBg: 'rgba(186, 253, 193, 0.2)',
+        iconColor: '#BAFDC1'
       };
     }
     if (category === 'Tools de Edición') {
       return {
-        badgeBg: 'rgba(201, 169, 77, 0.12)',
-        badgeColor: 'var(--luxury)',
-        badgeBorder: '1px solid rgba(201, 169, 77, 0.35)',
-        iconBg: 'rgba(201, 169, 77, 0.15)',
-        iconColor: 'var(--luxury)',
-        hoverBorder: 'var(--luxury)'
+        badgeBg: 'rgba(201, 169, 77, 0.18)',
+        badgeColor: '#E6C465',
+        badgeBorder: '1px solid rgba(201, 169, 77, 0.45)',
+        iconBg: 'rgba(201, 169, 77, 0.22)',
+        iconColor: '#E6C465'
       };
     }
-    // Tools Diseño (por defecto cian/neón)
+    // Tools Diseño (Verde Neón Esmeralda Brand)
     return {
-      badgeBg: 'rgba(56, 189, 248, 0.12)',
-      badgeColor: '#38BDF8',
-      badgeBorder: '1px solid rgba(56, 189, 248, 0.3)',
-      iconBg: 'rgba(56, 189, 248, 0.15)',
-      iconColor: '#38BDF8',
-      hoverBorder: '#38BDF8'
+      badgeBg: 'rgba(24, 246, 104, 0.16)',
+      badgeColor: '#48FA8B',
+      badgeBorder: '1px solid rgba(24, 246, 104, 0.4)',
+      iconBg: 'rgba(24, 246, 104, 0.2)',
+      iconColor: '#48FA8B'
     };
   };
 
@@ -56,7 +53,7 @@ export default function ToolDrawer({ isOpen, onClose, onSelectTool }) {
         position: 'fixed',
         inset: 0,
         zIndex: 2000,
-        backgroundColor: 'rgba(8, 8, 10, 0.85)',
+        backgroundColor: 'rgba(5, 12, 7, 0.88)',
         backdropFilter: 'blur(16px)',
         display: 'flex',
         justifyContent: 'flex-end',
@@ -68,58 +65,60 @@ export default function ToolDrawer({ isOpen, onClose, onSelectTool }) {
         onClick={(e) => e.stopPropagation()}
         style={{
           width: '100%',
-          maxWidth: '400px',
+          maxWidth: '420px',
           height: '100vh',
-          backgroundColor: 'var(--bg-surface)',
-          borderLeft: '1px solid var(--border-luxury)',
-          boxShadow: '-12px 0 40px rgba(0,0,0,0.85), -2px 0 15px rgba(186, 253, 193, 0.08)',
+          background: 'linear-gradient(175deg, #102615 0%, #0b1a0e 45%, #071009 100%)',
+          borderLeft: '1px solid rgba(186, 253, 193, 0.4)',
+          boxShadow: '-14px 0 45px rgba(0,0,0,0.9), -3px 0 20px rgba(24, 246, 104, 0.18)',
           display: 'flex',
           flexDirection: 'column',
           position: 'relative',
           overflow: 'hidden',
           animation: 'slideInRight 0.25s cubic-bezier(0.16, 1, 0.3, 1)',
-          backgroundImage: 'radial-gradient(rgba(186, 253, 193, 0.04) 1px, transparent 1px)',
-          backgroundSize: '20px 20px'
+          backgroundImage: 'radial-gradient(rgba(186, 253, 193, 0.08) 1px, transparent 1px)',
+          backgroundSize: '24px 24px'
         }}
       >
-        {/* Drawer Header Estilo Kalpagráfica */}
+        {/* Header con gradiente verde institucional Kalpagráfica */}
         <div
           style={{
             padding: '1.4rem 1.5rem',
-            borderBottom: '1px solid var(--border-subtle)',
+            borderBottom: '1px solid rgba(186, 253, 193, 0.25)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
-            background: 'linear-gradient(180deg, var(--bg-surface-2) 0%, var(--bg-surface) 100%)'
+            background: 'linear-gradient(180deg, #17381e 0%, #102615 100%)',
+            boxShadow: '0 4px 15px rgba(0, 0, 0, 0.4)'
           }}
         >
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem' }}>
             <div
               style={{
-                width: '38px',
-                height: '38px',
+                width: '40px',
+                height: '40px',
                 borderRadius: 'var(--radius-md)',
-                backgroundColor: 'var(--accent-muted)',
-                border: '1px solid var(--accent)',
+                backgroundColor: 'rgba(186, 253, 193, 0.18)',
+                border: '1px solid #BAFDC1',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                color: 'var(--accent)',
-                boxShadow: '0 0 12px rgba(186, 253, 193, 0.2)'
+                color: '#BAFDC1',
+                boxShadow: '0 0 14px rgba(186, 253, 193, 0.3)',
+                flexShrink: 0
               }}
             >
-              <SlidersHorizontal size={18} />
+              <SlidersHorizontal size={20} />
             </div>
             <div>
               <div
                 className="font-caps"
-                style={{ fontSize: '0.68rem', color: 'var(--luxury)', letterSpacing: '0.12em', fontWeight: 600 }}
+                style={{ fontSize: '0.7rem', color: '#E6C465', letterSpacing: '0.12em', fontWeight: 700 }}
               >
-                Suite Utilitaria
+                Suite Kalpagráfica
               </div>
               <h3
                 className="font-headline"
-                style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--text-primary)', lineHeight: 1.15 }}
+                style={{ fontSize: '1.15rem', fontWeight: 700, color: '#FFFFFF', lineHeight: 1.15 }}
               >
                 Panel de Herramientas
               </h3>
@@ -129,17 +128,18 @@ export default function ToolDrawer({ isOpen, onClose, onSelectTool }) {
           <button
             onClick={onClose}
             style={{
-              background: 'var(--bg-surface-2)',
-              border: '1px solid var(--border-subtle)',
-              color: 'var(--text-primary)',
+              background: 'rgba(186, 253, 193, 0.12)',
+              border: '1px solid rgba(186, 253, 193, 0.3)',
+              color: '#BAFDC1',
               cursor: 'pointer',
-              width: '32px',
-              height: '32px',
+              width: '34px',
+              height: '34px',
               borderRadius: '50%',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              transition: 'all 0.2s'
+              transition: 'all 0.2s',
+              flexShrink: 0
             }}
             title="Cerrar Panel"
           >
@@ -147,17 +147,17 @@ export default function ToolDrawer({ isOpen, onClose, onSelectTool }) {
           </button>
         </div>
 
-        {/* Buscador de Herramientas con acentos neón */}
-        <div style={{ padding: '1rem 1.5rem 0.6rem' }}>
+        {/* Buscador de Herramientas sobre verde fondo */}
+        <div style={{ padding: '1.1rem 1.5rem 0.6rem' }}>
           <div style={{ position: 'relative' }}>
             <Search
-              size={15}
+              size={16}
               style={{
                 position: 'absolute',
-                left: '0.85rem',
+                left: '0.9rem',
                 top: '50%',
                 transform: 'translateY(-50%)',
-                color: 'var(--text-secondary)'
+                color: '#85faaf'
               }}
             />
             <input
@@ -167,11 +167,12 @@ export default function ToolDrawer({ isOpen, onClose, onSelectTool }) {
               placeholder="Buscar por nombre o categoría..."
               className="input"
               style={{
-                paddingLeft: '2.4rem',
-                fontSize: '0.84rem',
-                height: '40px',
-                backgroundColor: 'var(--bg-base)',
-                borderColor: 'var(--border-subtle)',
+                paddingLeft: '2.5rem',
+                fontSize: '0.85rem',
+                height: '42px',
+                backgroundColor: 'rgba(8, 18, 10, 0.9)',
+                borderColor: 'rgba(186, 253, 193, 0.35)',
+                color: '#FFFFFF',
                 borderRadius: 'var(--radius-md)'
               }}
             />
@@ -180,14 +181,14 @@ export default function ToolDrawer({ isOpen, onClose, onSelectTool }) {
                 onClick={() => setSearchQuery('')}
                 style={{
                   position: 'absolute',
-                  right: '0.7rem',
+                  right: '0.8rem',
                   top: '50%',
                   transform: 'translateY(-50%)',
                   background: 'none',
                   border: 'none',
                   color: 'var(--text-disabled)',
                   cursor: 'pointer',
-                  fontSize: '0.75rem'
+                  fontSize: '0.8rem'
                 }}
               >
                 ✕
@@ -201,21 +202,21 @@ export default function ToolDrawer({ isOpen, onClose, onSelectTool }) {
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
-              marginTop: '0.6rem',
-              fontSize: '0.72rem',
-              color: 'var(--text-secondary)'
+              marginTop: '0.7rem',
+              fontSize: '0.75rem',
+              color: 'rgba(229, 229, 231, 0.8)'
             }}
           >
-            <span>Registro activo de utilidades</span>
+            <span>Catálogo activo de herramientas</span>
             <span
               className="font-mono"
               style={{
-                color: 'var(--accent)',
-                backgroundColor: 'var(--accent-muted)',
-                padding: '0.15rem 0.5rem',
+                color: '#18f668',
+                backgroundColor: 'rgba(24, 246, 104, 0.15)',
+                padding: '0.2rem 0.6rem',
                 borderRadius: 'var(--radius-full)',
-                border: '1px solid rgba(186,253,193,0.3)',
-                fontWeight: 600
+                border: '1px solid rgba(24, 246, 104, 0.4)',
+                fontWeight: 700
               }}
             >
               {filteredTools.length} disponibles
@@ -223,7 +224,7 @@ export default function ToolDrawer({ isOpen, onClose, onSelectTool }) {
           </div>
         </div>
 
-        {/* Lista de Tarjetas de Herramientas con estilo Blueprint/Neón */}
+        {/* Lista de Tarjetas de Herramientas en Verde Institucional */}
         <div
           style={{
             flex: 1,
@@ -231,7 +232,7 @@ export default function ToolDrawer({ isOpen, onClose, onSelectTool }) {
             padding: '0.6rem 1.5rem 1.5rem',
             display: 'flex',
             flexDirection: 'column',
-            gap: '0.8rem'
+            gap: '0.85rem'
           }}
         >
           {filteredTools.length === 0 ? (
@@ -239,14 +240,14 @@ export default function ToolDrawer({ isOpen, onClose, onSelectTool }) {
               style={{
                 textAlign: 'center',
                 padding: '3rem 1rem',
-                backgroundColor: 'var(--bg-surface-2)',
+                backgroundColor: 'rgba(14, 30, 17, 0.7)',
                 borderRadius: 'var(--radius-md)',
-                border: '1px solid var(--border-subtle)',
-                color: 'var(--text-disabled)',
-                fontSize: '0.85rem'
+                border: '1px solid rgba(186, 253, 193, 0.2)',
+                color: 'rgba(255, 255, 255, 0.7)',
+                fontSize: '0.88rem'
               }}
             >
-              No se encontraron utilidades para "<strong style={{ color: 'var(--accent)' }}>{searchQuery}</strong>".
+              No se encontraron utilidades para "<strong style={{ color: '#BAFDC1' }}>{searchQuery}</strong>".
             </div>
           ) : (
             filteredTools.map((tool) => {
@@ -262,26 +263,25 @@ export default function ToolDrawer({ isOpen, onClose, onSelectTool }) {
                   }}
                   className="tool-drawer-card"
                   style={{
-                    backgroundColor: 'var(--bg-surface-2)',
-                    border: '1px solid var(--border-subtle)',
+                    background: 'linear-gradient(135deg, rgba(20, 46, 26, 0.9) 0%, rgba(11, 24, 14, 0.95) 100%)',
+                    border: '1px solid rgba(186, 253, 193, 0.25)',
                     borderRadius: 'var(--radius-md)',
-                    padding: '0.9rem 1.1rem',
+                    padding: '1rem 1.1rem',
                     cursor: 'pointer',
                     transition: 'all 0.25s cubic-bezier(0.16, 1, 0.3, 1)',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'space-between',
-                    gap: '0.85rem',
-                    position: 'relative',
-                    overflow: 'hidden'
+                    gap: '1rem',
+                    minHeight: '80px'
                   }}
                 >
-                  <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.85rem', flex: 1 }}>
-                    {/* Icon Container con color por categoría */}
+                  <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.9rem', flex: 1, minWidth: 0 }}>
+                    {/* Icon Container amplio */}
                     <div
                       style={{
-                        width: '38px',
-                        height: '38px',
+                        width: '42px',
+                        height: '42px',
                         borderRadius: 'var(--radius-md)',
                         backgroundColor: theme.iconBg,
                         border: `1px solid ${theme.badgeColor}`,
@@ -290,46 +290,48 @@ export default function ToolDrawer({ isOpen, onClose, onSelectTool }) {
                         justifyContent: 'center',
                         color: theme.iconColor,
                         flexShrink: 0,
+                        boxShadow: `0 0 10px ${theme.badgeBg}`,
                         marginTop: '2px',
                         transition: 'transform 0.25s ease'
                       }}
                       className="tool-card-icon"
                     >
-                      <Icon size={18} />
+                      <Icon size={20} />
                     </div>
 
-                    <div style={{ flex: 1 }}>
-                      {/* Badge por categoría (Menta, Dorado o Cian) */}
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.25rem' }}>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      {/* Badge por categoría (Menta, Dorado o Esmeralda) */}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.3rem' }}>
                         <span
                           className="font-caps"
                           style={{
-                            fontSize: '0.62rem',
+                            fontSize: '0.64rem',
                             fontWeight: 700,
                             letterSpacing: '0.08em',
                             color: theme.badgeColor,
                             backgroundColor: theme.badgeBg,
                             border: theme.badgeBorder,
-                            padding: '0.15rem 0.45rem',
-                            borderRadius: 'var(--radius-sm)'
+                            padding: '0.18rem 0.5rem',
+                            borderRadius: 'var(--radius-sm)',
+                            whiteSpace: 'nowrap'
                           }}
                         >
                           {tool.category}
                         </span>
                       </div>
 
-                      <h4 style={{ fontSize: '0.92rem', fontWeight: 700, color: 'var(--text-primary)', lineHeight: 1.25 }}>
+                      <h4 style={{ fontSize: '0.95rem', fontWeight: 700, color: '#FFFFFF', lineHeight: 1.3, marginBottom: '0.2rem' }}>
                         {tool.title}
                       </h4>
-                      <p style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', lineHeight: 1.38, marginTop: '0.25rem' }}>
+                      <p style={{ fontSize: '0.79rem', color: 'rgba(229, 229, 231, 0.78)', lineHeight: 1.4, margin: 0 }}>
                         {tool.description}
                       </p>
                     </div>
                   </div>
 
                   <ChevronRight
-                    size={16}
-                    style={{ color: 'var(--text-disabled)', flexShrink: 0, transition: 'all 0.2s ease' }}
+                    size={18}
+                    style={{ color: 'rgba(186, 253, 193, 0.4)', flexShrink: 0, transition: 'all 0.2s ease' }}
                     className="tool-card-arrow"
                   />
                 </div>
@@ -341,22 +343,22 @@ export default function ToolDrawer({ isOpen, onClose, onSelectTool }) {
         {/* Footer del Drawer en Verde Neón & Lujo */}
         <div
           style={{
-            padding: '0.9rem 1.5rem',
-            borderTop: '1px solid var(--border-subtle)',
-            backgroundColor: 'var(--bg-base)',
-            fontSize: '0.75rem',
-            color: 'var(--text-secondary)',
+            padding: '1rem 1.5rem',
+            borderTop: '1px solid rgba(186, 253, 193, 0.25)',
+            background: 'linear-gradient(180deg, #0b1a0e 0%, #071009 100%)',
+            fontSize: '0.78rem',
+            color: 'rgba(229, 229, 231, 0.7)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
             gap: '0.5rem'
           }}
         >
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
-            <Sparkles size={14} color="var(--accent)" style={{ flexShrink: 0 }} />
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <Sparkles size={15} color="#18f668" style={{ flexShrink: 0 }} />
             <span>Infraestructura utilitaria Kalpagráfica</span>
           </div>
-          <span className="font-caps" style={{ color: 'var(--luxury)', fontSize: '0.68rem', fontWeight: 600 }}>
+          <span className="font-mono" style={{ color: '#BAFDC1', fontSize: '0.75rem', fontWeight: 600 }}>
             v2.5
           </span>
         </div>
@@ -368,17 +370,17 @@ export default function ToolDrawer({ isOpen, onClose, onSelectTool }) {
           to { transform: translateX(0); }
         }
         .tool-drawer-card:hover {
-          border-color: var(--accent) !important;
-          transform: translateX(-3px);
-          background-color: rgba(186, 253, 193, 0.05) !important;
-          box-shadow: 0 4px 18px rgba(186, 253, 193, 0.12) !important;
+          border-color: #BAFDC1 !important;
+          transform: translateX(-4px);
+          background: linear-gradient(135deg, rgba(28, 64, 36, 0.95) 0%, rgba(16, 36, 20, 0.98) 100%) !important;
+          box-shadow: 0 6px 24px rgba(186, 253, 193, 0.2) !important;
         }
         .tool-drawer-card:hover .tool-card-icon {
-          transform: scale(1.08);
+          transform: scale(1.1);
         }
         .tool-drawer-card:hover .tool-card-arrow {
-          color: var(--accent) !important;
-          transform: translateX(3px);
+          color: #BAFDC1 !important;
+          transform: translateX(4px);
         }
       `}</style>
     </div>

@@ -107,28 +107,31 @@ export default function Navbar({ activeSection, onNavigate, onOpenToolDrawer }) 
         </div>
 
         {/* Right Side Actions: Panel Lateral de Herramientas + Mobile Menu Toggle */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexShrink: 0 }}>
           <button
             onClick={onOpenToolDrawer}
             title="Abrir Panel de Acceso Rápido a Herramientas"
             style={{
               display: 'inline-flex',
               alignItems: 'center',
+              justifyContent: 'center',
               gap: '0.45rem',
               backgroundColor: 'var(--accent-muted)',
-              border: '1px solid rgba(186, 253, 193, 0.35)',
+              border: '1px solid rgba(186, 253, 193, 0.4)',
               color: 'var(--accent)',
               borderRadius: 'var(--radius-md)',
-              padding: '0.45rem 0.8rem',
+              padding: '0.42rem 0.75rem',
               fontSize: '0.8rem',
               fontWeight: 600,
               cursor: 'pointer',
+              whiteSpace: 'nowrap',
+              flexShrink: 0,
               transition: 'all 0.2s ease'
             }}
             className="tools-drawer-btn"
           >
-            <Wrench size={16} />
-            <span className="tools-btn-text">Herramientas</span>
+            <Wrench size={15} style={{ flexShrink: 0 }} />
+            <span>Herramientas</span>
           </button>
 
           <button
@@ -140,7 +143,8 @@ export default function Navbar({ activeSection, onNavigate, onOpenToolDrawer }) 
               border: 'none',
               color: 'var(--accent)',
               cursor: 'pointer',
-              padding: '0.4rem'
+              padding: '0.35rem',
+              flexShrink: 0
             }}
           >
             {mobileMenuOpen ? <X size={26} /> : <Menu size={26} />}
@@ -196,10 +200,6 @@ export default function Navbar({ activeSection, onNavigate, onOpenToolDrawer }) 
           .logo-desktop { display: none !important; }
           .logo-mobile { display: flex !important; }
           header { height: 56px !important; }
-        }
-        @media (max-width: 480px) {
-          .tools-btn-text { display: none; }
-          .tools-drawer-btn { padding: 0.45rem 0.55rem !important; }
         }
       `}</style>
     </header>
