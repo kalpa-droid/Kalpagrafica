@@ -1,6 +1,6 @@
 {
-  "total": 4255,
-  "dupsPruned": 1950,
+  "total": 4243,
+  "dupsPruned": 1962,
   "letters": [
     "Num",
     "A",
@@ -998,13 +998,6 @@
       "file": "/logobook/A/Alumni_-_El_Paso_Galeria_de_Comunicacion.svg"
     },
     {
-      "id": 139,
-      "letter": "A",
-      "company": "Alumni",
-      "author": "Diseñador Kalpagráfica",
-      "file": "/logobook/A/Alumni_-_Disenador_Kalpagrafica.svg"
-    },
-    {
       "id": 140,
       "letter": "A",
       "company": "Alvit",
@@ -1381,13 +1374,6 @@
       "company": "Anton Lihl",
       "author": "Oanh Pham Phu",
       "file": "/logobook/A/Anton_Lihl_-_Oanh_Pham_Phu.svg"
-    },
-    {
-      "id": 194,
-      "letter": "A",
-      "company": "Anton Stankowski",
-      "author": "Diseñador Kalpagráfica",
-      "file": "/logobook/A/Anton_Stankowski_-_Disenador_Kalpagrafica.svg"
     },
     {
       "id": 195,
@@ -3798,13 +3784,6 @@
       "file": "/logobook/B/Burton_Kramer_-_Burton_Kramer.svg"
     },
     {
-      "id": 539,
-      "letter": "B",
-      "company": "Burton Kramer",
-      "author": "Diseñador Kalpagráfica",
-      "file": "/logobook/B/Burton_Kramer_-_Disenador_Kalpagrafica.svg"
-    },
-    {
       "id": 540,
       "letter": "B",
       "company": "Business Computers",
@@ -5385,13 +5364,6 @@
       "company": "Colleen Pencils",
       "author": "Tadashi Masuda",
       "file": "/logobook/C/Colleen_Pencils_-_Tadashi_Masuda.svg"
-    },
-    {
-      "id": 766,
-      "letter": "C",
-      "company": "Collége de Maisonneuve",
-      "author": "Diseñador Kalpagráfica",
-      "file": "/logobook/C/College_de_Maisonneuve_-_Disenador_Kalpagrafica.svg"
     },
     {
       "id": 767,
@@ -8374,13 +8346,6 @@
       "company": "Emil Daiber",
       "author": "Hanns Lohrer",
       "file": "/logobook/E/Emil_Daiber_-_Hanns_Lohrer.svg"
-    },
-    {
-      "id": 1193,
-      "letter": "E",
-      "company": "Emil Daiber",
-      "author": "Diseñador Kalpagráfica",
-      "file": "/logobook/E/Emil_Daiber_-_Disenador_Kalpagrafica.svg"
     },
     {
       "id": 1194,
@@ -13654,20 +13619,6 @@
       "file": "/logobook/I/Instructional_Systems_Incorporated_-_Lance_Wyman.svg"
     },
     {
-      "id": 1947,
-      "letter": "I",
-      "company": "Instructional Systems Incorporated",
-      "author": "Diseñador Kalpagráfica",
-      "file": "/logobook/I/Instructional_Systems_Incorporated_-_Disenador_Kalpagrafica.svg"
-    },
-    {
-      "id": 1948,
-      "letter": "I",
-      "company": "Integrated Design Associates",
-      "author": "Diseñador Kalpagráfica",
-      "file": "/logobook/I/Integrated_Design_Associates_-_Disenador_Kalpagrafica.svg"
-    },
-    {
       "id": 1949,
       "letter": "I",
       "company": "Integrated Design Associates",
@@ -13883,13 +13834,6 @@
       "company": "Intomart Qualitatief",
       "author": "Daphne Duijvelshoff",
       "file": "/logobook/I/Intomart_Qualitatief_-_Daphne_Duijvelshoff.svg"
-    },
-    {
-      "id": 1980,
-      "letter": "I",
-      "company": "Intra Alloys",
-      "author": "Diseñador Kalpagráfica",
-      "file": "/logobook/I/Intra_Alloys_-_Disenador_Kalpagrafica.svg"
     },
     {
       "id": 1981,
@@ -23706,13 +23650,6 @@
       "file": "/logobook/S/Siderurgica_del_Pacifico-Sidelpa_-_Dicken_Castro.svg"
     },
     {
-      "id": 3383,
-      "letter": "S",
-      "company": "Sie",
-      "author": "Diseñador Kalpagráfica",
-      "file": "/logobook/S/Sie_-_Disenador_Kalpagrafica.svg"
-    },
-    {
       "id": 3384,
       "letter": "S",
       "company": "Sie",
@@ -24782,13 +24719,6 @@
       "company": "Stierlin  Co.",
       "author": "Peter G. Ulmer",
       "file": "/logobook/S/Stierlin_Co._-_Peter_G._Ulmer.svg"
-    },
-    {
-      "id": 3537,
-      "letter": "S",
-      "company": "Stiftung Volkswagenwerk",
-      "author": "Diseñador Kalpagráfica",
-      "file": "/logobook/S/Stiftung_Volkswagenwerk_-_Disenador_Kalpagrafica.svg"
     },
     {
       "id": 3538,
@@ -27115,13 +27045,6 @@
       "file": "/logobook/T/Trenes_Vertebrados_-_Elias_Garcia_Benavides.svg"
     },
     {
-      "id": 3870,
-      "letter": "T",
-      "company": "Tri-Arts Press",
-      "author": "Diseñador Kalpagráfica",
-      "file": "/logobook/T/Tri-Arts_Press_-_Disenador_Kalpagrafica.svg"
-    },
-    {
       "id": 3871,
       "letter": "T",
       "company": "Tri-Arts Press",
@@ -28142,13 +28065,6 @@
       "company": "Verlag fur Technik und Wirtschaft_logo.svg",
       "author": "Heinz Kröhl Peter Offenberg",
       "file": "/logobook/V/Verlag_fur_Technik_und_Wirtschaft_logo.svg_-_Heinz_Krohl_Peter_Offenberg.svg"
-    },
-    {
-      "id": 4017,
-      "letter": "V",
-      "company": "Verlag für Wirtschafts und Steuersachverständige",
-      "author": "Diseñador Kalpagráfica",
-      "file": "/logobook/V/Verlag_fur_Wirtschafts_und_Steuersachverstandige_-_Disenador_Kalpagrafica.svg"
     },
     {
       "id": 4018,
