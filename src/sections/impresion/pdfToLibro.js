@@ -14,10 +14,16 @@ export async function inyectarPDFjs() {
   });
 }
 
-export async function crearCanvasTapaCustom(coverConfig) {
+// Tamaño (en px a 300dpi) de la página final del libro, según el papel donde se va a imprimir:
+// Papel A4 doblado al medio -> páginas de libro A5. Papel A3 doblado al medio -> páginas de libro A4.
+export function getCoverCanvasSize(paperSize) {
+  return paperSize === 'A3' ? { width: 2480, height: 3508 } : { width: 1748, height: 2480 };
+}
+
+export async function crearCanvasTapaCustom(coverConfig, canvasSize = { width: 1748, height: 2480 }) {
   if (!coverConfig) return null;
-  const width = 1748;
-  const height = 2480;
+  const width = canvasSize.width;
+  const height = canvasSize.height;
   const canvas = document.createElement('canvas');
   canvas.width = width;
   canvas.height = height;
@@ -73,10 +79,10 @@ export async function crearCanvasTapaCustom(coverConfig) {
   return canvas;
 }
 
-export async function crearCanvasContratapaCustom(backCoverConfig) {
+export async function crearCanvasContratapaCustom(backCoverConfig, canvasSize = { width: 1748, height: 2480 }) {
   if (!backCoverConfig) return null;
-  const width = 1748;
-  const height = 2480;
+  const width = canvasSize.width;
+  const height = canvasSize.height;
   const canvas = document.createElement('canvas');
   canvas.width = width;
   canvas.height = height;
@@ -153,7 +159,6 @@ export async function crearCanvasContratapaCustom(backCoverConfig) {
 
 async function procesarComoImagenes(file, mode, options = {}, onProgress) {
   const {
-    fotocopiaStart = 'derecha',
     hasCover = false,
     coverSide = 'derecha',
     hasBackCover = false,
@@ -164,8 +169,11 @@ async function procesarComoImagenes(file, mode, options = {}, onProgress) {
     pageRotations = {},
     pageSplitOffsets = {},
     customCover = null,
-    customBackCover = null
+    customBackCover = null,
+    paperSize = 'A4'
   } = options;
+
+  const coverCanvasSize = getCoverCanvasSize(paperSize);
 
   const newPdf = await PDFDocument.create();
   const arrayBuffer = await file.arrayBuffer();
@@ -181,7 +189,7 @@ async function procesarComoImagenes(file, mode, options = {}, onProgress) {
   // Si se generó o subió una Tapa Custom, se inserta en la Página 1
   let effectiveRefPdfPage = refPdfPage;
   if (!hasCover && customCover && (customCover.type === 'upload' || customCover.type === 'template')) {
-    const coverCanvas = await crearCanvasTapaCustom(customCover);
+    const coverCanvas = await crearCanvasTapaCustom(customCover, coverCanvasSize);
     if (coverCanvas) {
       const coverImg = await newPdf.embedJpg(coverCanvas.toDataURL('image/jpeg', 0.92));
       const pageC = newPdf.addPage([coverCanvas.width, coverCanvas.height]);
@@ -248,7 +256,12 @@ async function procesarComoImagenes(file, mode, options = {}, onProgress) {
       const leftW = splitX;
       const rightW = fullW - splitX;
 
-      if (isFirstProcessedSheet && (fotocopiaStart === 'derecha' || (hasCover && coverSide === 'derecha'))) {
+      // Solo se descarta la mitad izquierda de la PRIMERA hoja escaneada cuando esa hoja
+      // es específicamente la tapa y está del lado derecho (la mitad izquierda sería
+      // la contratapa interior/reverso, no una página de contenido real).
+      // Antes esto se activaba siempre por un valor fijo no configurable ("fotocopiaStart"),
+      // lo que hacía desaparecer la página física N° 1 aunque no hubiera tapa.
+      if (isFirstProcessedSheet && hasCover && coverSide === 'derecha') {
         const rightCanvas = document.createElement('canvas');
         rightCanvas.width = rightW; rightCanvas.height = fullH;
         rightCanvas.getContext('2d').drawImage(finalCanvas, splitX, 0, rightW, fullH, 0, 0, rightW, fullH);
@@ -325,12 +338,13 @@ export async function pdfToLibro(file, mode, options = {}, onProgress) {
 
   const pagesDoc = await procesarComoImagenes(file, mode, options, onProgress);
 
-  const { hasBackCover = false, customBackCover = null } = options;
+  const { hasBackCover = false, customBackCover = null, paperSize = 'A4' } = options;
+  const coverCanvasSize = getCoverCanvasSize(paperSize);
 
   // Si hay una Contratapa Custom para agregar
   let backCoverCanvas = null;
   if (!hasBackCover && customBackCover && (customBackCover.type === 'upload' || customBackCover.type === 'template')) {
-    backCoverCanvas = await crearCanvasContratapaCustom(customBackCover);
+    backCoverCanvas = await crearCanvasContratapaCustom(customBackCover, coverCanvasSize);
   }
 
   const currentCount = pagesDoc.getPageCount();
@@ -343,8 +357,9 @@ export async function pdfToLibro(file, mode, options = {}, onProgress) {
   const remainder = (4 - (targetCount % 4)) % 4;
 
   // Insertar páginas en blanco ANTES de la contratapa para que actúen como hojas de cortesía
+  // (mismo tamaño que las páginas del libro, según el papel elegido, para que la imposición quede proporcional)
   for (let i = 0; i < remainder; i++) {
-    const blank = pagesDoc.addPage(PageSizes.A4);
+    const blank = pagesDoc.addPage([coverCanvasSize.width, coverCanvasSize.height]);
     blank.drawRectangle({ x: 0, y: 0, width: 0, height: 0 });
   }
 
@@ -375,8 +390,11 @@ export async function pdfToLibro(file, mode, options = {}, onProgress) {
     const [leftPage] = await bookletDoc.copyPages(pagesDoc, [leftIndex]);
     const [rightPage] = await bookletDoc.copyPages(pagesDoc, [rightIndex]);
 
-    const sheetWidth = PageSizes.A4[1]; // 842 pt
-    const sheetHeight = PageSizes.A4[0]; // 595 pt
+    // Tamaño físico de la HOJA DE PAPEL donde se imprime (A4 o A3, elegido por el usuario) —
+    // no confundir con el tamaño de la página final del libro (A5 o A4), que es la mitad de esto doblada.
+    const paperPageSize = PageSizes[paperSize] || PageSizes.A4;
+    const sheetWidth = paperPageSize[1];
+    const sheetHeight = paperPageSize[0];
     const sheet = bookletDoc.addPage([sheetWidth, sheetHeight]);
 
     const embedL = await bookletDoc.embedPage(leftPage);

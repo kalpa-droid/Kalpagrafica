@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Maximize2, Minimize2, ZoomIn, ZoomOut, Check, X, Crop, Move } from 'lucide-react';
 
-export default function A5ImageCropperModal({ isOpen, imageSrc, onCropComplete, onClose, title = 'Recortar Imagen a Proporción A5' }) {
+export default function A5ImageCropperModal({ isOpen, imageSrc, onCropComplete, onClose, title = 'Recortar Imagen a Proporción A5', targetSize = { width: 1748, height: 2480 }, sizeLabel = 'A5' }) {
   const [cropBox, setCropBox] = useState({ x: 0, y: 0, width: 200, height: 283 }); // 1:1.4142 ratio
   const [scale, setScale] = useState(1);
   const [isDragging, setIsDragging] = useState(false);
@@ -100,11 +100,11 @@ export default function A5ImageCropperModal({ isOpen, imageSrc, onCropComplete, 
     setCropBox({ x: newX, y: newY, width: w, height: h });
   };
 
-  // Export high resolution A5 crop (1748 x 2480 px)
+  // Exporta el recorte en alta resolución al tamaño de página final del libro (A5 o A4 según el papel elegido)
   const handleConfirmCrop = () => {
     const canvas = document.createElement('canvas');
-    const targetW = 1748;
-    const targetH = 2480;
+    const targetW = targetSize.width;
+    const targetH = targetSize.height;
     canvas.width = targetW;
     canvas.height = targetH;
     const ctx = canvas.getContext('2d');
@@ -176,7 +176,7 @@ export default function A5ImageCropperModal({ isOpen, imageSrc, onCropComplete, 
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--accent)', fontWeight: 700, fontSize: '0.95rem' }}>
             <Crop size={18} />
-            <span>{title} (A5 Vertical)</span>
+            <span>{title} ({sizeLabel} Vertical)</span>
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
@@ -261,7 +261,7 @@ export default function A5ImageCropperModal({ isOpen, imageSrc, onCropComplete, 
                   pointerEvents: 'none',
                   opacity: 0.9
                 }}>
-                  <Move size={12} /> Arrastrar Recorte A5
+                  <Move size={12} /> Arrastrar Recorte {sizeLabel}
                 </div>
               </div>
             )}
@@ -308,7 +308,7 @@ export default function A5ImageCropperModal({ isOpen, imageSrc, onCropComplete, 
             className="btn btn-primary btn-sm"
             onClick={handleConfirmCrop}
           >
-            <Check size={16} /> Confirmar Recorte A5
+            <Check size={16} /> Confirmar Recorte {sizeLabel}
           </button>
         </div>
       </div>

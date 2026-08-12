@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { BookOpen, Download, AlertCircle, CheckCircle, FileCheck, Info, Upload, Palette, Layers, Edit3, ArrowRight, Check, Crop, Maximize2 } from 'lucide-react';
-import { pdfToLibro, crearCanvasTapaCustom, crearCanvasContratapaCustom } from './pdfToLibro';
+import { pdfToLibro, crearCanvasTapaCustom, crearCanvasContratapaCustom, getCoverCanvasSize } from './pdfToLibro';
 import PdfPreviewStrip from './PdfPreviewStrip';
 import A5ImageCropperModal from './A5ImageCropperModal';
 
@@ -29,8 +29,10 @@ function PageSlot({ label, sub, side, highlight }) {
   );
 }
 
-function BookletDiagram({ mode, hasCover, coverSide, hasRefPage, refPdfPage, refBookPage, refPageSide, hasCustomCover }) {
+function BookletDiagram({ mode, hasCover, coverSide, hasRefPage, refPdfPage, refBookPage, refPageSide, hasCustomCover, paperSize }) {
   const isFotocopia = mode === 'fotocopia';
+  const bookPageLabel = paperSize === 'A3' ? 'A4' : 'A5';
+  const paperLabel = paperSize === 'A3' ? 'A3' : 'A4';
 
   const isBookPageOdd = refBookPage > 0 ? refBookPage % 2 !== 0 : true;
   const expectedSide = isBookPageOdd ? 'derecha' : 'izquierda';
@@ -48,7 +50,7 @@ function BookletDiagram({ mode, hasCover, coverSide, hasRefPage, refPdfPage, ref
       boxShadow: '0 4px 15px rgba(0,0,0,0.3)'
     }}>
       <div style={{ fontSize: '0.82rem', color: 'var(--accent)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '1.2rem', textAlign: 'center' }}>
-        Diagrama Comparativo de Preimpresión: Original vs Resultado Final A5 Cosido
+        Diagrama Comparativo de Preimpresión: Original vs Resultado Final {bookPageLabel} Cosido
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1.5rem', alignItems: 'start' }}>
@@ -85,7 +87,7 @@ function BookletDiagram({ mode, hasCover, coverSide, hasRefPage, refPdfPage, ref
         {/* LADO DERECHO: RESULTADO FINAL A4 IMPRESO A DOBLE CARA */}
         <div style={{ backgroundColor: 'var(--bg-surface)', padding: '1rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-subtle)' }}>
           <span style={{ fontSize: '0.78rem', color: needAdjustment ? '#FBBF24' : 'var(--accent)', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.6rem' }}>
-            <FileCheck size={14} /> 2. Imposición Final (A4 Doble Cara ➔ A5 Cosido)
+            <FileCheck size={14} /> 2. Imposición Final ({paperLabel} Doble Cara ➔ {bookPageLabel} Cosido)
           </span>
 
           <div style={{ display: 'flex', gap: '0.8rem', justifyContent: 'center', alignItems: 'center', flexWrap: 'wrap', marginBottom: hasValidRef ? '0.8rem' : 0 }}>
@@ -145,6 +147,8 @@ function BookletDiagram({ mode, hasCover, coverSide, hasRefPage, refPdfPage, ref
 export default function PdfToLibroTool() {
   const [file, setFile] = useState(null);
   const [mode, setMode] = useState('normal'); // 'normal' | 'fotocopia'
+  const [paperSize, setPaperSize] = useState('A4'); // 'A4' (→ libro A5) | 'A3' (→ libro A4)
+  const coverCanvasSize = useMemo(() => getCoverCanvasSize(paperSize), [paperSize]);
 
   // Controlador de Etapas Guiadas (1..5)
   const [activeStep, setActiveStep] = useState(1);
@@ -217,7 +221,7 @@ export default function PdfToLibroTool() {
             textColor: templateTextColor,
             bgImageUri: templateBgImageUri
           };
-      const canvas = await crearCanvasTapaCustom(config);
+      const canvas = await crearCanvasTapaCustom(config, coverCanvasSize);
       if (canvas && !isCancelled) {
         setCoverPreviewUrl(canvas.toDataURL('image/jpeg', 0.8));
         canvas.width = 0; canvas.height = 0;
@@ -225,7 +229,7 @@ export default function PdfToLibroTool() {
     };
     generatePreview();
     return () => { isCancelled = true; };
-  }, [hasCover, customCoverType, customCoverUploadUri, templateTitle, templateAuthor, templatePublisher, templateBgColor, templateTextColor, templateBgImageUri]);
+  }, [hasCover, customCoverType, customCoverUploadUri, templateTitle, templateAuthor, templatePublisher, templateBgColor, templateTextColor, templateBgImageUri, coverCanvasSize]);
 
   // Generar vista previa en tiempo real de la Contratapa Custom
   useEffect(() => {
@@ -246,7 +250,7 @@ export default function PdfToLibroTool() {
             textColor: backCoverTextColor,
             bgImageUri: backCoverBgImageUri
           };
-      const canvas = await crearCanvasContratapaCustom(config);
+      const canvas = await crearCanvasContratapaCustom(config, coverCanvasSize);
       if (canvas && !isCancelled) {
         setBackCoverPreviewUrl(canvas.toDataURL('image/jpeg', 0.8));
         canvas.width = 0; canvas.height = 0;
@@ -254,7 +258,7 @@ export default function PdfToLibroTool() {
     };
     generatePreview();
     return () => { isCancelled = true; };
-  }, [hasBackCover, customBackCoverType, customBackCoverUploadUri, backCoverSynopsis, backCoverPublisher, backCoverIsbn, backCoverBgColor, backCoverTextColor, backCoverBgImageUri]);
+  }, [hasBackCover, customBackCoverType, customBackCoverUploadUri, backCoverSynopsis, backCoverPublisher, backCoverIsbn, backCoverBgColor, backCoverTextColor, backCoverBgImageUri, coverCanvasSize]);
 
   const handleFileChange = (e) => {
     const selected = e.target.files[0];
@@ -360,7 +364,8 @@ export default function PdfToLibroTool() {
         pageRotations,
         pageSplitOffsets,
         customCover: customCoverConfig,
-        customBackCover: customBackCoverConfig
+        customBackCover: customBackCoverConfig,
+        paperSize
       };
 
       const result = await pdfToLibro(file, mode, options, (msg, pct) => {
@@ -402,10 +407,10 @@ export default function PdfToLibroTool() {
     <div style={{ backgroundColor: 'var(--bg-surface)', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border-subtle)', padding: '1.8rem', boxShadow: 'var(--shadow-card)' }}>
       <h3 style={{ fontSize: '1.2rem', color: 'var(--text-primary)', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
         <BookOpen size={20} color="var(--accent)" />
-        <span>PDF a Libro (Imposición de Folleto A4 / A5)</span>
+        <span>PDF a Libro (Imposición de Folleto A4 / A3)</span>
       </h3>
       <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '1.5rem', lineHeight: 1.5 }}>
-        Asistente guiado por etapas para maquetar folletos A4 listos para imprimir a doble cara y coser/abrochar al centro en tamaño A5.
+        Asistente guiado por etapas para maquetar folletos listos para imprimir a doble cara y coser/abrochar al centro — en papel A4 (libro A5) o en papel A3 (libro A4).
       </p>
 
       {/* INDICADOR DE PASOS / ETAPAS DESPLEGABLES */}
@@ -467,15 +472,31 @@ export default function PdfToLibroTool() {
           </div>
         </div>
 
-        <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', marginBottom: '1rem' }}>
           <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem', color: 'var(--text-primary)', cursor: 'pointer' }}>
             <input type="radio" name="mode" value="normal" checked={mode === 'normal'} onChange={() => { setMode('normal'); if (file) setActiveStep(3); }} style={{ accentColor: 'var(--accent)' }} />
-            <span>PDF Normal (Páginas individuales A4 / A5)</span>
+            <span>PDF Normal (Páginas individuales)</span>
           </label>
           <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem', color: 'var(--text-primary)', cursor: 'pointer' }}>
             <input type="radio" name="mode" value="fotocopia" checked={mode === 'fotocopia'} onChange={() => { setMode('fotocopia'); if (file) setActiveStep(2); }} style={{ accentColor: 'var(--accent)' }} />
             <span>Fotocopia de Libro Abierto (Doble página por hoja A4)</span>
           </label>
+        </div>
+
+        <div style={{ paddingTop: '0.8rem', borderTop: '1px dashed var(--border-subtle)' }}>
+          <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '0.5rem' }}>
+            ¿En qué tamaño de papel vas a imprimir? (define el tamaño final de tu libro y el de la tapa/contratapa)
+          </span>
+          <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem', color: 'var(--text-primary)', cursor: 'pointer' }}>
+              <input type="radio" name="paperSize" value="A4" checked={paperSize === 'A4'} onChange={() => setPaperSize('A4')} style={{ accentColor: 'var(--accent)' }} />
+              <span>Papel A4 <span style={{ color: 'var(--text-disabled)' }}>→ libro final tamaño A5</span></span>
+            </label>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem', color: 'var(--text-primary)', cursor: 'pointer' }}>
+              <input type="radio" name="paperSize" value="A3" checked={paperSize === 'A3'} onChange={() => setPaperSize('A3')} style={{ accentColor: 'var(--accent)' }} />
+              <span>Papel A3 <span style={{ color: 'var(--text-disabled)' }}>→ libro final tamaño A4</span></span>
+            </label>
+          </div>
         </div>
       </div>
 
@@ -950,6 +971,7 @@ export default function PdfToLibroTool() {
             refBookPage={Number(refBookPage) || 0}
             refPageSide={effectiveRefPageSide}
             hasCustomCover={!hasCover && (customCoverUploadUri || templateTitle)}
+            paperSize={paperSize}
           />
 
           {errorMsg && (
@@ -995,6 +1017,8 @@ export default function PdfToLibroTool() {
         isOpen={cropperOpen}
         imageSrc={cropperImageSrc}
         title={cropperTitle}
+        targetSize={coverCanvasSize}
+        sizeLabel={paperSize === 'A3' ? 'A4' : 'A5'}
         onCropComplete={handleCroppedResult}
         onClose={() => setCropperOpen(false)}
       />
