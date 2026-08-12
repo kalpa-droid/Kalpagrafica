@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { Eye, ChevronLeft, ChevronRight, CheckCircle2, RefreshCw, ZoomIn, X, Check, Trash2, RotateCcw, ArrowLeft, ArrowRight } from 'lucide-react';
+import { Eye, EyeOff, ChevronLeft, ChevronRight, CheckCircle2, RefreshCw, ZoomIn, X, Check, Trash2, RotateCcw, ArrowLeft, ArrowRight } from 'lucide-react';
 import { inyectarPDFjs } from './pdfToLibro';
 
 function LightboxModal({ 
@@ -733,6 +733,7 @@ export default function PdfPreviewStrip({
   const [loadingDoc, setLoadingDoc] = useState(false);
   const [error, setError] = useState('');
   const [lightboxItem, setLightboxItem] = useState(null);
+  const [showDeletedCards, setShowDeletedCards] = useState(true);
   const containerRef = useRef(null);
 
   useEffect(() => {
@@ -844,6 +845,9 @@ export default function PdfPreviewStrip({
   }
 
   const activeItemsCount = itemsToRender.filter(item => !deletedPages.includes(item.sheetNum)).length;
+  const itemsToDisplay = showDeletedCards
+    ? itemsToRender
+    : itemsToRender.filter(item => !deletedPages.includes(item.sheetNum));
 
   return (
     <div style={{
@@ -854,15 +858,38 @@ export default function PdfPreviewStrip({
       marginBottom: '1.5rem'
     }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.8rem', flexWrap: 'wrap', gap: '0.5rem' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', flexWrap: 'wrap' }}>
           <Eye size={16} color="var(--accent)" />
           <span style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
             Visor de páginas ({activeItemsCount} {isFoliadoStep && mode === 'fotocopia' ? 'páginas cortadas activas' : 'hojas activas'})
           </span>
           {deletedPages.length > 0 && (
-            <span className="font-mono" style={{ fontSize: '0.72rem', backgroundColor: 'rgba(248,113,113,0.15)', color: '#F87171', padding: '0.15rem 0.5rem', borderRadius: 'var(--radius-full)', border: '1px solid #F87171', fontWeight: 700 }}>
-              {deletedPages.length} descartadas
-            </span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+              <span className="font-mono" style={{ fontSize: '0.72rem', backgroundColor: 'rgba(248,113,113,0.15)', color: '#F87171', padding: '0.15rem 0.5rem', borderRadius: 'var(--radius-full)', border: '1px solid #F87171', fontWeight: 700 }}>
+                {deletedPages.length} descartadas
+              </span>
+              <button
+                type="button"
+                onClick={() => setShowDeletedCards(prev => !prev)}
+                style={{
+                  backgroundColor: showDeletedCards ? 'rgba(248,113,113,0.15)' : 'var(--bg-surface)',
+                  border: `1.5px solid ${showDeletedCards ? '#F87171' : 'var(--border-subtle)'}`,
+                  borderRadius: 'var(--radius-sm)',
+                  padding: '0.2rem 0.6rem',
+                  color: showDeletedCards ? '#F87171' : 'var(--accent)',
+                  fontSize: '0.72rem',
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '0.35rem'
+                }}
+                title={showDeletedCards ? "Ocultar las páginas eliminadas de la vista previa" : "Mostrar las páginas eliminadas en la vista previa"}
+              >
+                {showDeletedCards ? <EyeOff size={13} /> : <Eye size={13} />}
+                <span>{showDeletedCards ? 'Ocultar descartadas' : `Ver descartadas (${deletedPages.length})`}</span>
+              </button>
+            </div>
           )}
         </div>
         <span style={{ fontSize: '0.72rem', color: 'var(--text-disabled)' }}>
@@ -901,7 +928,7 @@ export default function PdfPreviewStrip({
               padding: '0.5rem 2rem', scrollBehavior: 'smooth', scrollbarWidth: 'thin'
             }}
           >
-            {itemsToRender.map((item, index) => {
+            {itemsToDisplay.map((item, index) => {
               const isSelected = selectedPdfPage === item.sheetNum && (
                 !item.side || (item.side === 'L' && selectedSide === 'izquierda') || (item.side === 'R' && selectedSide === 'derecha')
               );
