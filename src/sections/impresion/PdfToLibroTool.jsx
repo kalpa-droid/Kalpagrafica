@@ -611,6 +611,7 @@ export default function PdfToLibroTool() {
           <PdfPreviewStrip
             file={file}
             selectedPdfPage={Number(refPdfPage) || 0}
+            selectedSide={refPageSide}
             onSelectPage={handleSelectPageFromViewer}
             mode={mode}
             pageRotations={pageRotations}
@@ -631,13 +632,13 @@ export default function PdfToLibroTool() {
             <div style={{ fontSize: '0.88rem', color: 'var(--accent)', fontWeight: 700 }}>
               {refPdfPage && refBookPage ? (
                 <div>
-                  ✓ En la página N° {refPdfPage} indicaste que ves el número impreso <span className="font-mono" style={{ fontSize: '1rem', color: '#0a0a0c', backgroundColor: 'var(--accent)', padding: '2px 8px', borderRadius: '4px', fontWeight: 800 }}>{refBookPage}</span>
+                  ✓ En la Hoja N° {refPdfPage} {mode === 'fotocopia' ? `(${refPageSide === 'izquierda' ? 'Mitad Izquierda' : 'Mitad Derecha'})` : ''} indicaste que ves el número impreso <span className="font-mono" style={{ fontSize: '1rem', color: '#0a0a0c', backgroundColor: 'var(--accent)', padding: '2px 8px', borderRadius: '4px', fontWeight: 800 }}>{refBookPage}</span>
                   <div style={{ fontSize: '0.75rem', color: 'var(--text-disabled)', fontWeight: 400, marginTop: '0.3rem' }}>
                     💡 Si escribiste mal o deseás corregir, hacé clic en cualquier página del visor arriba para cambiarlo.
                   </div>
                 </div>
               ) : (
-                <span>💡 Hacé clic en cualquier página del visor de arriba para indicar qué número impreso ves.</span>
+                <span>💡 Tocá la página individualizada arriba e ingresá qué número impreso ves.</span>
               )}
             </div>
           </div>

@@ -4,7 +4,7 @@ import { inyectarPDFjs } from './pdfToLibro';
 
 function LightboxModal({ 
   pdfDoc, 
-  pageNum, 
+  item, 
   numPages, 
   mode, 
   rotation = 0, 
@@ -29,13 +29,15 @@ function LightboxModal({
   const [loading, setLoading] = useState(true);
   const [bookNumberInput, setBookNumberInput] = useState(initialBookPage);
 
+  const { sheetNum, side, titleLabel } = item;
+
   useEffect(() => {
     let isCancelled = false;
     const renderHighRes = async () => {
       if (!pdfDoc) return;
       try {
         setLoading(true);
-        const page = await pdfDoc.getPage(pageNum);
+        const page = await pdfDoc.getPage(sheetNum);
         if (isCancelled) return;
 
         const rawViewport = page.getViewport({ scale: 1.2 });
@@ -46,20 +48,43 @@ function LightboxModal({
         const totalAngle = (autoAngle + rotation) % 360;
 
         const viewport = page.getViewport({ scale: 1.2, rotation: totalAngle });
-        const canvas = document.createElement('canvas');
-        canvas.width = viewport.width;
-        canvas.height = viewport.height;
-        const ctx = canvas.getContext('2d');
+        const tempCanvas = document.createElement('canvas');
+        tempCanvas.width = viewport.width;
+        tempCanvas.height = viewport.height;
+        const ctx = tempCanvas.getContext('2d');
 
         ctx.fillStyle = '#ffffff';
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
         await page.render({ canvasContext: ctx, viewport }).promise;
 
-        if (!isCancelled) {
-          setHighResUrl(canvas.toDataURL('image/jpeg', 0.9));
-          setLoading(false);
+        if (side === 'L' || side === 'R') {
+          const pct = (splitOffset !== undefined ? splitOffset : 50) / 100;
+          const splitX = Math.round(tempCanvas.width * pct);
+          const halfCanvas = document.createElement('canvas');
+
+          if (side === 'L') {
+            halfCanvas.width = splitX;
+            halfCanvas.height = tempCanvas.height;
+            halfCanvas.getContext('2d').drawImage(tempCanvas, 0, 0, splitX, tempCanvas.height, 0, 0, splitX, tempCanvas.height);
+          } else {
+            const rightW = tempCanvas.width - splitX;
+            halfCanvas.width = rightW;
+            halfCanvas.height = tempCanvas.height;
+            halfCanvas.getContext('2d').drawImage(tempCanvas, splitX, 0, rightW, tempCanvas.height, 0, 0, rightW, tempCanvas.height);
+          }
+
+          if (!isCancelled) {
+            setHighResUrl(halfCanvas.toDataURL('image/jpeg', 0.9));
+            setLoading(false);
+          }
+          halfCanvas.width = 0; tempCanvas.width = 0;
+        } else {
+          if (!isCancelled) {
+            setHighResUrl(tempCanvas.toDataURL('image/jpeg', 0.9));
+            setLoading(false);
+          }
+          tempCanvas.width = 0;
         }
-        canvas.width = 0; canvas.height = 0;
         page.cleanup();
       } catch (err) {
         console.error('Error al cargar pantalla completa:', err);
@@ -67,10 +92,10 @@ function LightboxModal({
     };
     renderHighRes();
     return () => { isCancelled = true; };
-  }, [pdfDoc, pageNum, mode, rotation]);
+  }, [pdfDoc, sheetNum, side, mode, rotation, splitOffset]);
 
   const handleConfirm = () => {
-    onSelect(pageNum, bookNumberInput);
+    onSelect(sheetNum, bookNumberInput, side);
     onClose();
   };
 
@@ -102,15 +127,15 @@ function LightboxModal({
         <X size={20} />
       </button>
 
-      {/* Título e Insignia de Posición con Mover Antes / Posición #X / Mover Después */}
+      {/* Título e Insignia de Posición */}
       <div style={{ color: '#fff', fontSize: '0.95rem', fontWeight: 600, marginBottom: '0.8rem', textAlign: 'center', display: 'flex', alignItems: 'center', gap: '0.8rem', flexWrap: 'wrap', justifyContent: 'center' }}>
-        <span style={{ color: 'var(--text-secondary)' }}>PDF Pág {pageNum}</span>
+        <span style={{ color: 'var(--text-secondary)' }}>{titleLabel}</span>
 
         {/* Botones de Mover con la Posición Actual en el medio */}
         {onMovePage && (
           <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.1)', padding: '3px 8px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-subtle)' }}>
             <button
-              onClick={() => onMovePage(pageNum, 'left', numPages)}
+              onClick={() => onMovePage(sheetNum, 'left', numPages)}
               disabled={isFirst}
               style={{
                 backgroundColor: 'rgba(255,255,255,0.15)',
@@ -135,7 +160,7 @@ function LightboxModal({
             </span>
 
             <button
-              onClick={() => onMovePage(pageNum, 'right', numPages)}
+              onClick={() => onMovePage(sheetNum, 'right', numPages)}
               disabled={isLast}
               style={{
                 backgroundColor: 'rgba(255,255,255,0.15)',
@@ -160,7 +185,7 @@ function LightboxModal({
         {/* Botón Tachito Eliminar / Restaurar */}
         {onDeletePage && (
           <button
-            onClick={() => onDeletePage(pageNum)}
+            onClick={() => onDeletePage(sheetNum)}
             style={{
               backgroundColor: isDeleted ? 'rgba(248,113,113,0.3)' : 'rgba(248,113,113,0.18)',
               border: '1px solid #F87171',
@@ -187,14 +212,13 @@ function LightboxModal({
       <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem', maxWidth: '95vw', marginBottom: '0.8rem' }}>
         <button
           onClick={onPrevPage}
-          disabled={pageNum <= 1}
           style={{
-            backgroundColor: pageNum <= 1 ? 'rgba(255,255,255,0.05)' : 'rgba(255,255,255,0.2)',
+            backgroundColor: 'rgba(255,255,255,0.2)',
             border: '1px solid var(--border-subtle)',
             borderRadius: 'var(--radius-sm)',
-            color: pageNum <= 1 ? 'rgba(255,255,255,0.2)' : '#fff',
+            color: '#fff',
             padding: '0.6rem 0.8rem',
-            cursor: pageNum <= 1 ? 'not-allowed' : 'pointer',
+            cursor: 'pointer',
             display: 'flex', alignItems: 'center', gap: '0.3rem', fontSize: '0.82rem', fontWeight: 600
           }}
         >
@@ -216,10 +240,10 @@ function LightboxModal({
           opacity: isDeleted ? 0.45 : 1
         }}>
           {loading ? (
-            <div style={{ color: '#000', padding: '2rem', fontSize: '0.9rem' }}>Cargando página...</div>
+            <div style={{ color: '#000', padding: '2rem', fontSize: '0.9rem' }}>Cargando página individual...</div>
           ) : (
             <div style={{ position: 'relative', display: 'inline-block' }}>
-              <img src={highResUrl} alt={`Página ${pageNum}`} style={{ maxHeight: '53vh', maxWidth: '100%', objectFit: 'contain' }} />
+              <img src={highResUrl} alt={titleLabel} style={{ maxHeight: '53vh', maxWidth: '100%', objectFit: 'contain' }} />
 
               {/* Marca "ELIMINADA" si aplica */}
               {isDeleted && (
@@ -256,14 +280,13 @@ function LightboxModal({
 
         <button
           onClick={onNextPage}
-          disabled={pageNum >= numPages}
           style={{
-            backgroundColor: pageNum >= numPages ? 'rgba(255,255,255,0.05)' : 'rgba(255,255,255,0.2)',
+            backgroundColor: 'rgba(255,255,255,0.2)',
             border: '1px solid var(--border-subtle)',
             borderRadius: 'var(--radius-sm)',
-            color: pageNum >= numPages ? 'rgba(255,255,255,0.2)' : '#fff',
+            color: '#fff',
             padding: '0.6rem 0.8rem',
-            cursor: pageNum >= numPages ? 'not-allowed' : 'pointer',
+            cursor: 'pointer',
             display: 'flex', alignItems: 'center', gap: '0.3rem', fontSize: '0.82rem', fontWeight: 600
           }}
         >
@@ -275,7 +298,7 @@ function LightboxModal({
       {mode === 'fotocopia' && !isFoliadoStep && !isDeleted && (
         <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', marginBottom: '0.8rem', backgroundColor: 'rgba(255,255,255,0.1)', padding: '0.4rem 1rem', borderRadius: 'var(--radius-sm)' }}>
           <button
-            onClick={() => onRotate && onRotate(pageNum, 180)}
+            onClick={() => onRotate && onRotate(sheetNum, 180)}
             style={{
               backgroundColor: 'var(--accent)', color: '#000', border: 'none', borderRadius: '4px',
               padding: '0.4rem 0.8rem', fontSize: '0.78rem', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.3rem'
@@ -286,9 +309,9 @@ function LightboxModal({
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', color: '#fff', fontSize: '0.78rem' }}>
             <span>Línea de corte:</span>
-            <button onClick={() => onAdjustSplit && onAdjustSplit(pageNum, Math.max(35, splitOffset - 2))} style={{ backgroundColor: 'rgba(255,255,255,0.2)', border: 'none', color: '#fff', padding: '2px 6px', borderRadius: '3px', cursor: 'pointer', fontWeight: 800 }}>◄</button>
+            <button onClick={() => onAdjustSplit && onAdjustSplit(sheetNum, Math.max(35, splitOffset - 2))} style={{ backgroundColor: 'rgba(255,255,255,0.2)', border: 'none', color: '#fff', padding: '2px 6px', borderRadius: '3px', cursor: 'pointer', fontWeight: 800 }}>◄</button>
             <span className="font-mono" style={{ color: '#F87171', fontWeight: 700 }}>{splitOffset}%</span>
-            <button onClick={() => onAdjustSplit && onAdjustSplit(pageNum, Math.min(65, splitOffset + 2))} style={{ backgroundColor: 'rgba(255,255,255,0.2)', border: 'none', color: '#fff', padding: '2px 6px', borderRadius: '3px', cursor: 'pointer', fontWeight: 800 }}>►</button>
+            <button onClick={() => onAdjustSplit && onAdjustSplit(sheetNum, Math.min(65, splitOffset + 2))} style={{ backgroundColor: 'rgba(255,255,255,0.2)', border: 'none', color: '#fff', padding: '2px 6px', borderRadius: '3px', cursor: 'pointer', fontWeight: 800 }}>►</button>
           </div>
         </div>
       )}
@@ -339,7 +362,7 @@ function LightboxModal({
 
 function ThumbnailCard({ 
   pdfDoc, 
-  pageNum, 
+  item, 
   positionIndex,
   isSelected, 
   onSelect, 
@@ -361,6 +384,8 @@ function ThumbnailCard({
   const [loading, setLoading] = useState(true);
   const cardRef = useRef(null);
 
+  const { sheetNum, side, titleLabel } = item;
+
   useEffect(() => {
     let isCancelled = false;
     let observer = null;
@@ -369,7 +394,7 @@ function ThumbnailCard({
       if (!pdfDoc) return;
       try {
         setLoading(true);
-        const page = await pdfDoc.getPage(pageNum);
+        const page = await pdfDoc.getPage(sheetNum);
         if (isCancelled) return;
 
         const rawViewport = page.getViewport({ scale: 0.25 });
@@ -381,23 +406,46 @@ function ThumbnailCard({
 
         const viewport = page.getViewport({ scale: 0.25, rotation: totalAngle });
 
-        const canvas = document.createElement('canvas');
-        canvas.width = viewport.width;
-        canvas.height = viewport.height;
-        const ctx = canvas.getContext('2d');
+        const tempCanvas = document.createElement('canvas');
+        tempCanvas.width = viewport.width;
+        tempCanvas.height = viewport.height;
+        const tempCtx = tempCanvas.getContext('2d');
 
-        ctx.fillStyle = '#ffffff';
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-        await page.render({ canvasContext: ctx, viewport }).promise;
+        tempCtx.fillStyle = '#ffffff';
+        tempCtx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
+        await page.render({ canvasContext: tempCtx, viewport }).promise;
 
-        if (!isCancelled) {
-          setThumbUrl(canvas.toDataURL('image/jpeg', 0.82));
-          setLoading(false);
+        if (side === 'L' || side === 'R') {
+          const pct = (splitOffset !== undefined ? splitOffset : 50) / 100;
+          const splitX = Math.round(tempCanvas.width * pct);
+          const halfCanvas = document.createElement('canvas');
+
+          if (side === 'L') {
+            halfCanvas.width = splitX;
+            halfCanvas.height = tempCanvas.height;
+            halfCanvas.getContext('2d').drawImage(tempCanvas, 0, 0, splitX, tempCanvas.height, 0, 0, splitX, tempCanvas.height);
+          } else {
+            const rightW = tempCanvas.width - splitX;
+            halfCanvas.width = rightW;
+            halfCanvas.height = tempCanvas.height;
+            halfCanvas.getContext('2d').drawImage(tempCanvas, splitX, 0, rightW, tempCanvas.height, 0, 0, rightW, tempCanvas.height);
+          }
+
+          if (!isCancelled) {
+            setThumbUrl(halfCanvas.toDataURL('image/jpeg', 0.82));
+            setLoading(false);
+          }
+          halfCanvas.width = 0; tempCanvas.width = 0;
+        } else {
+          if (!isCancelled) {
+            setThumbUrl(tempCanvas.toDataURL('image/jpeg', 0.82));
+            setLoading(false);
+          }
+          tempCanvas.width = 0;
         }
-        canvas.width = 0; canvas.height = 0;
         page.cleanup();
       } catch (err) {
-        console.error(`Error al renderizar thumbnail de pág ${pageNum}:`, err);
+        console.error(`Error al renderizar thumbnail:`, err);
       }
     };
 
@@ -419,7 +467,7 @@ function ThumbnailCard({
       isCancelled = true;
       if (observer && cardRef.current) observer.unobserve(cardRef.current);
     };
-  }, [pdfDoc, pageNum, mode, rotation]);
+  }, [pdfDoc, sheetNum, side, mode, rotation, splitOffset]);
 
   return (
     <div
@@ -444,7 +492,7 @@ function ThumbnailCard({
         <div style={{ display: 'flex', alignItems: 'center', gap: '2px' }}>
           {/* Botón Mover Antes */}
           <button
-            onClick={(e) => { e.stopPropagation(); onMovePage(pageNum, 'left', numPages); }}
+            onClick={(e) => { e.stopPropagation(); onMovePage(sheetNum, 'left', numPages); }}
             disabled={isFirst}
             title="Mover una posición antes (izquierda)"
             style={{
@@ -483,7 +531,7 @@ function ThumbnailCard({
 
           {/* Botón Mover Después */}
           <button
-            onClick={(e) => { e.stopPropagation(); onMovePage(pageNum, 'right', numPages); }}
+            onClick={(e) => { e.stopPropagation(); onMovePage(sheetNum, 'right', numPages); }}
             disabled={isLast}
             title="Mover una posición después (derecha)"
             style={{
@@ -505,7 +553,7 @@ function ThumbnailCard({
 
         {/* Botón Tachito Eliminar / Restaurar */}
         <button
-          onClick={(e) => { e.stopPropagation(); onDeletePage(pageNum); }}
+          onClick={(e) => { e.stopPropagation(); onDeletePage(sheetNum); }}
           title={isDeleted ? "Restaurar página" : "Eliminar esta página"}
           style={{
             backgroundColor: isDeleted ? '#F87171' : 'rgba(248, 113, 113, 0.15)',
@@ -524,7 +572,7 @@ function ThumbnailCard({
       </div>
 
       <div
-        onClick={() => onOpenLightbox(pageNum)}
+        onClick={() => onOpenLightbox(item)}
         style={{
           width: '142px',
           height: '148px',
@@ -543,7 +591,7 @@ function ThumbnailCard({
         {loading ? (
           <span style={{ fontSize: '0.65rem', color: 'var(--text-disabled)' }}>Cargando...</span>
         ) : (
-          <img src={thumbUrl} alt={`Página ${pageNum}`} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+          <img src={thumbUrl} alt={titleLabel} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
         )}
 
         {/* Overlay "ELIMINADA" en la tarjeta */}
@@ -600,14 +648,14 @@ function ThumbnailCard({
 
       <div style={{ marginTop: '0.3rem', width: '100%', textAlign: 'center' }}>
         <span style={{ fontSize: '0.7rem', color: isDeleted ? '#F87171' : 'var(--text-secondary)', fontWeight: 600 }}>
-          Pág {pageNum} {isDeleted ? '(Eliminada)' : ''}
+          {titleLabel} {isDeleted ? '(Eliminada)' : ''}
         </span>
 
         {/* Botón único Corregir Giro (180°) y Ajuste Fino de corte solo en Etapa 2 de Fotocopia */}
         {mode === 'fotocopia' && !isFoliadoStep && !isDeleted && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem', marginTop: '0.2rem' }}>
             <button
-              onClick={(e) => { e.stopPropagation(); onRotate(pageNum, 180); }}
+              onClick={(e) => { e.stopPropagation(); onRotate(sheetNum, 180); }}
               title="Corregir giro si la hoja quedó pata para arriba"
               style={{
                 backgroundColor: 'var(--bg-surface)',
@@ -629,7 +677,7 @@ function ThumbnailCard({
 
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '3px', backgroundColor: 'var(--bg-surface)', padding: '2px 4px', borderRadius: '3px', border: '1px solid var(--border-subtle)' }}>
               <button
-                onClick={(e) => { e.stopPropagation(); onAdjustSplit(pageNum, Math.max(35, splitOffset - 2)); }}
+                onClick={(e) => { e.stopPropagation(); onAdjustSplit(sheetNum, Math.max(35, splitOffset - 2)); }}
                 title="Mover línea de corte a la izquierda (-2%)"
                 style={{ background: 'none', border: 'none', color: '#F87171', fontWeight: 800, cursor: 'pointer', fontSize: '0.7rem', padding: '0 2px' }}
               >
@@ -639,7 +687,7 @@ function ThumbnailCard({
                 ✂ {splitOffset}%
               </span>
               <button
-                onClick={(e) => { e.stopPropagation(); onAdjustSplit(pageNum, Math.min(65, splitOffset + 2)); }}
+                onClick={(e) => { e.stopPropagation(); onAdjustSplit(sheetNum, Math.min(65, splitOffset + 2)); }}
                 title="Mover línea de corte a la derecha (+2%)"
                 style={{ background: 'none', border: 'none', color: '#F87171', fontWeight: 800, cursor: 'pointer', fontSize: '0.7rem', padding: '0 2px' }}
               >
@@ -656,6 +704,7 @@ function ThumbnailCard({
 export default function PdfPreviewStrip({ 
   file, 
   selectedPdfPage, 
+  selectedSide = 'derecha',
   onSelectPage, 
   mode, 
   pageRotations = {}, 
@@ -674,7 +723,7 @@ export default function PdfPreviewStrip({
   const [numPages, setNumPages] = useState(0);
   const [loadingDoc, setLoadingDoc] = useState(false);
   const [error, setError] = useState('');
-  const [lightboxPageNum, setLightboxPageNum] = useState(null);
+  const [lightboxItem, setLightboxItem] = useState(null);
   const containerRef = useRef(null);
 
   useEffect(() => {
@@ -735,7 +784,39 @@ export default function PdfPreviewStrip({
     ? pageOrder
     : Array.from({ length: numPages }, (_, i) => i + 1);
 
+  // Construir la lista de elementos (páginas enteras vs tarjetas cortadas en etapa 3)
+  let itemsToRender = [];
+  if (mode === 'fotocopia' && isFoliadoStep) {
+    effectivePageList.forEach((sheetNum) => {
+      itemsToRender.push({
+        id: `${sheetNum}_L`,
+        sheetNum,
+        side: 'L',
+        sideLabel: 'Izq',
+        titleLabel: `Hoja ${sheetNum} (Izq)`
+      });
+      itemsToRender.push({
+        id: `${sheetNum}_R`,
+        sheetNum,
+        side: 'R',
+        sideLabel: 'Der',
+        titleLabel: `Hoja ${sheetNum} (Der)`
+      });
+    });
+  } else {
+    effectivePageList.forEach((sheetNum) => {
+      itemsToRender.push({
+        id: String(sheetNum),
+        sheetNum,
+        side: null,
+        sideLabel: null,
+        titleLabel: `Pág ${sheetNum}`
+      });
+    });
+  }
+
   const activePagesCount = numPages - deletedPages.length;
+  const activeItemsCount = itemsToRender.filter(item => !deletedPages.includes(item.sheetNum)).length;
 
   return (
     <div style={{
@@ -749,16 +830,16 @@ export default function PdfPreviewStrip({
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
           <Eye size={16} color="var(--accent)" />
           <span style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-            Visor de páginas ({activePagesCount} activas / {numPages} totales)
+            Visor de páginas ({activeItemsCount} {isFoliadoStep && mode === 'fotocopia' ? 'páginas cortadas activas' : 'hojas activas'})
           </span>
           {deletedPages.length > 0 && (
             <span className="font-mono" style={{ fontSize: '0.72rem', backgroundColor: 'rgba(248,113,113,0.15)', color: '#F87171', padding: '0.15rem 0.5rem', borderRadius: 'var(--radius-full)', border: '1px solid #F87171', fontWeight: 700 }}>
-              {deletedPages.length} eliminadas
+              {deletedPages.length} descartadas
             </span>
           )}
         </div>
         <span style={{ fontSize: '0.72rem', color: 'var(--text-disabled)' }}>
-          Usa ◄ Antes / Después ► para mover posiciones, 🗑️ para eliminar hojas o 🔍 para ampliar.
+          Usa ◄ Antes / Después ► para mover posiciones, 🗑️ para eliminar o 🔍 para ampliar.
         </span>
       </div>
 
@@ -793,29 +874,35 @@ export default function PdfPreviewStrip({
               padding: '0.5rem 2rem', scrollBehavior: 'smooth', scrollbarWidth: 'thin'
             }}
           >
-            {effectivePageList.map((pageNum, index) => (
-              <ThumbnailCard
-                key={pageNum}
-                pdfDoc={pdfDoc}
-                pageNum={pageNum}
-                positionIndex={index + 1}
-                isSelected={selectedPdfPage === pageNum}
-                onSelect={onSelectPage}
-                mode={mode}
-                rotation={pageRotations[pageNum] || 0}
-                onRotate={onRotatePage}
-                splitOffset={pageSplitOffsets[pageNum] !== undefined ? pageSplitOffsets[pageNum] : 50}
-                onAdjustSplit={onAdjustSplitPage}
-                onOpenLightbox={(p) => setLightboxPageNum(p)}
-                isDeleted={deletedPages.includes(pageNum)}
-                onDeletePage={onDeletePage}
-                onMovePage={onMovePage}
-                numPages={numPages}
-                isFirst={index === 0}
-                isLast={index === effectivePageList.length - 1}
-                isFoliadoStep={isFoliadoStep}
-              />
-            ))}
+            {itemsToRender.map((item, index) => {
+              const isSelected = selectedPdfPage === item.sheetNum && (
+                !item.side || (item.side === 'L' && selectedSide === 'izquierda') || (item.side === 'R' && selectedSide === 'derecha')
+              );
+
+              return (
+                <ThumbnailCard
+                  key={item.id}
+                  pdfDoc={pdfDoc}
+                  item={item}
+                  positionIndex={index + 1}
+                  isSelected={isSelected}
+                  onSelect={onSelectPage}
+                  mode={mode}
+                  rotation={pageRotations[item.sheetNum] || 0}
+                  onRotate={onRotatePage}
+                  splitOffset={pageSplitOffsets[item.sheetNum] !== undefined ? pageSplitOffsets[item.sheetNum] : 50}
+                  onAdjustSplit={onAdjustSplitPage}
+                  onOpenLightbox={(it) => setLightboxItem(it)}
+                  isDeleted={deletedPages.includes(item.sheetNum)}
+                  onDeletePage={onDeletePage}
+                  onMovePage={onMovePage}
+                  numPages={numPages}
+                  isFirst={index === 0}
+                  isLast={index === itemsToRender.length - 1}
+                  isFoliadoStep={isFoliadoStep}
+                />
+              );
+            })}
           </div>
 
           {/* Botón Scroll Derecha */}
@@ -836,33 +923,33 @@ export default function PdfPreviewStrip({
       )}
 
       {/* MODAL LIGHTBOX PANTALLA COMPLETA */}
-      {lightboxPageNum && (
+      {lightboxItem && (
         <LightboxModal
           pdfDoc={pdfDoc}
-          pageNum={lightboxPageNum}
+          item={lightboxItem}
           numPages={numPages}
           mode={mode}
-          rotation={pageRotations[lightboxPageNum] || 0}
+          rotation={pageRotations[lightboxItem.sheetNum] || 0}
           onRotate={onRotatePage}
-          splitOffset={pageSplitOffsets[lightboxPageNum] !== undefined ? pageSplitOffsets[lightboxPageNum] : 50}
+          splitOffset={pageSplitOffsets[lightboxItem.sheetNum] !== undefined ? pageSplitOffsets[lightboxItem.sheetNum] : 50}
           onAdjustSplit={onAdjustSplitPage}
-          initialBookPage={selectedPdfPage === lightboxPageNum ? refBookPage : ''}
-          onClose={() => setLightboxPageNum(null)}
+          initialBookPage={selectedPdfPage === lightboxItem.sheetNum ? refBookPage : ''}
+          onClose={() => setLightboxItem(null)}
           onPrevPage={() => {
-            const idx = effectivePageList.indexOf(lightboxPageNum);
-            if (idx > 0) setLightboxPageNum(effectivePageList[idx - 1]);
+            const idx = itemsToRender.findIndex(it => it.id === lightboxItem.id);
+            if (idx > 0) setLightboxItem(itemsToRender[idx - 1]);
           }}
           onNextPage={() => {
-            const idx = effectivePageList.indexOf(lightboxPageNum);
-            if (idx < effectivePageList.length - 1) setLightboxPageNum(effectivePageList[idx + 1]);
+            const idx = itemsToRender.findIndex(it => it.id === lightboxItem.id);
+            if (idx < itemsToRender.length - 1) setLightboxItem(itemsToRender[idx + 1]);
           }}
-          onSelect={(pNum, bNum) => onSelectPage(pNum, bNum)}
-          isDeleted={deletedPages.includes(lightboxPageNum)}
+          onSelect={(sNum, bNum, sSide) => onSelectPage(sNum, bNum, sSide)}
+          isDeleted={deletedPages.includes(lightboxItem.sheetNum)}
           onDeletePage={onDeletePage}
           onMovePage={onMovePage}
-          positionIndex={effectivePageList.indexOf(lightboxPageNum) + 1}
-          isFirst={effectivePageList.indexOf(lightboxPageNum) === 0}
-          isLast={effectivePageList.indexOf(lightboxPageNum) === effectivePageList.length - 1}
+          positionIndex={itemsToRender.findIndex(it => it.id === lightboxItem.id) + 1}
+          isFirst={itemsToRender.findIndex(it => it.id === lightboxItem.id) === 0}
+          isLast={itemsToRender.findIndex(it => it.id === lightboxItem.id) === itemsToRender.length - 1}
           showFoliadoConfirm={showFoliadoConfirm}
           isFoliadoStep={isFoliadoStep}
         />
