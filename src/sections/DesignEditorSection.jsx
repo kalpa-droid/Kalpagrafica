@@ -1,12 +1,16 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Palette, Type, Square, Image as ImageIcon, Download, Printer, FileText, Trash2, ArrowUp, ArrowDown, Sparkles } from 'lucide-react';
+import { Palette, Type, Square, Image as ImageIcon, Download, Printer, FileText, Trash2, ArrowUp, ArrowDown, Sparkles, Wand2, Undo2, Sun, Contrast as ContrastIcon, Droplet, Focus } from 'lucide-react';
 import { Stage, Layer, Text, Rect, Circle, Image as KonvaImage, Transformer } from 'react-konva';
+import Konva from 'konva';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
+import ImageRetouchModal from '../components/ImageRetouchModal';
 
-// Helper de imagen Konva
+// Helper de imagen Konva — aplica filtros no-destructivos de Konva (brillo,
+// contraste, saturación, desenfoque) cacheando el nodo cada vez que cambian.
 function URLImage({ image, ...props }) {
   const [imgObj, setImgObj] = useState(null);
+  const shapeRef = useRef(null);
 
   useEffect(() => {
     if (!image.src) return;
@@ -16,8 +20,21 @@ function URLImage({ image, ...props }) {
     img.onload = () => setImgObj(img);
   }, [image.src]);
 
+  useEffect(() => {
+    if (!shapeRef.current) return;
+    shapeRef.current.cache();
+    shapeRef.current.getLayer()?.batchDraw();
+  }, [imgObj, props.brightness, props.contrast, props.saturation, props.blurRadius]);
+
   if (!imgObj) return null;
-  return <KonvaImage image={imgObj} {...props} />;
+  return (
+    <KonvaImage
+      ref={shapeRef}
+      image={imgObj}
+      filters={[Konva.Filters.Brighten, Konva.Filters.Contrast, Konva.Filters.HSL, Konva.Filters.Blur]}
+      {...props}
+    />
+  );
 }
 
 // Plantillas predefinidas
@@ -38,9 +55,24 @@ export default function DesignEditorSection() {
     { id: 'el-4', type: 'text', text: 'hola@kalpagrafica.com | +54 9 11 0000-0000', x: 40, y: 150, fontSize: 12, fill: '#9EA0A6', fontFamily: 'sans-serif' }
   ]);
   const [selectedId, setSelectedId] = useState(null);
+  const [retouchModalOpen, setRetouchModalOpen] = useState(false);
 
   const stageRef = useRef(null);
   const trRef = useRef(null);
+  const historyRef = useRef([]); // pila de snapshots de `elements` para Deshacer
+
+  // Envoltorio de setElements que guarda un snapshot previo en el historial
+  const mutateElements = (updater) => {
+    historyRef.current.push(elements);
+    if (historyRef.current.length > 30) historyRef.current.shift();
+    setElements(updater);
+  };
+
+  const undoLast = () => {
+    const prev = historyRef.current.pop();
+    if (!prev) return;
+    setElements(prev);
+  };
 
   // Vincular Transformer de Konva al elemento seleccionado
   useEffect(() => {
@@ -95,7 +127,12 @@ export default function DesignEditorSection() {
       x: preset.width / 2 - 60,
       y: preset.height / 2 - 60,
       width: 120,
-      height: 120
+      height: 120,
+      // Filtros no-destructivos (Konva.Filters) — 0 = sin efecto
+      brightness: 0,
+      contrast: 0,
+      saturation: 0,
+      blurRadius: 0
     };
     setElements((prev) => [...prev, newEl]);
     setSelectedId(newEl.id);
@@ -106,9 +143,16 @@ export default function DesignEditorSection() {
     setElements((prev) => prev.map((el) => (el.id === selectedId ? { ...el, [key]: value } : el)));
   };
 
+  // Igual que updateSelected pero guarda un snapshot para poder deshacer
+  // (se usa para cambios "pesados": reemplazo de imagen, eliminar elemento, etc.)
+  const updateSelectedWithHistory = (key, value) => {
+    if (!selectedId) return;
+    mutateElements((prev) => prev.map((el) => (el.id === selectedId ? { ...el, [key]: value } : el)));
+  };
+
   const deleteSelected = () => {
     if (!selectedId) return;
-    setElements((prev) => prev.filter((el) => el.id !== selectedId));
+    mutateElements((prev) => prev.filter((el) => el.id !== selectedId));
     setSelectedId(null);
   };
 
@@ -235,6 +279,14 @@ export default function DesignEditorSection() {
               <input type="file" accept="image/*" onChange={handleImageUpload} style={{ display: 'none' }} />
             </label>
           </div>
+
+          <h4 style={{ fontSize: '0.9rem', color: 'var(--accent)', fontWeight: 700, marginTop: '1.8rem', marginBottom: '1rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+            Historial
+          </h4>
+          <button className="btn btn-secondary btn-sm" onClick={undoLast} disabled={historyRef.current.length === 0} style={{ justifyContent: 'flex-start', gap: '0.6rem', width: '100%' }}>
+            <Undo2 size={16} />
+            <span>Deshacer</span>
+          </button>
 
           <h4 style={{ fontSize: '0.9rem', color: 'var(--accent)', fontWeight: 700, marginTop: '1.8rem', marginBottom: '1rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
             Fondo del Lienzo
@@ -426,6 +478,70 @@ export default function DesignEditorSection() {
                 </>
               )}
 
+              {/* Si es Imagen: retoque IA + filtros no-destructivos */}
+              {selectedElement.type === 'image' && (
+                <>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                    <button
+                      className="btn btn-secondary btn-sm"
+                      onClick={() => setRetouchModalOpen(true)}
+                      style={{ justifyContent: 'center', gap: '0.5rem' }}
+                    >
+                      <Wand2 size={15} />
+                      <span>Retocar (Borrador Mágico / Fondo)</span>
+                    </button>
+                  </div>
+
+                  <div style={{ paddingTop: '0.8rem', borderTop: '1px solid var(--border-subtle)' }}>
+                    <label style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '0.3rem', marginBottom: '0.3rem' }}>
+                      <Sun size={13} /> Brillo ({selectedElement.brightness ?? 0})
+                    </label>
+                    <input
+                      type="range" min={-1} max={1} step={0.05}
+                      value={selectedElement.brightness ?? 0}
+                      onChange={(e) => updateSelected('brightness', Number(e.target.value))}
+                      style={{ width: '100%', accentColor: 'var(--accent)' }}
+                    />
+                  </div>
+
+                  <div>
+                    <label style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '0.3rem', marginBottom: '0.3rem' }}>
+                      <ContrastIcon size={13} /> Contraste ({selectedElement.contrast ?? 0})
+                    </label>
+                    <input
+                      type="range" min={-100} max={100} step={1}
+                      value={selectedElement.contrast ?? 0}
+                      onChange={(e) => updateSelected('contrast', Number(e.target.value))}
+                      style={{ width: '100%', accentColor: 'var(--accent)' }}
+                    />
+                  </div>
+
+                  <div>
+                    <label style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '0.3rem', marginBottom: '0.3rem' }}>
+                      <Droplet size={13} /> Saturación ({selectedElement.saturation ?? 0})
+                    </label>
+                    <input
+                      type="range" min={-2} max={5} step={0.1}
+                      value={selectedElement.saturation ?? 0}
+                      onChange={(e) => updateSelected('saturation', Number(e.target.value))}
+                      style={{ width: '100%', accentColor: 'var(--accent)' }}
+                    />
+                  </div>
+
+                  <div>
+                    <label style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '0.3rem', marginBottom: '0.3rem' }}>
+                      <Focus size={13} /> Desenfoque ({selectedElement.blurRadius ?? 0})
+                    </label>
+                    <input
+                      type="range" min={0} max={20} step={1}
+                      value={selectedElement.blurRadius ?? 0}
+                      onChange={(e) => updateSelected('blurRadius', Number(e.target.value))}
+                      style={{ width: '100%', accentColor: 'var(--accent)' }}
+                    />
+                  </div>
+                </>
+              )}
+
               {/* Controles de Capas y Eliminación */}
               <div style={{ paddingTop: '1rem', borderTop: '1px solid var(--border-subtle)', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                 <div style={{ display: 'flex', gap: '0.5rem' }}>
@@ -447,6 +563,17 @@ export default function DesignEditorSection() {
         </div>
 
       </div>
+
+      {retouchModalOpen && selectedElement?.type === 'image' && (
+        <ImageRetouchModal
+          src={selectedElement.src}
+          onApply={(newSrc) => {
+            updateSelectedWithHistory('src', newSrc);
+            setRetouchModalOpen(false);
+          }}
+          onClose={() => setRetouchModalOpen(false)}
+        />
+      )}
     </section>
   );
 }
