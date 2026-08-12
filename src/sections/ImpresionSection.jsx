@@ -3,6 +3,7 @@ import { Printer, BookOpen, LayoutGrid, FileImage } from 'lucide-react';
 import PdfToLibroTool from './impresion/PdfToLibroTool';
 import MosaicoTool from './impresion/MosaicoTool';
 import PdfToPngTool from './impresion/PdfToPngTool';
+import ErrorBoundary from '../components/ErrorBoundary';
 
 export default function ImpresionSection({ activeTab: externalTab, onTabChange }) {
   const [internalTab, setInternalTab] = useState('libro');
@@ -74,9 +75,21 @@ export default function ImpresionSection({ activeTab: externalTab, onTabChange }
 
       {/* Render del tool activo */}
       <div style={{ maxWidth: '900px', margin: '0 auto' }}>
-        {activeTab === 'libro' && <PdfToLibroTool />}
-        {activeTab === 'mosaico' && <MosaicoTool />}
-        {activeTab === 'png' && <PdfToPngTool />}
+        {activeTab === 'libro' && (
+          <ErrorBoundary title="No se pudo procesar el PDF seleccionado">
+            <PdfToLibroTool />
+          </ErrorBoundary>
+        )}
+        {activeTab === 'mosaico' && (
+          <ErrorBoundary title="Problema en herramienta Mosaico">
+            <MosaicoTool />
+          </ErrorBoundary>
+        )}
+        {activeTab === 'png' && (
+          <ErrorBoundary title="Problema en herramienta PDF a PNG">
+            <PdfToPngTool />
+          </ErrorBoundary>
+        )}
       </div>
     </section>
   );

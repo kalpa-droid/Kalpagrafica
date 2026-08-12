@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { BookOpen, Download, AlertCircle, CheckCircle, FileCheck, Info, Upload, Palette, Layers, Edit3, ArrowRight, Check, Crop, Maximize2 } from 'lucide-react';
+import { BookOpen, Download, AlertCircle, CheckCircle, FileCheck, Info, Upload, Palette, Layers, Edit3, ArrowLeft, ArrowRight, Check, Crop, Maximize2 } from 'lucide-react';
 import { pdfToLibro, crearCanvasTapaCustom, crearCanvasContratapaCustom, getCoverCanvasSize } from './pdfToLibro';
 import PdfPreviewStrip from './PdfPreviewStrip';
 import A5ImageCropperModal from './A5ImageCropperModal';
+import ErrorBoundary from '../../components/ErrorBoundary';
 
 function PageSlot({ label, sub, side, highlight }) {
   const isRight = side === 'derecha';
@@ -610,22 +611,24 @@ export default function PdfToLibroTool() {
             </div>
           </div>
 
-          <PdfPreviewStrip
-            file={file}
-            selectedPdfPage={Number(refPdfPage) || 0}
-            onSelectPage={handleSelectPageFromViewer}
-            mode={mode}
-            pageRotations={pageRotations}
-            onRotatePage={handleRotatePage}
-            pageSplitOffsets={pageSplitOffsets}
-            onAdjustSplitPage={handleAdjustSplitPage}
-            refBookPage={refBookPage}
-            deletedPages={deletedPages}
-            onDeletePage={handleToggleDeletePage}
-            pageOrder={pageOrder}
-            onMovePage={handleMovePage}
-            showFoliadoConfirm={false}
-          />
+          <ErrorBoundary title="No se pudo renderizar la vista previa de este PDF">
+            <PdfPreviewStrip
+              file={file}
+              selectedPdfPage={Number(refPdfPage) || 0}
+              onSelectPage={handleSelectPageFromViewer}
+              mode={mode}
+              pageRotations={pageRotations}
+              onRotatePage={handleRotatePage}
+              pageSplitOffsets={pageSplitOffsets}
+              onAdjustSplitPage={handleAdjustSplitPage}
+              refBookPage={refBookPage}
+              deletedPages={deletedPages}
+              onDeletePage={handleToggleDeletePage}
+              pageOrder={pageOrder}
+              onMovePage={handleMovePage}
+              showFoliadoConfirm={false}
+            />
+          </ErrorBoundary>
 
           <div style={{ display: 'flex', gap: '0.8rem', marginTop: '1rem', flexWrap: 'wrap' }}>
             <button
@@ -666,24 +669,26 @@ export default function PdfToLibroTool() {
             </div>
           </div>
 
-          <PdfPreviewStrip
-            file={file}
-            selectedPdfPage={Number(refPdfPage) || 0}
-            selectedSide={refPageSide}
-            onSelectPage={handleSelectPageFromViewer}
-            mode={mode}
-            pageRotations={pageRotations}
-            onRotatePage={handleRotatePage}
-            pageSplitOffsets={pageSplitOffsets}
-            onAdjustSplitPage={handleAdjustSplitPage}
-            refBookPage={refBookPage}
-            deletedPages={deletedPages}
-            onDeletePage={handleToggleDeletePage}
-            pageOrder={pageOrder}
-            onMovePage={handleMovePage}
-            showFoliadoConfirm={true}
-            isFoliadoStep={true}
-          />
+          <ErrorBoundary title="No se pudo renderizar la vista previa de este PDF">
+            <PdfPreviewStrip
+              file={file}
+              selectedPdfPage={Number(refPdfPage) || 0}
+              selectedSide={refPageSide}
+              onSelectPage={handleSelectPageFromViewer}
+              mode={mode}
+              pageRotations={pageRotations}
+              onRotatePage={handleRotatePage}
+              pageSplitOffsets={pageSplitOffsets}
+              onAdjustSplitPage={handleAdjustSplitPage}
+              refBookPage={refBookPage}
+              deletedPages={deletedPages}
+              onDeletePage={handleToggleDeletePage}
+              pageOrder={pageOrder}
+              onMovePage={handleMovePage}
+              showFoliadoConfirm={true}
+              isFoliadoStep={true}
+            />
+          </ErrorBoundary>
 
           {/* INSIGNIA DE ESTADO DE FOLIADO */}
           <div style={{ backgroundColor: 'var(--bg-surface)', padding: '0.9rem 1.1rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-subtle)', marginBottom: '1rem' }}>
