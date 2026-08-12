@@ -1,8 +1,24 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { Eye, ChevronLeft, ChevronRight, CheckCircle2, RefreshCw, ZoomIn, X, Check } from 'lucide-react';
+import { Eye, ChevronLeft, ChevronRight, CheckCircle2, RefreshCw, ZoomIn, X, Check, Trash2, RotateCcw } from 'lucide-react';
 import { inyectarPDFjs } from './pdfToLibro';
 
-function LightboxModal({ pdfDoc, pageNum, numPages, mode, rotation = 0, onRotate, splitOffset = 50, onAdjustSplit, onSelect, onClose, onPrevPage, onNextPage, initialBookPage = '' }) {
+function LightboxModal({ 
+  pdfDoc, 
+  pageNum, 
+  numPages, 
+  mode, 
+  rotation = 0, 
+  onRotate, 
+  splitOffset = 50, 
+  onAdjustSplit, 
+  onSelect, 
+  onClose, 
+  onPrevPage, 
+  onNextPage, 
+  initialBookPage = '',
+  isDeleted = false,
+  onDeletePage
+}) {
   const [highResUrl, setHighResUrl] = useState(null);
   const [loading, setLoading] = useState(true);
   const [bookNumberInput, setBookNumberInput] = useState(initialBookPage);
@@ -75,16 +91,42 @@ function LightboxModal({ pdfDoc, pageNum, numPages, mode, rotation = 0, onRotate
           borderRadius: '50%', width: '36px', height: '36px',
           color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center'
         }}
+        title="Cerrar visor"
       >
         <X size={20} />
       </button>
 
-      {/* Título instructivo */}
-      <div style={{ color: '#fff', fontSize: '0.95rem', fontWeight: 600, marginBottom: '0.8rem', textAlign: 'center', display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+      {/* Título instructivo y Botón Eliminar en Header del Lightbox */}
+      <div style={{ color: '#fff', fontSize: '0.95rem', fontWeight: 600, marginBottom: '0.8rem', textAlign: 'center', display: 'flex', alignItems: 'center', gap: '0.8rem', flexWrap: 'wrap', justifyContent: 'center' }}>
         <span>Si no ves un número pasa a la siguiente</span>
         <span style={{ fontSize: '0.75rem', backgroundColor: 'rgba(255,255,255,0.15)', padding: '2px 8px', borderRadius: '10px', color: 'var(--accent)' }}>
           Pág {pageNum} de {numPages}
         </span>
+
+        {/* BOTÓN TACHITO PARA ELIMINAR / RESTAURAR PÁGINA */}
+        {onDeletePage && (
+          <button
+            onClick={() => onDeletePage(pageNum)}
+            style={{
+              backgroundColor: isDeleted ? 'rgba(248,113,113,0.3)' : 'rgba(248,113,113,0.18)',
+              border: '1px solid #F87171',
+              borderRadius: 'var(--radius-sm)',
+              color: '#F87171',
+              padding: '0.35rem 0.75rem',
+              cursor: 'pointer',
+              fontSize: '0.78rem',
+              fontWeight: 700,
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.4rem',
+              transition: 'all 0.2s ease'
+            }}
+            title={isDeleted ? "Restaurar esta página al PDF" : "Eliminar esta página del PDF"}
+          >
+            {isDeleted ? <RotateCcw size={14} /> : <Trash2 size={14} color="#F87171" />}
+            <span>{isDeleted ? 'Restaurar esta página' : 'Eliminar esta página'}</span>
+          </button>
+        )}
       </div>
 
       {/* Contenedor con Imagen y Flechas de Navegación laterales */}
@@ -116,7 +158,8 @@ function LightboxModal({ pdfDoc, pageNum, numPages, mode, rotation = 0, onRotate
           alignItems: 'center',
           justifyContent: 'center',
           padding: '8px',
-          position: 'relative'
+          position: 'relative',
+          opacity: isDeleted ? 0.45 : 1
         }}>
           {loading ? (
             <div style={{ color: '#000', padding: '2rem', fontSize: '0.9rem' }}>Cargando página...</div>
@@ -124,8 +167,27 @@ function LightboxModal({ pdfDoc, pageNum, numPages, mode, rotation = 0, onRotate
             <div style={{ position: 'relative', display: 'inline-block' }}>
               <img src={highResUrl} alt={`Página ${pageNum}`} style={{ maxHeight: '53vh', maxWidth: '100%', objectFit: 'contain' }} />
 
+              {/* Marca de Agua "ELIMINADA" en Lightbox */}
+              {isDeleted && (
+                <div style={{
+                  position: 'absolute',
+                  inset: 0,
+                  backgroundColor: 'rgba(248, 113, 113, 0.4)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: '#FFFFFF',
+                  fontWeight: 900,
+                  fontSize: '1.5rem',
+                  letterSpacing: '0.1em',
+                  textShadow: '0 2px 10px rgba(0,0,0,0.8)'
+                }}>
+                  PÁGINA ELIMINADA
+                </div>
+              )}
+
               {/* Línea de corte central en zoom si es Fotocopia */}
-              {mode === 'fotocopia' && (
+              {mode === 'fotocopia' && !isDeleted && (
                 <div style={{
                   position: 'absolute',
                   left: `${splitOffset}%`, top: 0, bottom: 0, width: 0,
@@ -156,7 +218,7 @@ function LightboxModal({ pdfDoc, pageNum, numPages, mode, rotation = 0, onRotate
       </div>
 
       {/* Barra de Ajustes de Fotocopia (Giro y Corte) si es modo Fotocopia */}
-      {mode === 'fotocopia' && (
+      {mode === 'fotocopia' && !isDeleted && (
         <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', marginBottom: '0.8rem', backgroundColor: 'rgba(255,255,255,0.1)', padding: '0.4rem 1rem', borderRadius: 'var(--radius-sm)' }}>
           <button
             onClick={() => onRotate && onRotate(pageNum, 180)}
@@ -178,48 +240,63 @@ function LightboxModal({ pdfDoc, pageNum, numPages, mode, rotation = 0, onRotate
       )}
 
       {/* Barra de Confirmación "¡Número encontrado!" */}
-      <div style={{
-        backgroundColor: 'var(--bg-surface-2)',
-        border: '1.5px solid var(--accent)',
-        borderRadius: 'var(--radius-md)',
-        padding: '0.8rem 1.2rem',
-        maxWidth: '480px',
-        width: '100%',
-        display: 'flex',
-        alignItems: 'center',
-        gap: '0.8rem',
-        justifyContent: 'space-between'
-      }}>
-        <div style={{ display: 'flex', gap: '0.6rem', alignItems: 'center' }}>
-          <span style={{ fontSize: '0.88rem', color: 'var(--text-primary)', fontWeight: 700 }}>
-            Veo el número:
-          </span>
-          <input
-            type="number"
-            min={1}
-            placeholder="ej. 1 o 8"
-            value={bookNumberInput}
-            onChange={(e) => setBookNumberInput(e.target.value)}
-            className="input font-mono"
-            style={{ width: '90px', fontSize: '1rem', textAlign: 'center', fontWeight: 800, color: 'var(--accent)' }}
-            autoFocus
-          />
-        </div>
+      {!isDeleted && (
+        <div style={{
+          backgroundColor: 'var(--bg-surface-2)',
+          border: '1.5px solid var(--accent)',
+          borderRadius: 'var(--radius-md)',
+          padding: '0.8rem 1.2rem',
+          maxWidth: '480px',
+          width: '100%',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '0.8rem',
+          justifyContent: 'space-between'
+        }}>
+          <div style={{ display: 'flex', gap: '0.6rem', alignItems: 'center' }}>
+            <span style={{ fontSize: '0.88rem', color: 'var(--text-primary)', fontWeight: 700 }}>
+              Veo el número:
+            </span>
+            <input
+              type="number"
+              min={1}
+              placeholder="ej. 1 o 8"
+              value={bookNumberInput}
+              onChange={(e) => setBookNumberInput(e.target.value)}
+              className="input font-mono"
+              style={{ width: '90px', fontSize: '1rem', textAlign: 'center', fontWeight: 800, color: 'var(--accent)' }}
+              autoFocus
+            />
+          </div>
 
-        <button
-          onClick={handleConfirm}
-          className="btn btn-primary"
-          style={{ padding: '0.55rem 1.2rem', fontSize: '0.88rem', fontWeight: 700 }}
-        >
-          <Check size={16} />
-          <span>¡Número encontrado!</span>
-        </button>
-      </div>
+          <button
+            onClick={handleConfirm}
+            className="btn btn-primary"
+            style={{ padding: '0.55rem 1.2rem', fontSize: '0.88rem', fontWeight: 700 }}
+          >
+            <Check size={16} />
+            <span>¡Número encontrado!</span>
+          </button>
+        </div>
+      )}
     </div>
   );
 }
 
-function ThumbnailCard({ pdfDoc, pageNum, isSelected, onSelect, mode, rotation = 0, onRotate, splitOffset = 50, onAdjustSplit, onOpenLightbox }) {
+function ThumbnailCard({ 
+  pdfDoc, 
+  pageNum, 
+  isSelected, 
+  onSelect, 
+  mode, 
+  rotation = 0, 
+  onRotate, 
+  splitOffset = 50, 
+  onAdjustSplit, 
+  onOpenLightbox,
+  isDeleted = false,
+  onDeletePage
+}) {
   const [thumbUrl, setThumbUrl] = useState(null);
   const [loading, setLoading] = useState(true);
   const cardRef = useRef(null);
@@ -289,22 +366,23 @@ function ThumbnailCard({ pdfDoc, pageNum, isSelected, onSelect, mode, rotation =
       ref={cardRef}
       style={{
         flexShrink: 0,
-        width: '125px',
+        width: '128px',
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
         padding: '0.4rem',
         borderRadius: 'var(--radius-sm)',
-        backgroundColor: isSelected ? 'rgba(186, 253, 193, 0.12)' : 'var(--bg-surface-2)',
-        border: `2px solid ${isSelected ? 'var(--accent)' : 'var(--border-subtle)'}`,
+        backgroundColor: isDeleted ? 'rgba(248, 113, 113, 0.15)' : (isSelected ? 'rgba(186, 253, 193, 0.12)' : 'var(--bg-surface-2)'),
+        border: `2px solid ${isDeleted ? '#F87171' : (isSelected ? 'var(--accent)' : 'var(--border-subtle)')}`,
         transition: 'all 0.15s ease',
-        boxShadow: isSelected ? '0 0 10px rgba(186, 253, 193, 0.3)' : 'none'
+        boxShadow: isSelected ? '0 0 10px rgba(186, 253, 193, 0.3)' : 'none',
+        position: 'relative'
       }}
     >
       <div
         onClick={() => onOpenLightbox(pageNum)}
         style={{
-          width: '112px',
+          width: '114px',
           height: '138px',
           backgroundColor: 'var(--bg-surface)',
           borderRadius: '3px',
@@ -314,7 +392,8 @@ function ThumbnailCard({ pdfDoc, pageNum, isSelected, onSelect, mode, rotation =
           overflow: 'hidden',
           position: 'relative',
           cursor: 'pointer',
-          border: '1px solid var(--border-subtle)'
+          border: '1px solid var(--border-subtle)',
+          opacity: isDeleted ? 0.45 : 1
         }}
       >
         {loading ? (
@@ -323,20 +402,72 @@ function ThumbnailCard({ pdfDoc, pageNum, isSelected, onSelect, mode, rotation =
           <img src={thumbUrl} alt={`Página ${pageNum}`} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
         )}
 
+        {/* BOTÓN TACHITO PARA ELIMINAR / RESTAURAR EN ESQUINA SUPERIOR IZQUIERDA */}
+        {onDeletePage && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onDeletePage(pageNum);
+            }}
+            title={isDeleted ? "Restaurar página" : "Eliminar esta página del PDF"}
+            style={{
+              position: 'absolute',
+              top: '4px',
+              left: '4px',
+              backgroundColor: isDeleted ? '#F87171' : 'rgba(0,0,0,0.7)',
+              border: '1px solid rgba(255,255,255,0.3)',
+              borderRadius: '4px',
+              padding: '3px 5px',
+              color: '#ffffff',
+              cursor: 'pointer',
+              zIndex: 5,
+              display: 'flex',
+              alignItems: 'center',
+              gap: '3px',
+              boxShadow: '0 2px 6px rgba(0,0,0,0.5)'
+            }}
+          >
+            <Trash2 size={11} color={isDeleted ? '#000000' : '#F87171'} />
+            {isDeleted && <span style={{ fontSize: '0.58rem', color: '#000000', fontWeight: 800 }}>Restaurar</span>}
+          </button>
+        )}
+
+        {/* Overlay "ELIMINADA" en la tarjeta */}
+        {isDeleted && (
+          <div style={{
+            position: 'absolute',
+            inset: 0,
+            backgroundColor: 'rgba(248, 113, 113, 0.35)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            color: '#FFFFFF',
+            fontWeight: 900,
+            fontSize: '0.72rem',
+            letterSpacing: '0.05em',
+            textShadow: '0 1px 4px rgba(0,0,0,0.9)',
+            zIndex: 4
+          }}>
+            ELIMINADA
+          </div>
+        )}
+
         {/* Overlay Botón Lupa Ampliar */}
-        <div style={{
-          position: 'absolute',
-          bottom: '4px', right: '4px',
-          backgroundColor: 'rgba(0,0,0,0.65)',
-          borderRadius: '3px', padding: '2px 4px',
-          display: 'flex', alignItems: 'center', gap: '2px',
-          color: '#fff', fontSize: '0.6rem'
-        }}>
-          <ZoomIn size={10} /> Ampliar
-        </div>
+        {!isDeleted && (
+          <div style={{
+            position: 'absolute',
+            bottom: '4px', right: '4px',
+            backgroundColor: 'rgba(0,0,0,0.65)',
+            borderRadius: '3px', padding: '2px 4px',
+            display: 'flex', alignItems: 'center', gap: '2px',
+            color: '#fff', fontSize: '0.6rem'
+          }}>
+            <ZoomIn size={10} /> Ampliar
+          </div>
+        )}
 
         {/* Línea de corte central (solo en modo Fotocopia) */}
-        {mode === 'fotocopia' && !loading && (
+        {mode === 'fotocopia' && !loading && !isDeleted && (
           <div style={{
             position: 'absolute',
             left: `${splitOffset}%`, top: 0, bottom: 0, width: 0,
@@ -346,7 +477,7 @@ function ThumbnailCard({ pdfDoc, pageNum, isSelected, onSelect, mode, rotation =
           </div>
         )}
 
-        {isSelected && (
+        {isSelected && !isDeleted && (
           <div style={{ position: 'absolute', top: '3px', right: '3px', backgroundColor: 'var(--accent)', borderRadius: '50%', padding: '2px', zIndex: 2 }}>
             <CheckCircle2 size={12} color="#000" />
           </div>
@@ -354,9 +485,12 @@ function ThumbnailCard({ pdfDoc, pageNum, isSelected, onSelect, mode, rotation =
       </div>
 
       <div style={{ marginTop: '0.3rem', width: '100%', textAlign: 'center' }}>
+        <span style={{ fontSize: '0.7rem', color: isDeleted ? '#F87171' : 'var(--text-secondary)', fontWeight: 600 }}>
+          Pág {pageNum} {isDeleted ? '(Eliminada)' : ''}
+        </span>
 
         {/* Botón único Corregir Giro (180°) y Ajuste Fino de corte para Fotocopia */}
-        {mode === 'fotocopia' && (
+        {mode === 'fotocopia' && !isDeleted && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem', marginTop: '0.2rem' }}>
             <button
               onClick={(e) => { e.stopPropagation(); onRotate(pageNum, 180); }}
@@ -405,7 +539,19 @@ function ThumbnailCard({ pdfDoc, pageNum, isSelected, onSelect, mode, rotation =
   );
 }
 
-export default function PdfPreviewStrip({ file, selectedPdfPage, onSelectPage, mode, pageRotations = {}, onRotatePage, pageSplitOffsets = {}, onAdjustSplitPage, refBookPage = '' }) {
+export default function PdfPreviewStrip({ 
+  file, 
+  selectedPdfPage, 
+  onSelectPage, 
+  mode, 
+  pageRotations = {}, 
+  onRotatePage, 
+  pageSplitOffsets = {}, 
+  onAdjustSplitPage, 
+  refBookPage = '',
+  deletedPages = [],
+  onDeletePage
+}) {
   const [pdfDoc, setPdfDoc] = useState(null);
   const [numPages, setNumPages] = useState(0);
   const [loadingDoc, setLoadingDoc] = useState(false);
@@ -466,6 +612,8 @@ export default function PdfPreviewStrip({ file, selectedPdfPage, onSelectPage, m
 
   if (!file) return null;
 
+  const activePagesCount = numPages - deletedPages.length;
+
   return (
     <div style={{
       backgroundColor: 'var(--bg-surface-2)',
@@ -475,14 +623,19 @@ export default function PdfPreviewStrip({ file, selectedPdfPage, onSelectPage, m
       marginBottom: '1.5rem'
     }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.8rem', flexWrap: 'wrap', gap: '0.5rem' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
           <Eye size={16} color="var(--accent)" />
           <span style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-            Hacé clic en la página donde veas un número de página del documento ({numPages} páginas)
+            Visor de páginas ({activePagesCount} activas / {numPages} totales)
           </span>
+          {deletedPages.length > 0 && (
+            <span className="font-mono" style={{ fontSize: '0.72rem', backgroundColor: 'rgba(248,113,113,0.15)', color: '#F87171', padding: '0.15rem 0.5rem', borderRadius: 'var(--radius-full)', border: '1px solid #F87171', fontWeight: 700 }}>
+              {deletedPages.length} eliminadas
+            </span>
+          )}
         </div>
         <span style={{ fontSize: '0.72rem', color: 'var(--text-disabled)' }}>
-          Hacé clic en cualquier página para ampliarla en pantalla completa e indicar el número impreso.
+          Hacé clic en el tachito 🗑️ para eliminar hojas o en la lupa 🔍 para ampliar.
         </span>
       </div>
 
@@ -530,6 +683,8 @@ export default function PdfPreviewStrip({ file, selectedPdfPage, onSelectPage, m
                 splitOffset={pageSplitOffsets[pageNum] !== undefined ? pageSplitOffsets[pageNum] : 50}
                 onAdjustSplit={onAdjustSplitPage}
                 onOpenLightbox={(p) => setLightboxPageNum(p)}
+                isDeleted={deletedPages.includes(pageNum)}
+                onDeletePage={onDeletePage}
               />
             ))}
           </div>
@@ -567,6 +722,8 @@ export default function PdfPreviewStrip({ file, selectedPdfPage, onSelectPage, m
           onPrevPage={() => setLightboxPageNum(prev => Math.max(1, prev - 1))}
           onNextPage={() => setLightboxPageNum(prev => Math.min(numPages, prev + 1))}
           onSelect={(pNum, bNum) => onSelectPage(pNum, bNum)}
+          isDeleted={deletedPages.includes(lightboxPageNum)}
+          onDeletePage={onDeletePage}
         />
       )}
     </div>

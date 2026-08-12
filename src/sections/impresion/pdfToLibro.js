@@ -170,7 +170,8 @@ async function procesarComoImagenes(file, mode, options = {}, onProgress) {
     pageSplitOffsets = {},
     customCover = null,
     customBackCover = null,
-    paperSize = 'A4'
+    paperSize = 'A4',
+    deletedPages = []
   } = options;
 
   const coverCanvasSize = getCoverCanvasSize(paperSize);
@@ -214,6 +215,10 @@ async function procesarComoImagenes(file, mode, options = {}, onProgress) {
   }
 
   for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+    // Si la página fue eliminada por el usuario desde el visor, la omitimos
+    if (deletedPages && deletedPages.includes(pageNum)) {
+      continue;
+    }
     if (onProgress) {
       const avance = 10 + Math.floor((pageNum / pdf.numPages) * 45);
       onProgress(`Procesando página ${pageNum} de ${pdf.numPages}...`, avance);

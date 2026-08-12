@@ -162,6 +162,7 @@ export default function PdfToLibroTool() {
   const [refPageSide, setRefPageSide] = useState('derecha'); // 'derecha' | 'izquierda'
   const [pageRotations, setPageRotations] = useState({});
   const [pageSplitOffsets, setPageSplitOffsets] = useState({});
+  const [deletedPages, setDeletedPages] = useState([]);
 
   // Opciones de Contratapa (Portada Posterior)
   const [hasBackCover, setHasBackCover] = useState(true);
@@ -201,6 +202,12 @@ export default function PdfToLibroTool() {
   const [progressPct, setProgressPct] = useState(0);
   const [success, setSuccess] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
+
+  const handleToggleDeletePage = (pageNum) => {
+    setDeletedPages(prev =>
+      prev.includes(pageNum) ? prev.filter(p => p !== pageNum) : [...prev, pageNum]
+    );
+  };
 
   // Generar vista previa en tiempo real de la Tapa Custom
   useEffect(() => {
@@ -365,7 +372,8 @@ export default function PdfToLibroTool() {
         pageSplitOffsets,
         customCover: customCoverConfig,
         customBackCover: customBackCoverConfig,
-        paperSize
+        paperSize,
+        deletedPages
       };
 
       const result = await pdfToLibro(file, mode, options, (msg, pct) => {
@@ -533,6 +541,8 @@ export default function PdfToLibroTool() {
             pageSplitOffsets={pageSplitOffsets}
             onAdjustSplitPage={handleAdjustSplitPage}
             refBookPage={refBookPage}
+            deletedPages={deletedPages}
+            onDeletePage={handleToggleDeletePage}
           />
 
           {activeStep === 2 && (
@@ -574,6 +584,8 @@ export default function PdfToLibroTool() {
               pageSplitOffsets={pageSplitOffsets}
               onAdjustSplitPage={handleAdjustSplitPage}
               refBookPage={refBookPage}
+              deletedPages={deletedPages}
+              onDeletePage={handleToggleDeletePage}
             />
           )}
 
