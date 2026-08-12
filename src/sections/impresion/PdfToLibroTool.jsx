@@ -459,12 +459,15 @@ export default function PdfToLibroTool() {
         ].map((s) => (
           <div
             key={s.num}
+            onClick={() => file && setActiveStep(s.num)}
             style={{
-              flex: 1, minWidth: '90px', padding: '0.5rem 0.6rem', textAlign: 'center',
+              flex: 1, minWidth: '90px', padding: '0.55rem 0.6rem', textAlign: 'center',
               borderRadius: 'var(--radius-sm)', fontSize: '0.78rem', fontWeight: 700,
               backgroundColor: activeStep === s.num ? 'var(--accent)' : activeStep > s.num ? 'rgba(186,253,193,0.15)' : 'var(--bg-surface-2)',
               color: activeStep === s.num ? '#000' : activeStep > s.num ? 'var(--accent)' : 'var(--text-disabled)',
-              border: `1px solid ${activeStep === s.num ? 'var(--accent)' : activeStep > s.num ? 'var(--accent)' : 'var(--border-subtle)'}`
+              border: `1px solid ${activeStep === s.num ? 'var(--accent)' : activeStep > s.num ? 'var(--accent)' : 'var(--border-subtle)'}`,
+              cursor: file ? 'pointer' : 'default',
+              transition: 'all 0.15s ease'
             }}
           >
             {activeStep > s.num ? `✓ ${s.label}` : s.label}
@@ -473,67 +476,75 @@ export default function PdfToLibroTool() {
       </div>
 
       {/* ETAPA 1: CARGA DE ARCHIVO Y SELECTOR DE FORMATO */}
-      <div style={{ marginBottom: '1.5rem', backgroundColor: 'var(--bg-surface-2)', padding: '1.2rem', borderRadius: 'var(--radius-md)', border: `1px solid ${activeStep === 1 ? 'var(--accent)' : 'var(--border-subtle)'}` }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.8rem' }}>
-          <label style={{ fontSize: '0.88rem', color: 'var(--accent)', fontWeight: 700 }}>
-            1. Subir archivo PDF y elegir formato de origen:
-          </label>
-          {activeStep > 1 && (
-            <button onClick={() => setActiveStep(1)} style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
-              <Edit3 size={12} /> Editar
+      {activeStep === 1 && (
+        <div style={{ marginBottom: '1.5rem', backgroundColor: 'var(--bg-surface-2)', padding: '1.2rem', borderRadius: 'var(--radius-md)', border: '1.5px solid var(--accent)' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.8rem' }}>
+            <label style={{ fontSize: '0.88rem', color: 'var(--accent)', fontWeight: 700 }}>
+              1. Subir archivo PDF y elegir formato de origen:
+            </label>
+          </div>
+
+          <div
+            onClick={() => document.getElementById('pdf-libro-input')?.click()}
+            style={{
+              border: '1.5px dashed var(--border-strong)',
+              borderRadius: 'var(--radius-md)',
+              padding: '1.5rem',
+              textAlign: 'center',
+              cursor: 'pointer',
+              backgroundColor: 'var(--bg-surface)',
+              marginBottom: '1rem'
+            }}
+          >
+            <input id="pdf-libro-input" type="file" accept="application/pdf" onChange={handleFileChange} style={{ display: 'none' }} />
+            <BookOpen size={28} color="var(--accent)" style={{ marginBottom: '0.5rem' }} />
+            <div style={{ fontSize: '0.9rem', color: 'var(--text-primary)', fontWeight: 600 }}>
+              {file ? file.name : 'Arrastrá tu PDF o hacé clic para seleccionar'}
+            </div>
+            <div style={{ fontSize: '0.75rem', color: 'var(--text-disabled)', marginTop: '0.3rem' }}>
+              {file ? `${(file.size / (1024 * 1024)).toFixed(2)} MB` : 'Soporta PDFs de cualquier número de páginas'}
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', marginBottom: '1rem' }}>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem', color: 'var(--text-primary)', cursor: 'pointer' }}>
+              <input type="radio" name="mode" value="normal" checked={mode === 'normal'} onChange={() => { setMode('normal'); if (file) setActiveStep(2); }} style={{ accentColor: 'var(--accent)' }} />
+              <span>PDF Normal (Páginas individuales)</span>
+            </label>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem', color: 'var(--text-primary)', cursor: 'pointer' }}>
+              <input type="radio" name="mode" value="fotocopia" checked={mode === 'fotocopia'} onChange={() => { setMode('fotocopia'); if (file) setActiveStep(2); }} style={{ accentColor: 'var(--accent)' }} />
+              <span>Fotocopia de Libro Abierto (Doble página por hoja A4)</span>
+            </label>
+          </div>
+
+          <div style={{ paddingTop: '0.8rem', borderTop: '1px dashed var(--border-subtle)', marginBottom: '1rem' }}>
+            <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '0.5rem' }}>
+              ¿En qué tamaño de papel vas a imprimir? (define el tamaño final de tu libro y el de la tapa/contratapa)
+            </span>
+            <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem', color: 'var(--text-primary)', cursor: 'pointer' }}>
+                <input type="radio" name="paperSize" value="A4" checked={paperSize === 'A4'} onChange={() => setPaperSize('A4')} style={{ accentColor: 'var(--accent)' }} />
+                <span>Papel A4 <span style={{ color: 'var(--text-disabled)' }}>→ libro final tamaño A5</span></span>
+              </label>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem', color: 'var(--text-primary)', cursor: 'pointer' }}>
+                <input type="radio" name="paperSize" value="A3" checked={paperSize === 'A3'} onChange={() => setPaperSize('A3')} style={{ accentColor: 'var(--accent)' }} />
+                <span>Papel A3 <span style={{ color: 'var(--text-disabled)' }}>→ libro final tamaño A4</span></span>
+              </label>
+            </div>
+          </div>
+
+          {file && (
+            <button
+              className="btn btn-primary"
+              onClick={() => setActiveStep(2)}
+              style={{ width: '100%', justifyContent: 'center' }}
+            >
+              <Check size={16} />
+              <span>✓ Pasar a Preparar Páginas (Paso 2) ►</span>
             </button>
           )}
         </div>
-
-        <div
-          onClick={() => document.getElementById('pdf-libro-input')?.click()}
-          style={{
-            border: '1.5px dashed var(--border-strong)',
-            borderRadius: 'var(--radius-md)',
-            padding: '1.5rem',
-            textAlign: 'center',
-            cursor: 'pointer',
-            backgroundColor: 'var(--bg-surface)',
-            marginBottom: '1rem'
-          }}
-        >
-          <input id="pdf-libro-input" type="file" accept="application/pdf" onChange={handleFileChange} style={{ display: 'none' }} />
-          <BookOpen size={28} color="var(--accent)" style={{ marginBottom: '0.5rem' }} />
-          <div style={{ fontSize: '0.9rem', color: 'var(--text-primary)', fontWeight: 600 }}>
-            {file ? file.name : 'Arrastrá tu PDF o hacé clic para seleccionar'}
-          </div>
-          <div style={{ fontSize: '0.75rem', color: 'var(--text-disabled)', marginTop: '0.3rem' }}>
-            {file ? `${(file.size / (1024 * 1024)).toFixed(2)} MB` : 'Soporta PDFs de cualquier número de páginas'}
-          </div>
-        </div>
-
-        <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', marginBottom: '1rem' }}>
-          <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem', color: 'var(--text-primary)', cursor: 'pointer' }}>
-            <input type="radio" name="mode" value="normal" checked={mode === 'normal'} onChange={() => { setMode('normal'); if (file) setActiveStep(2); }} style={{ accentColor: 'var(--accent)' }} />
-            <span>PDF Normal (Páginas individuales)</span>
-          </label>
-          <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem', color: 'var(--text-primary)', cursor: 'pointer' }}>
-            <input type="radio" name="mode" value="fotocopia" checked={mode === 'fotocopia'} onChange={() => { setMode('fotocopia'); if (file) setActiveStep(2); }} style={{ accentColor: 'var(--accent)' }} />
-            <span>Fotocopia de Libro Abierto (Doble página por hoja A4)</span>
-          </label>
-        </div>
-
-        <div style={{ paddingTop: '0.8rem', borderTop: '1px dashed var(--border-subtle)' }}>
-          <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '0.5rem' }}>
-            ¿En qué tamaño de papel vas a imprimir? (define el tamaño final de tu libro y el de la tapa/contratapa)
-          </span>
-          <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
-            <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem', color: 'var(--text-primary)', cursor: 'pointer' }}>
-              <input type="radio" name="paperSize" value="A4" checked={paperSize === 'A4'} onChange={() => setPaperSize('A4')} style={{ accentColor: 'var(--accent)' }} />
-              <span>Papel A4 <span style={{ color: 'var(--text-disabled)' }}>→ libro final tamaño A5</span></span>
-            </label>
-            <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem', color: 'var(--text-primary)', cursor: 'pointer' }}>
-              <input type="radio" name="paperSize" value="A3" checked={paperSize === 'A3'} onChange={() => setPaperSize('A3')} style={{ accentColor: 'var(--accent)' }} />
-              <span>Papel A3 <span style={{ color: 'var(--text-disabled)' }}>→ libro final tamaño A4</span></span>
-            </label>
-          </div>
-        </div>
-      </div>
+      )}
 
       {!file && (
         <div style={{ backgroundColor: 'var(--bg-surface-2)', padding: '1.5rem', borderRadius: 'var(--radius-md)', border: '1px dashed var(--border-subtle)', textAlign: 'center', marginBottom: '1.5rem' }}>
@@ -545,17 +556,12 @@ export default function PdfToLibroTool() {
       )}
 
       {/* ETAPA 2: PREPARACIÓN DE PÁGINAS (ORGANIZAR ⬅️ ➡️, ELIMINAR 🗑️, GIRAR 🔄 Y CORTAR ✂️) */}
-      {file && activeStep >= 2 && (
-        <div style={{ marginBottom: '1.5rem', backgroundColor: 'var(--bg-surface-2)', padding: '1.2rem', borderRadius: 'var(--radius-md)', border: `1.5px solid ${activeStep === 2 ? 'var(--accent)' : 'var(--border-subtle)'}` }}>
+      {file && activeStep === 2 && (
+        <div style={{ marginBottom: '1.5rem', backgroundColor: 'var(--bg-surface-2)', padding: '1.2rem', borderRadius: 'var(--radius-md)', border: '1.5px solid var(--accent)' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.8rem' }}>
             <div style={{ fontSize: '0.88rem', color: 'var(--accent)', fontWeight: 700 }}>
               2. Organizar y Ajustar Páginas (Reordenar ⬅️ ➡️, Eliminar 🗑️, Girar 🔄 y Cortar ✂️)
             </div>
-            {activeStep > 2 && (
-              <button onClick={() => setActiveStep(2)} style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
-                <Edit3 size={12} /> Editar
-              </button>
-            )}
           </div>
 
           <PdfPreviewStrip
@@ -575,31 +581,34 @@ export default function PdfToLibroTool() {
             showFoliadoConfirm={false}
           />
 
-          {activeStep === 2 && (
+          <div style={{ display: 'flex', gap: '0.8rem', marginTop: '1rem', flexWrap: 'wrap' }}>
+            <button
+              className="btn btn-secondary"
+              onClick={() => setActiveStep(1)}
+              style={{ flex: 1, minWidth: '160px', justifyContent: 'center' }}
+            >
+              <ArrowLeft size={16} />
+              <span>◄ Volver a Paso 1 (Archivo)</span>
+            </button>
             <button
               className="btn btn-primary"
               onClick={() => setActiveStep(3)}
-              style={{ width: '100%', justifyContent: 'center', marginTop: '0.8rem' }}
+              style={{ flex: 2, minWidth: '220px', justifyContent: 'center' }}
             >
               <Check size={16} />
-              <span>✓ Confirmar Organización de Páginas y Pasar a Foliado</span>
+              <span>✓ Confirmar Organización y Pasar a Foliado (Paso 3) ►</span>
             </button>
-          )}
+          </div>
         </div>
       )}
 
-      {/* ETAPA 3: FOLIADO DE REFERENCIA (IDENTIFICAR 1 SOLA PÁGINA) */}
-      {file && activeStep >= 3 && (
-        <div style={{ marginBottom: '1.5rem', backgroundColor: 'var(--bg-surface-2)', padding: '1.2rem', borderRadius: 'var(--radius-md)', border: `1.5px solid ${activeStep === 3 ? 'var(--accent)' : 'var(--border-subtle)'}` }}>
+      {/* ETAPA 3: FOLIADO DE REFERENCIA (IDENTIFICAR 1 SOLA PÁGINA CORTADA) */}
+      {file && activeStep === 3 && (
+        <div style={{ marginBottom: '1.5rem', backgroundColor: 'var(--bg-surface-2)', padding: '1.2rem', borderRadius: 'var(--radius-md)', border: '1.5px solid var(--accent)' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.8rem' }}>
             <div style={{ fontSize: '0.88rem', color: 'var(--accent)', fontWeight: 700 }}>
               3. Foliado de Referencia (Identificar 1 SOLA página con número impreso)
             </div>
-            {activeStep > 3 && (
-              <button onClick={() => setActiveStep(3)} style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
-                <Edit3 size={12} /> Editar
-              </button>
-            )}
           </div>
 
           <div style={{ backgroundColor: 'var(--bg-surface)', padding: '0.9rem 1.1rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-subtle)', marginBottom: '1rem' }}>
@@ -646,32 +655,35 @@ export default function PdfToLibroTool() {
             </div>
           </div>
 
-          {activeStep === 3 && (
+          <div style={{ display: 'flex', gap: '0.8rem', marginTop: '1rem', flexWrap: 'wrap' }}>
+            <button
+              className="btn btn-secondary"
+              onClick={() => setActiveStep(2)}
+              style={{ flex: 1, minWidth: '160px', justifyContent: 'center' }}
+            >
+              <ArrowLeft size={16} />
+              <span>◄ Volver a Paso 2 (Organizar Páginas)</span>
+            </button>
             <button
               className="btn btn-primary"
               onClick={() => setActiveStep(4)}
               disabled={!refPdfPage || !refBookPage}
-              style={{ width: '100%', justifyContent: 'center' }}
+              style={{ flex: 2, minWidth: '220px', justifyContent: 'center' }}
             >
               <Check size={16} />
-              <span>✓ Confirmar Foliación y Pasar a Carátula</span>
+              <span>✓ Confirmar Foliación y Pasar a Carátula (Paso 4) ►</span>
             </button>
-          )}
+          </div>
         </div>
       )}
 
       {/* ETAPA 4: GESTIÓN DE TAPA Y CONTRATAPA EXTERIOR */}
-      {file && activeStep >= 4 && (
-        <div style={{ marginBottom: '1.5rem', backgroundColor: 'var(--bg-surface-2)', padding: '1.2rem', borderRadius: 'var(--radius-md)', border: `1.5px solid ${activeStep === 4 ? 'var(--accent)' : 'var(--border-subtle)'}` }}>
+      {file && activeStep === 4 && (
+        <div style={{ marginBottom: '1.5rem', backgroundColor: 'var(--bg-surface-2)', padding: '1.2rem', borderRadius: 'var(--radius-md)', border: '1.5px solid var(--accent)' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.8rem' }}>
             <div style={{ fontSize: '0.88rem', color: 'var(--accent)', fontWeight: 700 }}>
-              {mode === 'fotocopia' ? '4' : '3'}. Gestión de Tapa y Contratapa Exterior del Libro
+              4. Gestión de Tapa y Contratapa Exterior del Libro
             </div>
-            {activeStep > 4 && (
-              <button onClick={() => setActiveStep(4)} style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
-                <Edit3 size={12} /> Editar
-              </button>
-            )}
           </div>
 
           {/* SECCIÓN A: PORTADA EXTERIOR (TAPA) */}
@@ -926,22 +938,43 @@ export default function PdfToLibroTool() {
             )}
           </div>
 
-          {activeStep === 4 && (
+          <div style={{ display: 'flex', gap: '0.8rem', marginTop: '1rem', flexWrap: 'wrap' }}>
+            <button
+              className="btn btn-secondary"
+              onClick={() => setActiveStep(3)}
+              style={{ flex: 1, minWidth: '160px', justifyContent: 'center' }}
+            >
+              <ArrowLeft size={16} />
+              <span>◄ Volver a Paso 3 (Foliado)</span>
+            </button>
             <button
               className="btn btn-primary"
               onClick={() => setActiveStep(5)}
-              style={{ width: '100%', justifyContent: 'center' }}
+              style={{ flex: 2, minWidth: '220px', justifyContent: 'center' }}
             >
               <Check size={16} />
-              <span>✓ Confirmar Tapas y Ver Maquetación</span>
+              <span>✓ Confirmar Tapas y Pasar a Generar (Paso 5) ►</span>
             </button>
-          )}
+          </div>
         </div>
       )}
 
       {/* ETAPA 5: DIAGRAMA TÉCNICO Y BOTÓN GENERAR */}
-      {file && activeStep >= 5 && (
-        <>
+      {file && activeStep === 5 && (
+        <div style={{ marginBottom: '1.5rem', backgroundColor: 'var(--bg-surface-2)', padding: '1.2rem', borderRadius: 'var(--radius-md)', border: '1.5px solid var(--accent)' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+            <div style={{ fontSize: '0.88rem', color: 'var(--accent)', fontWeight: 700 }}>
+              5. Maquetación Final y Generación de PDF Imprimible
+            </div>
+            <button
+              className="btn btn-secondary btn-sm"
+              onClick={() => setActiveStep(4)}
+              style={{ gap: '0.3rem', fontSize: '0.78rem' }}
+            >
+              <ArrowLeft size={14} /> ◄ Volver a Paso 4 (Carátula)
+            </button>
+          </div>
+
           <BookletDiagram
             mode={mode}
             hasCover={hasCover}
@@ -980,16 +1013,26 @@ export default function PdfToLibroTool() {
             </div>
           )}
 
-          <button
-            className="btn btn-primary"
-            onClick={handleGenerate}
-            disabled={!file || loading}
-            style={{ width: '100%', justifyContent: 'center', padding: '0.8rem', fontSize: '1rem' }}
-          >
-            <Download size={20} />
-            <span>{loading ? 'Procesando Libro...' : 'Generar PDF Libro'}</span>
-          </button>
-        </>
+          <div style={{ display: 'flex', gap: '0.8rem', marginTop: '1rem', flexWrap: 'wrap' }}>
+            <button
+              className="btn btn-secondary"
+              onClick={() => setActiveStep(4)}
+              style={{ flex: 1, minWidth: '160px', justifyContent: 'center' }}
+            >
+              <ArrowLeft size={16} />
+              <span>◄ Volver a Paso 4 (Carátula)</span>
+            </button>
+            <button
+              className="btn btn-primary"
+              onClick={handleGenerate}
+              disabled={!file || loading}
+              style={{ flex: 2, minWidth: '220px', justifyContent: 'center', padding: '0.8rem', fontSize: '1rem' }}
+            >
+              <Download size={20} />
+              <span>{loading ? 'Generando PDF Libro...' : 'DESCARGAR PDF LIBRO IMPRIMIBLE'}</span>
+            </button>
+          </div>
+        </div>
       )}
 
       {/* MODAL RECORTADOR DE IMAGEN A5 EN PANTALLA COMPLETA */}
