@@ -8,9 +8,16 @@ import AssetsTab from './tools/AssetsTab';
 import TypeTab from './tools/TypeTab';
 import CliTab from './tools/CliTab';
 
-export default function ToolsSection() {
-  const [activeTab, setActiveTab] = useState('colour');
+export default function ToolsSection({ activeTab: externalTab, onTabChange }) {
+  const [internalTab, setInternalTab] = useState('colour');
   const [copiedCode, setCopiedCode] = useState(null);
+
+  const activeTab = externalTab || internalTab;
+
+  const setActiveTab = (tabId) => {
+    setInternalTab(tabId);
+    if (onTabChange) onTabChange(tabId);
+  };
 
   const copyToClipboard = (text, id) => {
     navigator.clipboard.writeText(text);

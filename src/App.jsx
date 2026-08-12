@@ -3,6 +3,7 @@ import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import BriefForm from './components/BriefForm';
 import ProductModal from './components/ProductModal';
+import ToolDrawer from './components/ToolDrawer';
 
 // Code-Splitting: Carga diferida por secciones para un primer render ultra rápido
 const LogoBookSection = lazy(() => import('./sections/LogoBookSection'));
@@ -47,6 +48,8 @@ export default function App() {
   const [activeSection, setActiveSection] = useState('logobook');
   const [isBriefOpen, setIsBriefOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState(null);
+  const [isToolDrawerOpen, setIsToolDrawerOpen] = useState(false);
+  const [selectedToolTab, setSelectedToolTab] = useState('colour');
 
   const handleNavigate = (id) => {
     setActiveSection(id);
@@ -60,10 +63,21 @@ export default function App() {
     }
   };
 
+  const handleSelectTool = (toolId, sectionId) => {
+    if (sectionId === 'herramientas') {
+      setSelectedToolTab(toolId);
+    }
+    handleNavigate(sectionId);
+  };
+
   return (
-    <div className="blueprint-bg" style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', backgroundColor: 'var(--bg-base)', color: 'var(--text-primary)' }}>
+    <div className="blueprint-bg" style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', backgroundColor: 'var(--bg-base)', color: 'var(--text-primary)', overflowX: 'hidden' }}>
       {/* Header Navbar */}
-      <Navbar activeSection={activeSection} onNavigate={handleNavigate} />
+      <Navbar 
+        activeSection={activeSection} 
+        onNavigate={handleNavigate} 
+        onOpenToolDrawer={() => setIsToolDrawerOpen(true)}
+      />
 
       {/* Main Content Area con Suspense Fallback */}
       <main style={{ flex: 1 }}>
@@ -73,7 +87,7 @@ export default function App() {
           </div>
 
           <div id="herramientas">
-            <ToolsSection />
+            <ToolsSection activeTab={selectedToolTab} onTabChange={setSelectedToolTab} />
           </div>
 
           <div id="impresion">
@@ -96,6 +110,13 @@ export default function App() {
 
       {/* Global Footer */}
       <Footer onNavigate={handleNavigate} />
+
+      {/* Side Utility Tool Drawer */}
+      <ToolDrawer
+        isOpen={isToolDrawerOpen}
+        onClose={() => setIsToolDrawerOpen(false)}
+        onSelectTool={handleSelectTool}
+      />
 
       {/* Interactive Modals */}
       <BriefForm isOpen={isBriefOpen} onClose={() => setIsBriefOpen(false)} />

@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Menu, X } from 'lucide-react';
+import { Menu, X, Wrench } from 'lucide-react';
 import { KalpaLogoHorizontal, KalpaLogoIcon } from './KalpaLogos';
 
-export default function Navbar({ activeSection, onNavigate }) {
+export default function Navbar({ activeSection, onNavigate, onOpenToolDrawer }) {
   const [scrolled, setScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
@@ -106,8 +106,31 @@ export default function Navbar({ activeSection, onNavigate }) {
           </nav>
         </div>
 
-        {/* Mobile Menu Toggle */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem' }}>
+        {/* Right Side Actions: Panel Lateral de Herramientas + Mobile Menu Toggle */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+          <button
+            onClick={onOpenToolDrawer}
+            title="Abrir Panel de Acceso Rápido a Herramientas"
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '0.45rem',
+              backgroundColor: 'var(--accent-muted)',
+              border: '1px solid rgba(186, 253, 193, 0.35)',
+              color: 'var(--accent)',
+              borderRadius: 'var(--radius-md)',
+              padding: '0.45rem 0.8rem',
+              fontSize: '0.8rem',
+              fontWeight: 600,
+              cursor: 'pointer',
+              transition: 'all 0.2s ease'
+            }}
+            className="tools-drawer-btn"
+          >
+            <Wrench size={16} />
+            <span className="tools-btn-text">Herramientas</span>
+          </button>
+
           <button
             className="mobile-toggle"
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
@@ -162,12 +185,21 @@ export default function Navbar({ activeSection, onNavigate }) {
       )}
 
       <style>{`
+        .tools-drawer-btn:hover {
+          background-color: var(--accent) !important;
+          color: #08080A !important;
+          border-color: var(--accent) !important;
+        }
         @media (max-width: 1024px) {
           .desktop-nav { display: none !important; }
           .mobile-toggle { display: block !important; }
           .logo-desktop { display: none !important; }
-          .logo-mobile { display: block !important; }
+          .logo-mobile { display: flex !important; }
           header { height: 56px !important; }
+        }
+        @media (max-width: 480px) {
+          .tools-btn-text { display: none; }
+          .tools-drawer-btn { padding: 0.45rem 0.55rem !important; }
         }
       `}</style>
     </header>
