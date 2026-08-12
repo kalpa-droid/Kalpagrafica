@@ -5,7 +5,7 @@ import { inyectarPDFjs } from './pdfToLibro';
 function LightboxModal({ 
   pdfDoc, 
   item, 
-  numPages, 
+  itemsToRender = [],
   mode, 
   rotation = 0, 
   onRotate, 
@@ -135,7 +135,7 @@ function LightboxModal({
         {onMovePage && (
           <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.1)', padding: '3px 8px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-subtle)' }}>
             <button
-              onClick={() => onMovePage(sheetNum, 'left', numPages)}
+              onClick={() => onMovePage(item.id, 'left', itemsToRender)}
               disabled={isFirst}
               style={{
                 backgroundColor: 'rgba(255,255,255,0.15)',
@@ -150,7 +150,7 @@ function LightboxModal({
                 alignItems: 'center',
                 gap: '0.2rem'
               }}
-              title="Mover posición antes"
+              title="Mover una posición antes"
             >
               <ArrowLeft size={13} /> Mover Antes
             </button>
@@ -160,7 +160,7 @@ function LightboxModal({
             </span>
 
             <button
-              onClick={() => onMovePage(sheetNum, 'right', numPages)}
+              onClick={() => onMovePage(item.id, 'right', itemsToRender)}
               disabled={isLast}
               style={{
                 backgroundColor: 'rgba(255,255,255,0.15)',
@@ -175,7 +175,7 @@ function LightboxModal({
                 alignItems: 'center',
                 gap: '0.2rem'
               }}
-              title="Mover posición después"
+              title="Mover una posición después"
             >
               Mover Después <ArrowRight size={13} />
             </button>
@@ -240,7 +240,7 @@ function LightboxModal({
           opacity: isDeleted ? 0.45 : 1
         }}>
           {loading ? (
-            <div style={{ color: '#000', padding: '2rem', fontSize: '0.9rem' }}>Cargando página individual...</div>
+            <div style={{ color: '#000', padding: '2rem', fontSize: '0.9rem' }}>Cargando página...</div>
           ) : (
             <div style={{ position: 'relative', display: 'inline-block' }}>
               <img src={highResUrl} alt={titleLabel} style={{ maxHeight: '53vh', maxWidth: '100%', objectFit: 'contain' }} />
@@ -363,6 +363,7 @@ function LightboxModal({
 function ThumbnailCard({ 
   pdfDoc, 
   item, 
+  itemsToRender = [],
   positionIndex,
   isSelected, 
   onSelect, 
@@ -375,7 +376,6 @@ function ThumbnailCard({
   isDeleted = false,
   onDeletePage,
   onMovePage,
-  numPages = 1,
   isFirst = false,
   isLast = false,
   isFoliadoStep = false
@@ -492,7 +492,7 @@ function ThumbnailCard({
         <div style={{ display: 'flex', alignItems: 'center', gap: '2px' }}>
           {/* Botón Mover Antes */}
           <button
-            onClick={(e) => { e.stopPropagation(); onMovePage(sheetNum, 'left', numPages); }}
+            onClick={(e) => { e.stopPropagation(); onMovePage(item.id, 'left', itemsToRender); }}
             disabled={isFirst}
             title="Mover una posición antes (izquierda)"
             style={{
@@ -524,14 +524,14 @@ function ThumbnailCard({
               lineHeight: 1,
               boxShadow: '0 1px 3px rgba(0,0,0,0.3)'
             }}
-            title={`Posición N° ${positionIndex} en el libro`}
+            title={`Posición N° ${positionIndex} en la secuencia`}
           >
             #{positionIndex}
           </span>
 
           {/* Botón Mover Después */}
           <button
-            onClick={(e) => { e.stopPropagation(); onMovePage(sheetNum, 'right', numPages); }}
+            onClick={(e) => { e.stopPropagation(); onMovePage(item.id, 'right', itemsToRender); }}
             disabled={isLast}
             title="Mover una posición después (derecha)"
             style={{
@@ -779,8 +779,8 @@ export default function PdfPreviewStrip({
 
   if (!file) return null;
 
-  // Orden efectivo de renderizado
-  const effectivePageList = (pageOrder && pageOrder.length === numPages)
+  // Orden efectivo de hojas base
+  const effectivePageList = (pageOrder && pageOrder.length === numPages && typeof pageOrder[0] === 'number')
     ? pageOrder
     : Array.from({ length: numPages }, (_, i) => i + 1);
 
@@ -815,7 +815,18 @@ export default function PdfPreviewStrip({
     });
   }
 
-  const activePagesCount = numPages - deletedPages.length;
+  // Ordenar itemsToRender según pageOrder si fue modificado individualmente
+  if (pageOrder && pageOrder.length === itemsToRender.length && typeof pageOrder[0] === 'string') {
+    const itemMap = new Map(itemsToRender.map(it => [it.id, it]));
+    const sorted = [];
+    pageOrder.forEach(id => {
+      if (itemMap.has(id)) sorted.push(itemMap.get(id));
+    });
+    if (sorted.length === itemsToRender.length) {
+      itemsToRender = sorted;
+    }
+  }
+
   const activeItemsCount = itemsToRender.filter(item => !deletedPages.includes(item.sheetNum)).length;
 
   return (
@@ -839,7 +850,7 @@ export default function PdfPreviewStrip({
           )}
         </div>
         <span style={{ fontSize: '0.72rem', color: 'var(--text-disabled)' }}>
-          Usa ◄ Antes / Después ► para mover posiciones, 🗑️ para eliminar o 🔍 para ampliar.
+          Usa ◄ Antes / Después ► para mover 1 posición exacta, 🗑️ para eliminar o 🔍 para ampliar.
         </span>
       </div>
 
@@ -884,6 +895,7 @@ export default function PdfPreviewStrip({
                   key={item.id}
                   pdfDoc={pdfDoc}
                   item={item}
+                  itemsToRender={itemsToRender}
                   positionIndex={index + 1}
                   isSelected={isSelected}
                   onSelect={onSelectPage}
@@ -896,7 +908,6 @@ export default function PdfPreviewStrip({
                   isDeleted={deletedPages.includes(item.sheetNum)}
                   onDeletePage={onDeletePage}
                   onMovePage={onMovePage}
-                  numPages={numPages}
                   isFirst={index === 0}
                   isLast={index === itemsToRender.length - 1}
                   isFoliadoStep={isFoliadoStep}
@@ -927,7 +938,7 @@ export default function PdfPreviewStrip({
         <LightboxModal
           pdfDoc={pdfDoc}
           item={lightboxItem}
-          numPages={numPages}
+          itemsToRender={itemsToRender}
           mode={mode}
           rotation={pageRotations[lightboxItem.sheetNum] || 0}
           onRotate={onRotatePage}

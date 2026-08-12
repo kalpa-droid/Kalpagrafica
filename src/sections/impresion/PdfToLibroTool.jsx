@@ -210,14 +210,17 @@ export default function PdfToLibroTool() {
     );
   };
 
-  const handleMovePage = (pageNum, direction, totalPages) => {
+  const handleMovePage = (itemId, direction, currentItems) => {
     setPageOrder(prev => {
-      const count = totalPages || 1;
-      const list = (prev && prev.length === count)
-        ? [...prev]
-        : Array.from({ length: count }, (_, i) => i + 1);
-      const idx = list.indexOf(pageNum);
+      const itemsList = (currentItems && currentItems.length > 0) ? currentItems : [];
+      const currentIds = itemsList.map(it => it.id);
+
+      const list = (prev && prev.length === currentIds.length) ? [...prev] : currentIds;
+      const targetId = String(itemId);
+      const idx = list.indexOf(targetId);
+
       if (idx === -1) return prev;
+
       if (direction === 'left' && idx > 0) {
         const temp = list[idx];
         list[idx] = list[idx - 1];

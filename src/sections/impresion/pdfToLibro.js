@@ -215,6 +215,81 @@ async function procesarComoImagenes(file, mode, options = {}, onProgress) {
     }
   }
 
+  const hasSplitIds = mode === 'fotocopia' && pageOrder && pageOrder.length > 0 && String(pageOrder[0]).includes('_');
+
+  if (hasSplitIds) {
+    const cachedSheetCanvases = {};
+
+    for (let idx = 0; idx < pageOrder.length; idx++) {
+      const itemId = String(pageOrder[idx]);
+      const parts = itemId.split('_');
+      const sheetNum = parseInt(parts[0], 10);
+      const side = parts[1]; // 'L' | 'R'
+
+      if (deletedPages && deletedPages.includes(sheetNum)) continue;
+
+      if (onProgress) {
+        const avance = 10 + Math.floor(((idx + 1) / pageOrder.length) * 45);
+        onProgress(`Procesando página individual ${idx + 1} de ${pageOrder.length}...`, avance);
+      }
+
+      let finalCanvas = cachedSheetCanvases[sheetNum];
+      if (!finalCanvas) {
+        const page = await pdf.getPage(sheetNum);
+        const userRotation = pageRotations[sheetNum] || 0;
+        const viewport = page.getViewport({ scale: 300 / 72, rotation: userRotation });
+
+        const tempCanvas = document.createElement('canvas');
+        tempCanvas.width = viewport.width; tempCanvas.height = viewport.height;
+        const tempCtx = tempCanvas.getContext('2d');
+        tempCtx.fillStyle = '#ffffff'; tempCtx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
+        await page.render({ canvasContext: tempCtx, viewport }).promise;
+
+        finalCanvas = tempCanvas;
+        const isVertical = tempCanvas.height > tempCanvas.width;
+        if (isVertical) {
+          finalCanvas = document.createElement('canvas');
+          finalCanvas.width = tempCanvas.height; finalCanvas.height = tempCanvas.width;
+          const finalCtx = finalCanvas.getContext('2d');
+          finalCtx.translate(finalCanvas.width / 2, finalCanvas.height / 2);
+          finalCtx.rotate(Math.PI / 2);
+          finalCtx.drawImage(tempCanvas, -tempCanvas.width / 2, -tempCanvas.height / 2);
+          tempCanvas.width = 0; tempCanvas.height = 0;
+        }
+        cachedSheetCanvases[sheetNum] = finalCanvas;
+        page.cleanup();
+      }
+
+      const splitPct = ((pageSplitOffsets[sheetNum] !== undefined) ? pageSplitOffsets[sheetNum] : 50) / 100;
+      const fullW = finalCanvas.width;
+      const fullH = finalCanvas.height;
+      const splitX = Math.round(fullW * splitPct);
+      const leftW = splitX;
+      const rightW = fullW - splitX;
+
+      if (side === 'L') {
+        const leftCanvas = document.createElement('canvas');
+        leftCanvas.width = leftW; leftCanvas.height = fullH;
+        leftCanvas.getContext('2d').drawImage(finalCanvas, 0, 0, leftW, fullH, 0, 0, leftW, fullH);
+        const leftImg = await newPdf.embedJpg(leftCanvas.toDataURL('image/jpeg', 0.92));
+        const pageL = newPdf.addPage([leftW, fullH]);
+        pageL.drawImage(leftImg, { x: 0, y: 0, width: leftW, height: fullH });
+        leftCanvas.width = 0; leftCanvas.height = 0;
+      } else {
+        const rightCanvas = document.createElement('canvas');
+        rightCanvas.width = rightW; rightCanvas.height = fullH;
+        rightCanvas.getContext('2d').drawImage(finalCanvas, splitX, 0, rightW, fullH, 0, 0, rightW, fullH);
+        const rightImg = await newPdf.embedJpg(rightCanvas.toDataURL('image/jpeg', 0.92));
+        const pageR = newPdf.addPage([rightW, fullH]);
+        pageR.drawImage(rightImg, { x: 0, y: 0, width: rightW, height: fullH });
+        rightCanvas.width = 0; rightCanvas.height = 0;
+      }
+    }
+
+    Object.values(cachedSheetCanvases).forEach(c => { if (c) { c.width = 0; c.height = 0; } });
+    return newPdf;
+  }
+
   // Orden efectivo de iteración (reordenamiento manual si fue modificado)
   const effectivePageOrder = (pageOrder && pageOrder.length > 0)
     ? pageOrder
