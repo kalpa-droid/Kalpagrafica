@@ -91,17 +91,17 @@ export default function LogoBookSection() {
   const handlePageChange = (newPage) => {
     const targetPage = Math.max(1, Math.min(newPage, totalPages));
     setCurrentPage(targetPage);
-    const element = document.getElementById('logobook');
+    const element = document.getElementById('logobook-controls') || document.getElementById('logobook-grid') || document.getElementById('logobook');
     if (element) {
-      const yOffset = -95;
+      const yOffset = -80;
       const y = element.getBoundingClientRect().top + window.pageYOffset + yOffset;
       window.scrollTo({ top: Math.max(0, y), behavior: 'smooth' });
     }
   };
 
   // Compact Combined Toolbar (Search + Navigation Dots + Theme Icon Only)
-  const renderControlToolbar = () => (
-    <div style={{
+  const renderControlToolbar = (isTop = true) => (
+    <div id={isTop ? "logobook-controls" : undefined} style={{
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'space-between',
@@ -416,7 +416,7 @@ export default function LogoBookSection() {
           )}
 
           {/* Logos Grid */}
-          <div style={{
+          <div id="logobook-grid" className="logobook-grid-container" style={{
             display: 'grid',
             gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))',
             gap: '1.5rem',
@@ -428,13 +428,13 @@ export default function LogoBookSection() {
               return (
                 <div
                   key={logo.id}
-                  className="card-blueprint"
+                  className="card-blueprint logobook-card"
                   onClick={() => setSelectedLogo(logo)}
                   style={{
                     cursor: 'pointer',
                     display: 'flex',
                     flexDirection: 'column',
-                    justify: 'space-between',
+                    justifyContent: 'space-between',
                     padding: '1.5rem',
                     height: '240px',
                     position: 'relative',
@@ -446,7 +446,7 @@ export default function LogoBookSection() {
                   }}
                 >
                   {/* SVG Visual Canvas Area with direct <img> and color filter fallback */}
-                  <div style={{
+                  <div className="logobook-card-canvas" style={{
                     flex: 1,
                     display: 'flex',
                     alignItems: 'center',
@@ -471,12 +471,12 @@ export default function LogoBookSection() {
                   </div>
 
                   {/* Card Caption with Empresa (bold) - Author */}
-                  <div style={{
+                  <div className="logobook-card-caption" style={{
                     borderTop: isLightMode ? '1px solid rgba(8, 8, 10, 0.15)' : '1px solid var(--border-subtle)',
                     paddingTop: '0.8rem',
                     marginTop: '0.5rem'
                   }}>
-                    <div style={{ 
+                    <div className="logobook-card-caption-text" style={{ 
                       fontSize: '0.92rem', 
                       lineHeight: 1.35, 
                       color: isLightMode ? '#08080A' : 'var(--text-primary)' 
@@ -498,7 +498,7 @@ export default function LogoBookSection() {
           </div>
 
           {/* BOTTOM Toolbar (Repeated Search + Navigation Dots + Theme Icon) */}
-          {renderControlToolbar()}
+          {renderControlToolbar(false)}
         </>
       )}
 
@@ -611,6 +611,32 @@ export default function LogoBookSection() {
         }
         .spin {
           animation: spin 1.5s linear infinite;
+        }
+
+        @media (max-width: 640px) {
+          .logobook-grid-container {
+            grid-template-columns: repeat(2, 1fr) !important;
+            gap: 0.75rem !important;
+          }
+          .logobook-card {
+            height: 160px !important;
+            padding: 0.75rem 0.6rem !important;
+          }
+          .logobook-card-canvas {
+            min-height: 70px !important;
+            padding: 0.4rem !important;
+          }
+          .logo-svg-img {
+            max-height: 52px !important;
+          }
+          .logobook-card-caption {
+            padding-top: 0.4rem !important;
+            margin-top: 0.3rem !important;
+          }
+          .logobook-card-caption-text {
+            font-size: 0.75rem !important;
+            line-height: 1.25 !important;
+          }
         }
       `}</style>
     </section>
