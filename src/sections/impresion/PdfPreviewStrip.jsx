@@ -22,7 +22,8 @@ function LightboxModal({
   positionIndex = 1,
   isFirst = false,
   isLast = false,
-  showFoliadoConfirm = false
+  showFoliadoConfirm = false,
+  isFoliadoStep = false
 }) {
   const [highResUrl, setHighResUrl] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -109,7 +110,7 @@ function LightboxModal({
         {onMovePage && (
           <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.1)', padding: '3px 8px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-subtle)' }}>
             <button
-              onClick={() => onMovePage(pageNum, 'left')}
+              onClick={() => onMovePage(pageNum, 'left', numPages)}
               disabled={isFirst}
               style={{
                 backgroundColor: 'rgba(255,255,255,0.15)',
@@ -134,7 +135,7 @@ function LightboxModal({
             </span>
 
             <button
-              onClick={() => onMovePage(pageNum, 'right')}
+              onClick={() => onMovePage(pageNum, 'right', numPages)}
               disabled={isLast}
               style={{
                 backgroundColor: 'rgba(255,255,255,0.15)',
@@ -239,8 +240,8 @@ function LightboxModal({
                 </div>
               )}
 
-              {/* Línea de corte central si es Fotocopia */}
-              {mode === 'fotocopia' && !isDeleted && (
+              {/* Línea de corte central solo en etapa 2 de Fotocopia */}
+              {mode === 'fotocopia' && !isFoliadoStep && !isDeleted && (
                 <div style={{
                   position: 'absolute',
                   left: `${splitOffset}%`, top: 0, bottom: 0, width: 0,
@@ -270,8 +271,8 @@ function LightboxModal({
         </button>
       </div>
 
-      {/* Ajustes de Fotocopia (Giro y Corte) */}
-      {mode === 'fotocopia' && !isDeleted && (
+      {/* Ajustes de Fotocopia (Giro y Corte) solo en Etapa 2 */}
+      {mode === 'fotocopia' && !isFoliadoStep && !isDeleted && (
         <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', marginBottom: '0.8rem', backgroundColor: 'rgba(255,255,255,0.1)', padding: '0.4rem 1rem', borderRadius: 'var(--radius-sm)' }}>
           <button
             onClick={() => onRotate && onRotate(pageNum, 180)}
@@ -351,8 +352,10 @@ function ThumbnailCard({
   isDeleted = false,
   onDeletePage,
   onMovePage,
+  numPages = 1,
   isFirst = false,
-  isLast = false
+  isLast = false,
+  isFoliadoStep = false
 }) {
   const [thumbUrl, setThumbUrl] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -441,7 +444,7 @@ function ThumbnailCard({
         <div style={{ display: 'flex', alignItems: 'center', gap: '2px' }}>
           {/* Botón Mover Antes */}
           <button
-            onClick={(e) => { e.stopPropagation(); onMovePage(pageNum, 'left'); }}
+            onClick={(e) => { e.stopPropagation(); onMovePage(pageNum, 'left', numPages); }}
             disabled={isFirst}
             title="Mover una posición antes (izquierda)"
             style={{
@@ -480,7 +483,7 @@ function ThumbnailCard({
 
           {/* Botón Mover Después */}
           <button
-            onClick={(e) => { e.stopPropagation(); onMovePage(pageNum, 'right'); }}
+            onClick={(e) => { e.stopPropagation(); onMovePage(pageNum, 'right', numPages); }}
             disabled={isLast}
             title="Mover una posición después (derecha)"
             style={{
@@ -577,8 +580,8 @@ function ThumbnailCard({
           </div>
         )}
 
-        {/* Línea de corte central (solo en modo Fotocopia) */}
-        {mode === 'fotocopia' && !loading && !isDeleted && (
+        {/* Línea de corte central solo en etapa 2 de Fotocopia */}
+        {mode === 'fotocopia' && !isFoliadoStep && !loading && !isDeleted && (
           <div style={{
             position: 'absolute',
             left: `${splitOffset}%`, top: 0, bottom: 0, width: 0,
@@ -600,8 +603,8 @@ function ThumbnailCard({
           Pág {pageNum} {isDeleted ? '(Eliminada)' : ''}
         </span>
 
-        {/* Botón único Corregir Giro (180°) y Ajuste Fino de corte para Fotocopia */}
-        {mode === 'fotocopia' && !isDeleted && (
+        {/* Botón único Corregir Giro (180°) y Ajuste Fino de corte solo en Etapa 2 de Fotocopia */}
+        {mode === 'fotocopia' && !isFoliadoStep && !isDeleted && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem', marginTop: '0.2rem' }}>
             <button
               onClick={(e) => { e.stopPropagation(); onRotate(pageNum, 180); }}
@@ -664,7 +667,8 @@ export default function PdfPreviewStrip({
   onDeletePage,
   pageOrder = [],
   onMovePage,
-  showFoliadoConfirm = false
+  showFoliadoConfirm = false,
+  isFoliadoStep = false
 }) {
   const [pdfDoc, setPdfDoc] = useState(null);
   const [numPages, setNumPages] = useState(0);
@@ -806,8 +810,10 @@ export default function PdfPreviewStrip({
                 isDeleted={deletedPages.includes(pageNum)}
                 onDeletePage={onDeletePage}
                 onMovePage={onMovePage}
+                numPages={numPages}
                 isFirst={index === 0}
                 isLast={index === effectivePageList.length - 1}
+                isFoliadoStep={isFoliadoStep}
               />
             ))}
           </div>
@@ -858,6 +864,7 @@ export default function PdfPreviewStrip({
           isFirst={effectivePageList.indexOf(lightboxPageNum) === 0}
           isLast={effectivePageList.indexOf(lightboxPageNum) === effectivePageList.length - 1}
           showFoliadoConfirm={showFoliadoConfirm}
+          isFoliadoStep={isFoliadoStep}
         />
       )}
     </div>

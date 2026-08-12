@@ -210,9 +210,12 @@ export default function PdfToLibroTool() {
     );
   };
 
-  const handleMovePage = (pageNum, direction) => {
+  const handleMovePage = (pageNum, direction, totalPages) => {
     setPageOrder(prev => {
-      const list = prev.length > 0 ? [...prev] : Array.from({ length: 500 }, (_, i) => i + 1);
+      const count = totalPages || 1;
+      const list = (prev && prev.length === count)
+        ? [...prev]
+        : Array.from({ length: count }, (_, i) => i + 1);
       const idx = list.indexOf(pageNum);
       if (idx === -1) return prev;
       if (direction === 'left' && idx > 0) {
@@ -620,6 +623,7 @@ export default function PdfToLibroTool() {
             pageOrder={pageOrder}
             onMovePage={handleMovePage}
             showFoliadoConfirm={true}
+            isFoliadoStep={true}
           />
 
           {/* INSIGNIA DE ESTADO DE FOLIADO */}
@@ -636,79 +640,6 @@ export default function PdfToLibroTool() {
                 <span>💡 Hacé clic en cualquier página del visor de arriba para indicar qué número impreso ves.</span>
               )}
             </div>
-
-            {mode === 'fotocopia' && (
-              <div style={{ marginTop: '0.8rem', paddingTop: '0.8rem', borderTop: '1px dashed var(--border-subtle)' }}>
-                <span style={{ fontSize: '0.85rem', color: 'var(--accent)', fontWeight: 700, display: 'block', marginBottom: '0.6rem', textAlign: 'center' }}>
-                  👉 Tocá del lado donde viste el número {refBookPage || 'impreso'}:
-                </span>
-                
-                {/* Single divided page graphic */}
-                <div style={{
-                  maxWidth: '380px',
-                  margin: '0 auto',
-                  height: '85px',
-                  border: '2px solid var(--border-strong)',
-                  borderRadius: 'var(--radius-md)',
-                  display: 'flex',
-                  overflow: 'hidden',
-                  backgroundColor: '#141418',
-                  boxShadow: '0 4px 15px rgba(0,0,0,0.3)',
-                  cursor: 'pointer'
-                }}>
-                  {/* MITAD IZQUIERDA */}
-                  <div
-                    onClick={() => setRefPageSide('izquierda')}
-                    style={{
-                      flex: 1,
-                      borderRight: '2px dashed var(--border-subtle)',
-                      backgroundColor: refPageSide === 'izquierda' ? 'var(--accent)' : 'transparent',
-                      color: refPageSide === 'izquierda' ? '#0a0a0c' : 'var(--text-secondary)',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      fontWeight: 800,
-                      fontSize: '0.88rem',
-                      transition: 'all 0.2s ease',
-                      userSelect: 'none'
-                    }}
-                  >
-                    <span>◄ IZQUIERDA</span>
-                    {refPageSide === 'izquierda' && (
-                      <span style={{ fontSize: '0.75rem', marginTop: '3px', fontWeight: 900, backgroundColor: '#0a0a0c', color: 'var(--accent)', padding: '2px 8px', borderRadius: '4px' }}>
-                        ✓ Pág {refBookPage || 'X'}
-                      </span>
-                    )}
-                  </div>
-
-                  {/* MITAD DERECHA */}
-                  <div
-                    onClick={() => setRefPageSide('derecha')}
-                    style={{
-                      flex: 1,
-                      backgroundColor: refPageSide === 'derecha' ? 'var(--accent)' : 'transparent',
-                      color: refPageSide === 'derecha' ? '#0a0a0c' : 'var(--text-secondary)',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      fontWeight: 800,
-                      fontSize: '0.88rem',
-                      transition: 'all 0.2s ease',
-                      userSelect: 'none'
-                    }}
-                  >
-                    <span>DERECHA ►</span>
-                    {refPageSide === 'derecha' && (
-                      <span style={{ fontSize: '0.75rem', marginTop: '3px', fontWeight: 900, backgroundColor: '#0a0a0c', color: 'var(--accent)', padding: '2px 8px', borderRadius: '4px' }}>
-                        ✓ Pág {refBookPage || 'X'}
-                      </span>
-                    )}
-                  </div>
-                </div>
-              </div>
-            )}
           </div>
 
           {activeStep === 3 && (
