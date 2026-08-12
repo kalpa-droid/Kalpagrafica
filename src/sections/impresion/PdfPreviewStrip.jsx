@@ -19,6 +19,7 @@ function LightboxModal({
   isDeleted = false,
   onDeletePage,
   onMovePage,
+  positionIndex = 1,
   isFirst = false,
   isLast = false,
   showFoliadoConfirm = false
@@ -100,16 +101,13 @@ function LightboxModal({
         <X size={20} />
       </button>
 
-      {/* Título e Insignia de Página */}
+      {/* Título e Insignia de Posición con Mover Antes / Posición #X / Mover Después */}
       <div style={{ color: '#fff', fontSize: '0.95rem', fontWeight: 600, marginBottom: '0.8rem', textAlign: 'center', display: 'flex', alignItems: 'center', gap: '0.8rem', flexWrap: 'wrap', justifyContent: 'center' }}>
-        <span>Inspección de Página N° {pageNum}</span>
-        <span style={{ fontSize: '0.75rem', backgroundColor: 'rgba(255,255,255,0.15)', padding: '2px 8px', borderRadius: '10px', color: 'var(--accent)' }}>
-          Total {numPages} páginas
-        </span>
+        <span style={{ color: 'var(--text-secondary)' }}>PDF Pág {pageNum}</span>
 
-        {/* Botones de Mover Posición (Antes / Después) */}
+        {/* Botones de Mover con la Posición Actual en el medio */}
         {onMovePage && (
-          <div style={{ display: 'flex', gap: '0.3rem', alignItems: 'center' }}>
+          <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.1)', padding: '3px 8px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-subtle)' }}>
             <button
               onClick={() => onMovePage(pageNum, 'left')}
               disabled={isFirst}
@@ -117,11 +115,11 @@ function LightboxModal({
                 backgroundColor: 'rgba(255,255,255,0.15)',
                 border: '1px solid var(--border-subtle)',
                 borderRadius: 'var(--radius-sm)',
-                color: isFirst ? 'rgba(255,255,255,0.3)' : '#fff',
+                color: isFirst ? 'rgba(255,255,255,0.3)' : 'var(--accent)',
                 padding: '0.35rem 0.6rem',
                 cursor: isFirst ? 'not-allowed' : 'pointer',
                 fontSize: '0.75rem',
-                fontWeight: 600,
+                fontWeight: 800,
                 display: 'flex',
                 alignItems: 'center',
                 gap: '0.2rem'
@@ -130,6 +128,11 @@ function LightboxModal({
             >
               <ArrowLeft size={13} /> Mover Antes
             </button>
+
+            <span className="font-mono" style={{ fontSize: '0.85rem', fontWeight: 900, color: '#0a0a0c', backgroundColor: 'var(--accent)', padding: '3px 8px', borderRadius: '4px' }}>
+              Posición #{positionIndex}
+            </span>
+
             <button
               onClick={() => onMovePage(pageNum, 'right')}
               disabled={isLast}
@@ -137,11 +140,11 @@ function LightboxModal({
                 backgroundColor: 'rgba(255,255,255,0.15)',
                 border: '1px solid var(--border-subtle)',
                 borderRadius: 'var(--radius-sm)',
-                color: isLast ? 'rgba(255,255,255,0.3)' : '#fff',
+                color: isLast ? 'rgba(255,255,255,0.3)' : 'var(--accent)',
                 padding: '0.35rem 0.6rem',
                 cursor: isLast ? 'not-allowed' : 'pointer',
                 fontSize: '0.75rem',
-                fontWeight: 600,
+                fontWeight: 800,
                 display: 'flex',
                 alignItems: 'center',
                 gap: '0.2rem'
@@ -174,7 +177,7 @@ function LightboxModal({
             title={isDeleted ? "Restaurar esta página al PDF" : "Eliminar esta página del PDF"}
           >
             {isDeleted ? <RotateCcw size={14} /> : <Trash2 size={14} color="#F87171" />}
-            <span>{isDeleted ? 'Restaurar esta página' : 'Eliminar esta página'}</span>
+            <span>{isDeleted ? 'Restaurar esta página' : 'Eliminar'}</span>
           </button>
         )}
       </div>
@@ -336,6 +339,7 @@ function LightboxModal({
 function ThumbnailCard({ 
   pdfDoc, 
   pageNum, 
+  positionIndex,
   isSelected, 
   onSelect, 
   mode, 
@@ -419,7 +423,7 @@ function ThumbnailCard({
       ref={cardRef}
       style={{
         flexShrink: 0,
-        width: '135px',
+        width: '155px',
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
@@ -432,28 +436,71 @@ function ThumbnailCard({
         position: 'relative'
       }}
     >
-      {/* BOTONES DE REORDENAMIENTO (FLECHAS ANTES Y DESPUÉS) EN CABECERA SUPERIOR */}
-      <div style={{ width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.3rem', gap: '0.2rem' }}>
-        <button
-          onClick={(e) => { e.stopPropagation(); onMovePage(pageNum, 'left'); }}
-          disabled={isFirst}
-          title="Mover esta página una posición a la izquierda (antes)"
-          style={{
-            backgroundColor: isFirst ? 'rgba(255,255,255,0.05)' : 'var(--bg-surface)',
-            border: '1px solid var(--border-subtle)',
-            borderRadius: '3px',
-            padding: '2px 5px',
-            color: isFirst ? 'var(--text-disabled)' : 'var(--text-primary)',
-            cursor: isFirst ? 'not-allowed' : 'pointer',
-            fontSize: '0.62rem',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '2px'
-          }}
-        >
-          <ArrowLeft size={10} /> Antes
-        </button>
+      {/* BARRITA SUPERIOR: [ ◄ Antes ]  [ #POS ]  [ Después ► ]  [ 🗑️ ] */}
+      <div style={{ width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.35rem', gap: '0.2rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '2px' }}>
+          {/* Botón Mover Antes */}
+          <button
+            onClick={(e) => { e.stopPropagation(); onMovePage(pageNum, 'left'); }}
+            disabled={isFirst}
+            title="Mover una posición antes (izquierda)"
+            style={{
+              backgroundColor: isFirst ? 'rgba(255,255,255,0.05)' : 'var(--bg-surface)',
+              border: '1px solid var(--border-subtle)',
+              borderRadius: '3px',
+              padding: '2px 4px',
+              color: isFirst ? 'var(--text-disabled)' : 'var(--accent)',
+              cursor: isFirst ? 'not-allowed' : 'pointer',
+              fontSize: '0.62rem',
+              display: 'flex',
+              alignItems: 'center',
+              fontWeight: 800
+            }}
+          >
+            <ArrowLeft size={10} /> Antes
+          </button>
 
+          {/* NÚMERO DE POSICIÓN ACTUAL EN EL MEDIO */}
+          <span
+            className="font-mono"
+            style={{
+              fontSize: '0.72rem',
+              fontWeight: 900,
+              color: '#0a0a0c',
+              backgroundColor: 'var(--accent)',
+              padding: '2px 5px',
+              borderRadius: '3px',
+              lineHeight: 1,
+              boxShadow: '0 1px 3px rgba(0,0,0,0.3)'
+            }}
+            title={`Posición N° ${positionIndex} en el libro`}
+          >
+            #{positionIndex}
+          </span>
+
+          {/* Botón Mover Después */}
+          <button
+            onClick={(e) => { e.stopPropagation(); onMovePage(pageNum, 'right'); }}
+            disabled={isLast}
+            title="Mover una posición después (derecha)"
+            style={{
+              backgroundColor: isLast ? 'rgba(255,255,255,0.05)' : 'var(--bg-surface)',
+              border: '1px solid var(--border-subtle)',
+              borderRadius: '3px',
+              padding: '2px 4px',
+              color: isLast ? 'var(--text-disabled)' : 'var(--accent)',
+              cursor: isLast ? 'not-allowed' : 'pointer',
+              fontSize: '0.62rem',
+              display: 'flex',
+              alignItems: 'center',
+              fontWeight: 800
+            }}
+          >
+            Después <ArrowRight size={10} />
+          </button>
+        </div>
+
+        {/* Botón Tachito Eliminar / Restaurar */}
         <button
           onClick={(e) => { e.stopPropagation(); onDeletePage(pageNum); }}
           title={isDeleted ? "Restaurar página" : "Eliminar esta página"}
@@ -461,45 +508,23 @@ function ThumbnailCard({
             backgroundColor: isDeleted ? '#F87171' : 'rgba(248, 113, 113, 0.15)',
             border: '1px solid #F87171',
             borderRadius: '3px',
-            padding: '2px 5px',
+            padding: '2px 4px',
             color: isDeleted ? '#000' : '#F87171',
             cursor: 'pointer',
             fontSize: '0.62rem',
             display: 'flex',
-            alignItems: 'center',
-            gap: '2px'
+            alignItems: 'center'
           }}
         >
-          <Trash2 size={10} color={isDeleted ? '#000000' : '#F87171'} />
-          <span>{isDeleted ? 'Restaurar' : ''}</span>
-        </button>
-
-        <button
-          onClick={(e) => { e.stopPropagation(); onMovePage(pageNum, 'right'); }}
-          disabled={isLast}
-          title="Mover esta página una posición a la derecha (después)"
-          style={{
-            backgroundColor: isLast ? 'rgba(255,255,255,0.05)' : 'var(--bg-surface)',
-            border: '1px solid var(--border-subtle)',
-            borderRadius: '3px',
-            padding: '2px 5px',
-            color: isLast ? 'var(--text-disabled)' : 'var(--text-primary)',
-            cursor: isLast ? 'not-allowed' : 'pointer',
-            fontSize: '0.62rem',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '2px'
-          }}
-        >
-          Después <ArrowRight size={10} />
+          <Trash2 size={11} color={isDeleted ? '#000000' : '#F87171'} />
         </button>
       </div>
 
       <div
         onClick={() => onOpenLightbox(pageNum)}
         style={{
-          width: '120px',
-          height: '142px',
+          width: '142px',
+          height: '148px',
           backgroundColor: 'var(--bg-surface)',
           borderRadius: '3px',
           display: 'flex',
@@ -729,7 +754,7 @@ export default function PdfPreviewStrip({
           )}
         </div>
         <span style={{ fontSize: '0.72rem', color: 'var(--text-disabled)' }}>
-          Usa ⬅️ ➡️ para mover posiciones, 🗑️ para eliminar hojas o 🔍 para ampliar.
+          Usa ◄ Antes / Después ► para mover posiciones, 🗑️ para eliminar hojas o 🔍 para ampliar.
         </span>
       </div>
 
@@ -769,6 +794,7 @@ export default function PdfPreviewStrip({
                 key={pageNum}
                 pdfDoc={pdfDoc}
                 pageNum={pageNum}
+                positionIndex={index + 1}
                 isSelected={selectedPdfPage === pageNum}
                 onSelect={onSelectPage}
                 mode={mode}
@@ -828,6 +854,7 @@ export default function PdfPreviewStrip({
           isDeleted={deletedPages.includes(lightboxPageNum)}
           onDeletePage={onDeletePage}
           onMovePage={onMovePage}
+          positionIndex={effectivePageList.indexOf(lightboxPageNum) + 1}
           isFirst={effectivePageList.indexOf(lightboxPageNum) === 0}
           isLast={effectivePageList.indexOf(lightboxPageNum) === effectivePageList.length - 1}
           showFoliadoConfirm={showFoliadoConfirm}
