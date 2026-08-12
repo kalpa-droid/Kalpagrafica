@@ -431,11 +431,14 @@ export default function PdfToLibroTool() {
     }
   };
 
-  const handleSelectPageFromViewer = (pageNum, bookNum) => {
+  const handleSelectPageFromViewer = (pageNum, bookNum, side) => {
     setHasRefPage(true);
     setRefPdfPage(String(pageNum));
-    if (bookNum) {
+    if (bookNum !== undefined && bookNum !== null && bookNum !== '') {
       setRefBookPage(String(bookNum));
+    }
+    if (side) {
+      setRefPageSide(side === 'L' ? 'izquierda' : side === 'R' ? 'derecha' : side);
     }
   };
 

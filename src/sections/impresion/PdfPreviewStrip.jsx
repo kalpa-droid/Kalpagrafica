@@ -29,6 +29,10 @@ function LightboxModal({
   const [loading, setLoading] = useState(true);
   const [bookNumberInput, setBookNumberInput] = useState(initialBookPage);
 
+  useEffect(() => {
+    setBookNumberInput(initialBookPage || '');
+  }, [item.id, initialBookPage]);
+
   const { sheetNum, side, titleLabel } = item;
 
   useEffect(() => {
@@ -572,7 +576,12 @@ function ThumbnailCard({
       </div>
 
       <div
-        onClick={() => onOpenLightbox(item)}
+        onClick={() => {
+          if (isFoliadoStep && onSelect) {
+            onSelect(sheetNum, undefined, side);
+          }
+          onOpenLightbox(item);
+        }}
         style={{
           width: '142px',
           height: '148px',
