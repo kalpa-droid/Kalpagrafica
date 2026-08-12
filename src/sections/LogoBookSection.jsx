@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Search, BookOpen, RefreshCw, Sun, Moon, ChevronLeft, ChevronRight, Info, ArrowDownAZ, UserRound } from 'lucide-react';
+import { Search, BookOpen, RefreshCw, Sun, Moon, ChevronLeft, ChevronRight, Info, ArrowDownAZ, UserRound, Maximize2, Minimize2, ZoomIn } from 'lucide-react';
 
 const ITEMS_PER_PAGE = 36;
 const NO_AUTHOR_LABEL = 'Autor no identificado';
@@ -11,6 +11,7 @@ export default function LogoBookSection() {
   const [searchQuery, setSearchQuery] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedLogo, setSelectedLogo] = useState(null);
+  const [isFullScreen, setIsFullScreen] = useState(false);
 
   // Theme for logo containers: 'dark' (Modo Noche: Fondo oscuro + Logo Verde) vs 'light' (Modo Claro: Fondo Verde Clarito + Logo Negro)
   const [cardTheme, setCardTheme] = useState('dark');
@@ -504,59 +505,73 @@ export default function LogoBookSection() {
 
       {/* Modal Detail View for Selected Logo */}
       {selectedLogo && (
-        <div style={{
-          position: 'fixed',
-          top: 0, left: 0, right: 0, bottom: 0,
-          backgroundColor: 'rgba(8, 8, 10, 0.9)',
-          backdropFilter: 'blur(16px)',
-          zIndex: 1000,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          padding: '1.5rem'
-        }} onClick={() => setSelectedLogo(null)}>
+        <div 
+          className="logobook-modal-overlay"
+          style={{
+            position: 'fixed',
+            top: 0, left: 0, right: 0, bottom: 0,
+            backgroundColor: 'rgba(8, 8, 10, 0.92)',
+            backdropFilter: 'blur(16px)',
+            zIndex: 1000,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '1rem'
+          }} 
+          onClick={() => { setSelectedLogo(null); setIsFullScreen(false); }}
+        >
           <div
+            className="logobook-modal-card"
             onClick={(e) => e.stopPropagation()}
             style={{
               backgroundColor: 'var(--bg-surface)',
               border: '1px solid var(--border-strong)',
               borderRadius: 'var(--radius-lg)',
-              maxWidth: '650px',
+              maxWidth: '700px',
               width: '100%',
-              padding: '2.5rem',
+              padding: '2rem',
               position: 'relative',
-              boxShadow: 'var(--shadow-card)'
+              boxShadow: 'var(--shadow-card)',
+              maxHeight: '94vh',
+              overflowY: 'auto'
             }}
           >
             {/* Close Modal Button */}
             <button
-              onClick={() => setSelectedLogo(null)}
+              onClick={() => { setSelectedLogo(null); setIsFullScreen(false); }}
               style={{
                 position: 'absolute',
-                top: '1.2rem',
-                right: '1.2rem',
-                background: 'none',
-                border: 'none',
-                color: 'var(--text-secondary)',
+                top: '1rem',
+                right: '1rem',
+                background: 'var(--bg-surface-2)',
+                border: '1px solid var(--border-subtle)',
+                borderRadius: '50%',
+                width: '32px',
+                height: '32px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: 'var(--text-primary)',
                 cursor: 'pointer',
-                fontSize: '1.2rem'
+                zIndex: 10
               }}
+              title="Cerrar"
             >
               ✕
             </button>
 
             {/* Modal Header */}
-            <div className="font-caps" style={{ color: 'var(--luxury)', fontSize: '0.8rem', marginBottom: '0.4rem' }}>
+            <div className="font-caps" style={{ color: 'var(--luxury)', fontSize: '0.78rem', marginBottom: '0.2rem' }}>
               Ficha de Marca
             </div>
 
-            <h3 style={{ fontSize: '1.6rem', color: 'var(--text-primary)', marginBottom: '0.4rem' }}>
+            <h3 style={{ fontSize: '1.5rem', color: 'var(--text-primary)', marginBottom: '0.2rem' }}>
               <strong style={{ fontWeight: 700, color: 'var(--accent)' }}>{selectedLogo.company}</strong>
             </h3>
-            <p style={{ color: 'var(--text-secondary)', fontSize: '1rem', marginBottom: '2rem' }}>
+            <p style={{ color: 'var(--text-secondary)', fontSize: '0.92rem', marginBottom: '1.2rem' }}>
               Creado por:{' '}
               <strong
-                onClick={() => { setSortBy('author'); setSearchQuery(selectedLogo.author || ''); setSelectedLogo(null); }}
+                onClick={() => { setSortBy('author'); setSearchQuery(selectedLogo.author || ''); setSelectedLogo(null); setIsFullScreen(false); }}
                 style={{ cursor: selectedLogo.author ? 'pointer' : 'default', textDecoration: selectedLogo.author ? 'underline' : 'none', textUnderlineOffset: '3px' }}
                 title={selectedLogo.author ? 'Ver más obras de este diseñador' : undefined}
               >
@@ -564,39 +579,157 @@ export default function LogoBookSection() {
               </strong>
             </p>
 
-            {/* Large Vector Canvas respecting active theme */}
-            <div style={{
-              height: '240px',
-              backgroundColor: cardTheme === 'light' ? '#BAFDC1' : 'var(--bg-base)',
-              borderRadius: 'var(--radius-md)',
-              border: cardTheme === 'light' ? '1px solid #BAFDC1' : '1px solid var(--border-subtle)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              padding: '2rem',
-              marginBottom: '2rem'
-            }}>
+            {/* Large Vector Canvas respecting active theme with Fullscreen Toggle */}
+            <div 
+              className="logobook-modal-canvas"
+              onClick={() => setIsFullScreen(true)}
+              style={{
+                height: '280px',
+                backgroundColor: cardTheme === 'light' ? '#BAFDC1' : 'var(--bg-base)',
+                borderRadius: 'var(--radius-md)',
+                border: cardTheme === 'light' ? '1px solid #BAFDC1' : '1px solid var(--border-subtle)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: '1.5rem',
+                marginBottom: '1.2rem',
+                position: 'relative',
+                cursor: 'pointer'
+              }}
+              title="Toca para ver en pantalla completa"
+            >
               <img
                 src={selectedLogo.file}
                 alt={selectedLogo.company}
+                className="logobook-modal-img"
                 style={{
-                  maxWidth: '100%',
-                  maxHeight: '180px',
+                  maxWidth: '95%',
+                  maxHeight: '220px',
                   objectFit: 'contain',
                   filter: cardTheme === 'light'
                     ? 'none'
                     : 'invert(88%) sepia(21%) saturate(935%) hue-rotate(74deg) brightness(106%) contrast(98%)'
                 }}
               />
+
+              {/* Botón flotante de Pantalla Completa */}
+              <button
+                onClick={(e) => { e.stopPropagation(); setIsFullScreen(true); }}
+                className="btn btn-secondary btn-sm"
+                style={{
+                  position: 'absolute',
+                  bottom: '0.8rem',
+                  right: '0.8rem',
+                  padding: '0.4rem 0.7rem',
+                  fontSize: '0.75rem',
+                  backgroundColor: 'rgba(8, 8, 10, 0.75)',
+                  backdropFilter: 'blur(8px)',
+                  border: '1px solid var(--border-strong)',
+                  color: 'var(--accent)',
+                  borderRadius: 'var(--radius-md)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.4rem',
+                  cursor: 'pointer'
+                }}
+              >
+                <Maximize2 size={14} />
+                <span>Pantalla Completa</span>
+              </button>
             </div>
 
             {/* Modal Actions */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
-              <div style={{ padding: '0.8rem 1rem', borderRadius: 'var(--radius-sm)', backgroundColor: 'var(--bg-surface-2)', border: '1px solid var(--border-subtle)', textAlign: 'center', fontSize: '0.78rem', color: 'var(--text-disabled)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.45rem' }}>
+              <div style={{ padding: '0.6rem 0.9rem', borderRadius: 'var(--radius-sm)', backgroundColor: 'var(--bg-surface-2)', border: '1px solid var(--border-subtle)', textAlign: 'center', fontSize: '0.78rem', color: 'var(--text-disabled)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.45rem' }}>
                 <Info size={14} color="var(--accent)" style={{ flexShrink: 0 }} />
                 <span>Muestra gráfica para análisis tipográfico y de retícula visual. Atribuido a <strong>{selectedLogo.author || NO_AUTHOR_LABEL}</strong>. Marcas propiedad de sus respectivos titulares.</span>
               </div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modern True Fullscreen Modal Overlay */}
+      {selectedLogo && isFullScreen && (
+        <div 
+          style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 3000,
+            backgroundColor: cardTheme === 'light' ? '#BAFDC1' : '#08080A',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '1.5rem'
+          }}
+          onClick={() => setIsFullScreen(false)}
+        >
+          {/* Header Controls */}
+          <div style={{
+            position: 'absolute',
+            top: '1.2rem',
+            left: '1.5rem',
+            right: '1.5rem',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            color: cardTheme === 'light' ? '#08080A' : 'var(--text-primary)',
+            zIndex: 10
+          }}>
+            <div>
+              <div className="font-caps" style={{ fontSize: '0.75rem', opacity: 0.8 }}>
+                {selectedLogo.company}
+              </div>
+              <div style={{ fontSize: '0.85rem', opacity: 0.7 }}>
+                {selectedLogo.author || NO_AUTHOR_LABEL}
+              </div>
+            </div>
+
+            <button
+              onClick={() => setIsFullScreen(false)}
+              style={{
+                background: cardTheme === 'light' ? 'rgba(8,8,10,0.1)' : 'rgba(255,255,255,0.1)',
+                border: 'none',
+                borderRadius: 'var(--radius-pill)',
+                padding: '0.5rem 1rem',
+                color: cardTheme === 'light' ? '#08080A' : 'var(--text-primary)',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.4rem',
+                cursor: 'pointer',
+                fontWeight: 600,
+                fontSize: '0.85rem'
+              }}
+            >
+              <Minimize2 size={18} />
+              <span>Cerrar</span>
+            </button>
+          </div>
+
+          {/* Huge Logo Viewport */}
+          <div style={{
+            width: '100%',
+            height: '85vh',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '1rem'
+          }}>
+            <img
+              src={selectedLogo.file}
+              alt={selectedLogo.company}
+              style={{
+                maxWidth: '98%',
+                maxHeight: '98%',
+                width: 'auto',
+                height: 'auto',
+                objectFit: 'contain',
+                filter: cardTheme === 'light'
+                  ? 'none'
+                  : 'invert(88%) sepia(21%) saturate(935%) hue-rotate(74deg) brightness(106%) contrast(98%)'
+              }}
+            />
           </div>
         </div>
       )}
@@ -636,6 +769,24 @@ export default function LogoBookSection() {
           .logobook-card-caption-text {
             font-size: 0.75rem !important;
             line-height: 1.25 !important;
+          }
+
+          /* Adaptación total a pantalla de celular en el Modal */
+          .logobook-modal-overlay {
+            padding: 0.5rem !important;
+          }
+          .logobook-modal-card {
+            padding: 1.2rem 1rem !important;
+            max-height: 94vh !important;
+          }
+          .logobook-modal-canvas {
+            height: 55vh !important;
+            max-height: 60vh !important;
+            padding: 1rem !important;
+          }
+          .logobook-modal-img {
+            max-height: 100% !important;
+            max-width: 100% !important;
           }
         }
       `}</style>
