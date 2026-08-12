@@ -1,14 +1,7 @@
 // =============================================================================
 // KALPAGRÁFICA — Borrador de Fondo (segmentación IA 100% en el navegador)
-// Usa @mediapipe/tasks-vision (Google), licencia Apache 2.0 — libre para uso
-// comercial y para proyectos de código cerrado, sin las obligaciones de
-// "copyleft de red" de la AGPL. Corre con WASM en el dispositivo del usuario:
-// la imagen nunca se sube a un servidor.
-// Repo: https://github.com/google-ai-edge/mediapipe
-// Modelo: selfie_segmenter (Google, Apache 2.0) — optimizado para personas /
-// retratos / fotos de producto con un sujeto principal en primer plano. Para
-// fondos muy complejos o múltiples sujetos, el resultado puede requerir un
-// retoque manual con el Borrador Mágico.
+// Usa @mediapipe/tasks-vision (Google), licencia Apache 2.0.
+// Optimizado para rendimiento ultrarrápido sin saturar la memoria del navegador.
 // =============================================================================
 
 const WASM_BASE = 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.22/wasm';
@@ -36,29 +29,40 @@ function loadImageElement(input) {
     const el = new Image();
     el.crossOrigin = 'anonymous';
     el.onload = () => resolve(el);
-    el.onerror = (e) => reject(e);
+    el.onerror = (e) => reject(new Error('No se pudo cargar la imagen para segmentar.'));
     el.src = typeof input === 'string' ? input : URL.createObjectURL(input);
   });
 }
 
 /**
- * Quita el fondo de una imagen y devuelve un Blob PNG con canal alfa.
- * @param {File|Blob|string} input - archivo, blob o URL de la imagen
- * @param {Object} opts
- * @param {(progress: {key: string, current: number, total: number}) => void} [opts.onProgress]
- * @returns {Promise<Blob>}
+ * Quita el fondo de una imagen ajustando la resolución a un máximo seguro (1200px)
+ * para garantizar fluidez y prevenir problemas de memoria en el navegador.
+ * Devuelve un Blob PNG con canal alfa (transparencia limpia).
  */
 export async function removeImageBackground(input, opts = {}) {
   const notify = (key, current, total) => opts.onProgress && opts.onProgress({ key, current, total });
 
-  notify('Cargando modelo de segmentación', 0, 1);
+  notify('Cargando modelo IA MediaPipe', 0, 1);
   const segmenter = await getSegmenter();
-  notify('Cargando modelo de segmentación', 1, 1);
+  notify('Cargando modelo IA MediaPipe', 1, 1);
 
-  notify('Analizando imagen', 0, 1);
+  notify('Procesando imagen', 0, 1);
   const imgEl = await loadImageElement(input);
-  const w = imgEl.naturalWidth;
-  const h = imgEl.naturalHeight;
+  
+  // Escalar inteligentemente si la imagen supera los 1200px
+  const maxDim = opts.maxDim || 1200;
+  let w = imgEl.naturalWidth || imgEl.width;
+  let h = imgEl.naturalHeight || imgEl.height;
+
+  if (w > maxDim || h > maxDim) {
+    if (w > h) {
+      h = Math.round((h * maxDim) / w);
+      w = maxDim;
+    } else {
+      w = Math.round((w * maxDim) / h);
+      h = maxDim;
+    }
+  }
 
   const canvas = document.createElement('canvas');
   canvas.width = w;
@@ -67,9 +71,10 @@ export async function removeImageBackground(input, opts = {}) {
   ctx.drawImage(imgEl, 0, 0, w, h);
   const imageData = ctx.getImageData(0, 0, w, h);
 
-  const segResult = segmenter.segment(imgEl);
+  // Ejecutar segmentación IA
+  const segResult = segmenter.segment(canvas);
   const mask = segResult.categoryMask;
-  const maskArr = mask.getAsUint8Array(); // 0 = fondo, 1 = sujeto en primer plano
+  const maskArr = mask.getAsUint8Array(); // 0 = fondo, 1 = sujeto
   const mw = mask.width;
   const mh = mask.height;
 
@@ -79,14 +84,14 @@ export async function removeImageBackground(input, opts = {}) {
     for (let x = 0; x < w; x++) {
       const mx = Math.min(mw - 1, (x / w) * mw | 0);
       if (maskArr[my * mw + mx] === 0) {
-        data[(y * w + x) * 4 + 3] = 0; // vuelve transparente el fondo
+        data[(y * w + x) * 4 + 3] = 0; // Transparencia total para el fondo
       }
     }
   }
   ctx.putImageData(imageData, 0, 0);
   mask.close?.();
   segResult.close?.();
-  notify('Analizando imagen', 1, 1);
+  notify('Procesando imagen', 1, 1);
 
   return new Promise((resolve) => canvas.toBlob((blob) => resolve(blob), 'image/png'));
 }

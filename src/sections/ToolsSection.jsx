@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Wrench, Palette, ScanEye, Code, Crop, FileImage, Ruler, Terminal, Wand2 } from 'lucide-react';
+import { Wrench, Palette, ScanEye, Code, Crop, FileImage, Ruler, Terminal } from 'lucide-react';
 import ColourTab from './tools/ColourTab';
 import AnalysisTab from './tools/AnalysisTab';
 import SvgTab from './tools/SvgTab';
@@ -7,7 +7,6 @@ import SocialTab from './tools/SocialTab';
 import AssetsTab from './tools/AssetsTab';
 import TypeTab from './tools/TypeTab';
 import CliTab from './tools/CliTab';
-import RetouchTab from './tools/RetouchTab';
 
 export default function ToolsSection({ activeTab: externalTab, onTabChange }) {
   const [internalTab, setInternalTab] = useState('colour');
@@ -33,7 +32,6 @@ export default function ToolsSection({ activeTab: externalTab, onTabChange }) {
     { id: 'svg', label: 'Optimizador SVG', icon: Code },
     { id: 'social', label: 'Social Cropper', icon: Crop },
     { id: 'assets', label: 'Favicon, Formato & Marca', icon: FileImage },
-    { id: 'retouch', label: 'Retoque IA', icon: Wand2 },
     { id: 'cli', label: 'Comandos CLI', icon: Terminal }
   ];
 
@@ -105,7 +103,6 @@ export default function ToolsSection({ activeTab: externalTab, onTabChange }) {
       {activeTab === 'svg' && <SvgTab copiedCode={copiedCode} copyToClipboard={copyToClipboard} />}
       {activeTab === 'social' && <SocialTab />}
       {activeTab === 'assets' && <AssetsTab />}
-      {activeTab === 'retouch' && <RetouchTab />}
       {activeTab === 'type' && <TypeTab />}
       {activeTab === 'cli' && <CliTab copiedCode={copiedCode} copyToClipboard={copyToClipboard} />}
 

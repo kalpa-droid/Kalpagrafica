@@ -11,7 +11,8 @@ import {
   FileType,
   CreditCard,
   GraduationCap,
-  Users
+  Users,
+  Wand2
 } from 'lucide-react';
 
 /**
@@ -48,9 +49,16 @@ export const TOOLS_REGISTRY = [
   {
     id: 'editor-tarjetas',
     sectionId: 'editor-tarjetas',
-    title: 'Editor de Tarjetas 2D',
+    title: 'Editor Gráfico & Tarjetas',
     category: 'Tools de Edición',
     icon: CreditCard
+  },
+  {
+    id: 'retouch-ia',
+    sectionId: 'editor-tarjetas',
+    title: 'Retoque IA & Quitar Fondo',
+    category: 'Tools de Edición',
+    icon: Wand2
   },
 
   // Tools Diseño
