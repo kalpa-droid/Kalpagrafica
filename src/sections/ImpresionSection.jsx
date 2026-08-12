@@ -4,8 +4,15 @@ import PdfToLibroTool from './impresion/PdfToLibroTool';
 import MosaicoTool from './impresion/MosaicoTool';
 import PdfToPngTool from './impresion/PdfToPngTool';
 
-export default function ImpresionSection() {
-  const [activeTab, setActiveTab] = useState('libro');
+export default function ImpresionSection({ activeTab: externalTab, onTabChange }) {
+  const [internalTab, setInternalTab] = useState('libro');
+
+  const activeTab = externalTab || internalTab;
+
+  const setActiveTab = (tabId) => {
+    setInternalTab(tabId);
+    if (onTabChange) onTabChange(tabId);
+  };
 
   const TABS = [
     { id: 'libro', label: 'PDF a Libro (Folleto)', icon: BookOpen },

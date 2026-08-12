@@ -50,6 +50,7 @@ export default function App() {
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [isToolDrawerOpen, setIsToolDrawerOpen] = useState(false);
   const [selectedToolTab, setSelectedToolTab] = useState('colour');
+  const [selectedImpresionTab, setSelectedImpresionTab] = useState('libro');
 
   const handleNavigate = (id) => {
     setActiveSection(id);
@@ -66,6 +67,8 @@ export default function App() {
   const handleSelectTool = (toolId, sectionId) => {
     if (sectionId === 'herramientas') {
       setSelectedToolTab(toolId);
+    } else if (sectionId === 'impresion') {
+      setSelectedImpresionTab(toolId);
     }
     handleNavigate(sectionId);
   };
@@ -87,7 +90,7 @@ export default function App() {
           </div>
 
           <div id="impresion">
-            <ImpresionSection />
+            <ImpresionSection activeTab={selectedImpresionTab} onTabChange={setSelectedImpresionTab} />
           </div>
 
           <div id="editor-tarjetas">

@@ -7,87 +7,127 @@ import {
   FileImage, 
   Terminal, 
   BookOpen, 
+  LayoutGrid,
+  FileType,
   CreditCard,
-  Wrench
+  GraduationCap,
+  Users
 } from 'lucide-react';
 
 /**
- * REGISTRO DINÁMICO DE HERRAMIENTAS DE KALPAGRÁFICA
- * Cualquier nueva herramienta que se agregue a este arreglo aparecerá
- * automáticamente en el Panel Lateral de Herramientas (Drawer Derecho) 
- * y en los menúes navegables del sitio.
+ * REGISTRO DINÁMICO DE TODAS LAS HERRAMIENTAS Y MÓDULOS DE KALPAGRÁFICA
+ * REGLA AUTOMÁTICA: Cualquier nueva herramienta que se registre en este arreglo
+ * aparecerá automáticamente en la grilla de 2 columnas del Panel Lateral
+ * de Herramientas tanto en celulares como en pantalla web.
  */
 export const TOOLS_REGISTRY = [
+  // Tools Impresión
   {
-    id: 'impresion-libro',
+    id: 'libro',
     sectionId: 'impresion',
-    title: 'Maquetador PDF & Tapas A5',
+    title: 'PDF a Libro (Folleto)',
     category: 'Tools Impresión',
-    icon: BookOpen,
-    description: 'Creación de PDF fotocopia, tapas/contratapas A5 y recorte personalizado.'
+    icon: BookOpen
   },
+  {
+    id: 'mosaico',
+    sectionId: 'impresion',
+    title: 'Imágenes a Mosaico A4',
+    category: 'Tools Impresión',
+    icon: LayoutGrid
+  },
+  {
+    id: 'png',
+    sectionId: 'impresion',
+    title: 'PDF a Imagen PNG HD',
+    category: 'Tools Impresión',
+    icon: FileType
+  },
+
+  // Tools de Edición
   {
     id: 'editor-tarjetas',
     sectionId: 'editor-tarjetas',
-    title: 'Tools de Edición (Tarjetas & Credenciales)',
+    title: 'Editor de Tarjetas 2D',
     category: 'Tools de Edición',
-    icon: CreditCard,
-    description: 'Maquetador interactivo 2D para tarjetas de presentación, credenciales y publicidad.'
+    icon: CreditCard
   },
+
+  // Tools Diseño
   {
     id: 'colour',
     sectionId: 'herramientas',
-    title: 'Color OKLCH & Pantone® PMS',
+    title: 'Color OKLCH & Pantone®',
     category: 'Tools Diseño',
-    icon: Palette,
-    description: 'Conversión OKLCH, coincidencia Pantone Coated/Uncoated y armonías cromáticas.'
+    icon: Palette
   },
   {
     id: 'type',
     sectionId: 'herramientas',
     title: 'Escala Tipográfica & Papel',
     category: 'Tools Diseño',
-    icon: Ruler,
-    description: '15 presets de escalas tipográficas reales y cálculo de pliegos A4/A5.'
+    icon: Ruler
   },
   {
     id: 'analysis',
     sectionId: 'herramientas',
-    title: 'Paletas & Visión Daltonismo',
+    title: 'Paletas & Daltonismo',
     category: 'Tools Diseño',
-    icon: ScanEye,
-    description: 'Extracción de paletas desde imágenes y simulación diagnóstica de daltonismo.'
+    icon: ScanEye
   },
   {
     id: 'svg',
     sectionId: 'herramientas',
-    title: 'Optimizador SVG & Marcas de Agua',
+    title: 'Optimizador SVG & Marcas',
     category: 'Tools Diseño',
-    icon: Code,
-    description: 'Limpieza de código vectorial SVG y aplicación de marcas de agua.'
+    icon: Code
   },
   {
     id: 'social',
     sectionId: 'herramientas',
     title: 'Social Cropper WebP',
     category: 'Tools Diseño',
-    icon: Crop,
-    description: 'Recorte con proporciones oficiales para redes sociales y exportación WebP.'
+    icon: Crop
   },
   {
     id: 'assets',
     sectionId: 'herramientas',
-    title: 'Generador de Favicon & Assets',
+    title: 'Generador de Favicon',
     category: 'Tools Diseño',
-    icon: FileImage,
-    description: 'Exportación de paquetes de favicons web, app icons e identidades visuales.'
+    icon: FileImage
   },
   {
     id: 'cli',
     sectionId: 'herramientas',
-    title: 'Comandos CLI @kalpa-droid',
+    title: 'Comandos CLI Terminal',
     category: 'Tools Diseño',
-    icon: Terminal,
-    description: 'Suite utilitaria ejecutable standalone directamente en la consola de comandos.'
+    icon: Terminal
+  },
+
+  // Libro de Logos
+  {
+    id: 'logobook',
+    sectionId: 'logobook',
+    title: 'Libro de Logos (6.200+)',
+    category: 'Catálogo',
+    icon: BookOpen
+  },
+
+  // Educación
+  {
+    id: 'educacion',
+    sectionId: 'educacion',
+    title: 'Colección Mindy & Guías',
+    category: 'Formación',
+    icon: GraduationCap
+  },
+
+  // Comunidad
+  {
+    id: 'comunidad',
+    sectionId: 'comunidad',
+    title: 'Red de Diseñadores',
+    category: 'Comunidad',
+    icon: Users
   }
 ];
