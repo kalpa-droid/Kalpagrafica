@@ -319,7 +319,7 @@ export default function RetouchTab() {
               </div>
 
               <p style={{ fontSize: '0.75rem', color: 'var(--text-disabled)', marginTop: '0.8rem' }}>
-                La primera vez descarga un modelo IA (~unos MB) que el navegador cachea para usos futuros. Requiere conexión a internet solo la primera vez.
+                La primera vez descarga un modelo IA (~unos MB, licencia Apache 2.0 de Google/MediaPipe — sin restricciones para uso comercial) que el navegador cachea para usos futuros. Requiere conexión a internet solo la primera vez. Funciona mejor con un sujeto/persona en primer plano bien diferenciado del fondo.
               </p>
             </>
           )}
