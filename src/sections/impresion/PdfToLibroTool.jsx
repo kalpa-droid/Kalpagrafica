@@ -791,27 +791,9 @@ export default function PdfToLibroTool() {
             </div>
 
             {hasCover ? (
-              mode === 'normal' ? (
-                <div style={{ padding: '0.5rem 0.8rem', backgroundColor: 'var(--bg-surface-2)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-subtle)', color: 'var(--text-secondary)', fontSize: '0.78rem' }}>
-                  💡 Se utilizará la <strong>Página 1</strong> del PDF subido como la Tapa Exterior.
-                </div>
-              ) : (
-                <div>
-                  <span style={{ fontSize: '0.8rem', color: 'var(--accent)', fontWeight: 700, display: 'block', marginBottom: '0.4rem', textAlign: 'center' }}>
-                    👉 Tocá del lado donde está la Tapa en la 1ª hoja escaneada:
-                  </span>
-                  <div style={{ maxWidth: '360px', margin: '0 auto', height: '70px', border: '2px solid var(--border-strong)', borderRadius: 'var(--radius-md)', display: 'flex', overflow: 'hidden', backgroundColor: '#141418', cursor: 'pointer' }}>
-                    <div onClick={() => setCoverSide('izquierda')} style={{ flex: 1, borderRight: '2px dashed var(--border-subtle)', backgroundColor: coverSide === 'izquierda' ? 'var(--accent)' : 'transparent', color: coverSide === 'izquierda' ? '#0a0a0c' : 'var(--text-secondary)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: '0.82rem' }}>
-                      <span>◄ IZQUIERDA</span>
-                      {coverSide === 'izquierda' && <span style={{ fontSize: '0.68rem', backgroundColor: '#0a0a0c', color: 'var(--accent)', padding: '1px 6px', borderRadius: '3px' }}>✓ TAPA</span>}
-                    </div>
-                    <div onClick={() => setCoverSide('derecha')} style={{ flex: 1, backgroundColor: coverSide === 'derecha' ? 'var(--accent)' : 'transparent', color: coverSide === 'derecha' ? '#0a0a0c' : 'var(--text-secondary)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: '0.82rem' }}>
-                      <span>DERECHA ►</span>
-                      {coverSide === 'derecha' && <span style={{ fontSize: '0.68rem', backgroundColor: '#0a0a0c', color: 'var(--accent)', padding: '1px 6px', borderRadius: '3px' }}>✓ TAPA</span>}
-                    </div>
-                  </div>
-                </div>
-              )
+              <div style={{ padding: '0.6rem 0.9rem', backgroundColor: 'var(--bg-surface-2)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-subtle)', color: 'var(--text-secondary)', fontSize: '0.78rem' }}>
+                💡 Se utilizará la <strong>Página 1</strong> de tu secuencia ordenada como la Tapa Exterior (Portada).
+              </div>
             ) : (
               <div style={{ marginTop: '0.8rem', paddingTop: '0.8rem', borderTop: '1px dashed var(--border-subtle)' }}>
                 <div style={{ display: 'flex', gap: '0.8rem', marginBottom: '0.8rem' }}>
@@ -917,27 +899,9 @@ export default function PdfToLibroTool() {
             </div>
 
             {hasBackCover ? (
-              mode === 'normal' ? (
-                <div style={{ padding: '0.5rem 0.8rem', backgroundColor: 'var(--bg-surface-2)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-subtle)', color: 'var(--text-secondary)', fontSize: '0.78rem' }}>
-                  💡 Se utilizará la <strong>Última Página</strong> del PDF subido como Contratapa Exterior.
-                </div>
-              ) : (
-                <div>
-                  <span style={{ fontSize: '0.8rem', color: 'var(--accent)', fontWeight: 700, display: 'block', marginBottom: '0.4rem', textAlign: 'center' }}>
-                    👉 Tocá del lado donde está la Contratapa en la última hoja escaneada:
-                  </span>
-                  <div style={{ maxWidth: '360px', margin: '0 auto', height: '70px', border: '2px solid var(--border-strong)', borderRadius: 'var(--radius-md)', display: 'flex', overflow: 'hidden', backgroundColor: '#141418', cursor: 'pointer' }}>
-                    <div onClick={() => setBackCoverSide('izquierda')} style={{ flex: 1, borderRight: '2px dashed var(--border-subtle)', backgroundColor: backCoverSide === 'izquierda' ? 'var(--accent)' : 'transparent', color: backCoverSide === 'izquierda' ? '#0a0a0c' : 'var(--text-secondary)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: '0.82rem' }}>
-                      <span>◄ IZQUIERDA</span>
-                      {backCoverSide === 'izquierda' && <span style={{ fontSize: '0.68rem', backgroundColor: '#0a0a0c', color: 'var(--accent)', padding: '1px 6px', borderRadius: '3px' }}>✓ CONTRATAPA</span>}
-                    </div>
-                    <div onClick={() => setBackCoverSide('derecha')} style={{ flex: 1, backgroundColor: backCoverSide === 'derecha' ? 'var(--accent)' : 'transparent', color: backCoverSide === 'derecha' ? '#0a0a0c' : 'var(--text-secondary)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: '0.82rem' }}>
-                      <span>DERECHA ►</span>
-                      {backCoverSide === 'derecha' && <span style={{ fontSize: '0.68rem', backgroundColor: '#0a0a0c', color: 'var(--accent)', padding: '1px 6px', borderRadius: '3px' }}>✓ CONTRATAPA</span>}
-                    </div>
-                  </div>
-                </div>
-              )
+              <div style={{ padding: '0.6rem 0.9rem', backgroundColor: 'var(--bg-surface-2)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-subtle)', color: 'var(--text-secondary)', fontSize: '0.78rem' }}>
+                💡 Se utilizará la <strong>Última Página</strong> de tu secuencia ordenada como la Contratapa Exterior (Dorsal).
+              </div>
             ) : (
               <div style={{ marginTop: '0.8rem', paddingTop: '0.8rem', borderTop: '1px dashed var(--border-subtle)' }}>
                 <div style={{ display: 'flex', gap: '0.8rem', marginBottom: '0.8rem' }}>
