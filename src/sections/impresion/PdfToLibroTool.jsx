@@ -546,6 +546,52 @@ export default function PdfToLibroTool() {
         </div>
       )}
 
+      {/* RESUMEN COMPACTO DE ARCHIVO Y CONFIGURACIÓN (SIEMPRE VISIBLE EN PASOS 2 A 5) */}
+      {file && activeStep > 1 && (
+        <div style={{
+          marginBottom: '1rem',
+          backgroundColor: 'var(--bg-surface-2)',
+          padding: '0.8rem 1.2rem',
+          borderRadius: 'var(--radius-md)',
+          border: '1px solid var(--border-subtle)',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          flexWrap: 'wrap',
+          gap: '0.6rem'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem', flexWrap: 'wrap', fontSize: '0.82rem' }}>
+            <span style={{ color: 'var(--accent)', fontWeight: 700 }}>📄 Archivo:</span>
+            <span style={{ color: 'var(--text-primary)', fontWeight: 600 }}>{file.name}</span>
+            <span style={{ color: 'var(--text-disabled)' }}>({(file.size / (1024 * 1024)).toFixed(2)} MB)</span>
+            <span style={{ color: 'var(--border-subtle)' }}>|</span>
+            <span style={{ color: 'var(--accent)', fontWeight: 700 }}>Modo:</span>
+            <span style={{ color: 'var(--text-primary)', fontWeight: 600 }}>{mode === 'fotocopia' ? 'Fotocopia Doble Página' : 'PDF Normal'}</span>
+            <span style={{ color: 'var(--border-subtle)' }}>|</span>
+            <span style={{ color: 'var(--accent)', fontWeight: 700 }}>Papel:</span>
+            <span style={{ color: 'var(--text-primary)', fontWeight: 600 }}>{paperSize} ({paperSize === 'A3' ? 'Libro A4' : 'Libro A5'})</span>
+          </div>
+          <button
+            onClick={() => setActiveStep(1)}
+            style={{
+              backgroundColor: 'var(--bg-surface)',
+              border: '1px solid var(--border-subtle)',
+              borderRadius: 'var(--radius-sm)',
+              color: 'var(--text-secondary)',
+              padding: '0.35rem 0.75rem',
+              cursor: 'pointer',
+              fontSize: '0.75rem',
+              fontWeight: 600,
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.3rem'
+            }}
+          >
+            <Edit3 size={13} color="var(--accent)" /> Cambiar Archivo / Formato
+          </button>
+        </div>
+      )}
+
       {!file && (
         <div style={{ backgroundColor: 'var(--bg-surface-2)', padding: '1.5rem', borderRadius: 'var(--radius-md)', border: '1px dashed var(--border-subtle)', textAlign: 'center', marginBottom: '1.5rem' }}>
           <Info size={24} color="var(--accent)" style={{ marginBottom: '0.5rem' }} />
