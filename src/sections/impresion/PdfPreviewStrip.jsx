@@ -788,15 +788,22 @@ export default function PdfPreviewStrip({
 
   if (!file) return null;
 
-  // Orden efectivo de hojas base
-  const effectivePageList = (pageOrder && pageOrder.length === numPages && typeof pageOrder[0] === 'number')
-    ? pageOrder
-    : Array.from({ length: numPages }, (_, i) => i + 1);
+  // 1. Extraer el orden de hojas base (preservando el reordenamiento del usuario hecho en el Paso 2 o 3)
+  let baseSheetOrder = [];
+  if (pageOrder && pageOrder.length > 0) {
+    const extracted = pageOrder.map(item => Number(String(item).split('_')[0])).filter(n => !isNaN(n) && n >= 1 && n <= numPages);
+    extracted.forEach(n => {
+      if (!baseSheetOrder.includes(n)) baseSheetOrder.push(n);
+    });
+  }
+  for (let i = 1; i <= numPages; i++) {
+    if (!baseSheetOrder.includes(i)) baseSheetOrder.push(i);
+  }
 
-  // Construir la lista de elementos (páginas enteras vs tarjetas cortadas en etapa 3)
+  // 2. Construir la lista de elementos según el modo y la etapa activa
   let itemsToRender = [];
   if (mode === 'fotocopia' && isFoliadoStep) {
-    effectivePageList.forEach((sheetNum) => {
+    baseSheetOrder.forEach((sheetNum) => {
       itemsToRender.push({
         id: `${sheetNum}_L`,
         sheetNum,
@@ -813,7 +820,7 @@ export default function PdfPreviewStrip({
       });
     });
   } else {
-    effectivePageList.forEach((sheetNum) => {
+    baseSheetOrder.forEach((sheetNum) => {
       itemsToRender.push({
         id: String(sheetNum),
         sheetNum,
@@ -824,7 +831,7 @@ export default function PdfPreviewStrip({
     });
   }
 
-  // Ordenar itemsToRender según pageOrder si fue modificado individualmente
+  // 3. Si pageOrder contiene IDs específicos ya reordenados a nivel de tarjeta individual
   if (pageOrder && pageOrder.length === itemsToRender.length && typeof pageOrder[0] === 'string') {
     const itemMap = new Map(itemsToRender.map(it => [it.id, it]));
     const sorted = [];

@@ -346,7 +346,7 @@ async function procesarComoImagenes(file, mode, options = {}, onProgress) {
 
   // Orden efectivo de iteración (reordenamiento manual si fue modificado)
   const effectivePageOrder = (pageOrder && pageOrder.length > 0)
-    ? pageOrder
+    ? pageOrder.map(x => Number(String(x).split('_')[0])).filter(n => !isNaN(n))
     : Array.from({ length: pdf.numPages }, (_, i) => i + 1);
 
   for (let idx = 0; idx < effectivePageOrder.length; idx++) {
