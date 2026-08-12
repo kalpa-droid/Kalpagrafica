@@ -57,14 +57,14 @@ export default function Navbar({ activeSection, onNavigate }) {
             onClick={() => handleNavClick('logobook')} 
             style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', marginRight: '3.5rem' }}
           >
-            <div className="logo-desktop">
+            <div className="logo-desktop" style={{ display: 'flex', alignItems: 'center' }}>
               <KalpaLogoHorizontal 
-                style={{ width: '135px', height: 'auto', color: 'var(--accent)' }} 
+                style={{ height: '28px', width: '135px', color: 'var(--accent)' }} 
               />
             </div>
-            <div className="logo-mobile" style={{ display: 'none' }}>
+            <div className="logo-mobile" style={{ display: 'none', alignItems: 'center' }}>
               <KalpaLogoIcon 
-                style={{ height: '24px', width: 'auto', color: 'var(--accent)' }} 
+                style={{ height: '32px', width: '32px' }} 
               />
             </div>
           </div>
