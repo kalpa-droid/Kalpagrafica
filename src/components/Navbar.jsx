@@ -63,8 +63,8 @@ export default function Navbar({ activeSection, onNavigate }) {
               />
             </div>
             <div className="logo-mobile" style={{ display: 'none', alignItems: 'center' }}>
-              <KalpaLogoIcon 
-                style={{ height: '32px', width: '32px' }} 
+              <KalpaLogoHorizontal 
+                style={{ height: '22px', width: '115px', color: 'var(--accent)' }} 
               />
             </div>
           </div>
