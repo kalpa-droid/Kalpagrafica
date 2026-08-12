@@ -33,14 +33,26 @@ export async function crearCanvasTapaCustom(coverConfig, canvasSize = { width: 1
     const img = new Image();
     img.src = coverConfig.imageUri;
     await new Promise((res) => { img.onload = res; img.onerror = res; });
-    ctx.fillStyle = '#ffffff';
-    ctx.fillRect(0, 0, width, height);
-    const scale = Math.min(width / (img.width || width), height / (img.height || height));
+    
+    // Llenado al 100% de la hoja sin ningún margen blanco (object-fit: cover)
+    const scale = Math.max(width / (img.width || width), height / (img.height || height));
     const w = (img.width || width) * scale;
     const h = (img.height || height) * scale;
     ctx.drawImage(img, (width - w) / 2, (height - h) / 2, w, h);
   } else if (coverConfig.type === 'template') {
-    const { title = '', author = '', publisher = '', bgColor = '#1a1a2e', textColor = '#bafdc1', bgImageUri } = coverConfig;
+    const { 
+      title = '', 
+      author = '', 
+      publisher = '', 
+      bgColor = '#1a1a2e', 
+      textColor = '#bafdc1', 
+      bgImageUri,
+      fontFamily = 'Georgia, serif',
+      fontSize = 95,
+      lineHeightMultiplier = 1.25
+    } = coverConfig;
+
+    // Fondo al 100% sin bordes interiores
     ctx.fillStyle = bgColor || '#1a1a2e';
     ctx.fillRect(0, 0, width, height);
 
@@ -48,31 +60,60 @@ export async function crearCanvasTapaCustom(coverConfig, canvasSize = { width: 1
       const img = new Image();
       img.src = bgImageUri;
       await new Promise((res) => { img.onload = res; img.onerror = res; });
+      const scale = Math.max(width / (img.width || width), height / (img.height || height));
+      const w = (img.width || width) * scale;
+      const h = (img.height || height) * scale;
       ctx.globalAlpha = 0.35;
-      ctx.drawImage(img, 0, 0, width, height);
+      ctx.drawImage(img, (width - w) / 2, (height - h) / 2, w, h);
       ctx.globalAlpha = 1.0;
     }
-
-    ctx.strokeStyle = textColor || '#bafdc1';
-    ctx.lineWidth = 12;
-    ctx.strokeRect(80, 80, width - 160, height - 160);
 
     ctx.fillStyle = textColor || '#bafdc1';
     ctx.textAlign = 'center';
 
+    // Margen seguro de 2 cm a cada lado (~236px a 300 DPI)
+    const sideMargin = Math.round(width * 0.135);
+    const maxWidth = width - (sideMargin * 2);
+
+    let currentY = Math.round(height * 0.28);
+
     if (title) {
-      ctx.font = 'bold 110px Georgia, serif';
-      ctx.fillText(title.toUpperCase(), width / 2, height * 0.4, width - 240);
+      ctx.font = `bold ${fontSize}px ${fontFamily}`;
+      const words = title.split(' ');
+      let currentLine = '';
+      const titleLines = [];
+
+      for (let i = 0; i < words.length; i++) {
+        const testLine = currentLine ? `${currentLine} ${words[i]}` : words[i];
+        const metrics = ctx.measureText(testLine);
+        if (metrics.width > maxWidth && currentLine) {
+          titleLines.push(currentLine);
+          currentLine = words[i];
+        } else {
+          currentLine = testLine;
+        }
+      }
+      if (currentLine) titleLines.push(currentLine);
+
+      const lineStep = Math.round(fontSize * lineHeightMultiplier);
+      titleLines.forEach((l) => {
+        ctx.fillText(l, width / 2, currentY);
+        currentY += lineStep;
+      });
     }
 
+    // El nombre del autor se ubica dinámicamente debajo del título multilinea
     if (author) {
-      ctx.font = '500 65px sans-serif';
-      ctx.fillText(author, width / 2, height * 0.52);
+      const authorFontSize = Math.round(fontSize * 0.55);
+      ctx.font = `500 ${authorFontSize}px ${fontFamily}`;
+      const authorY = currentY + Math.round(fontSize * 0.4);
+      ctx.fillText(author, width / 2, authorY);
     }
 
     if (publisher) {
-      ctx.font = '400 45px sans-serif';
-      ctx.fillText(publisher.toUpperCase(), width / 2, height * 0.88);
+      const publisherFontSize = Math.round(fontSize * 0.4);
+      ctx.font = `400 ${publisherFontSize}px ${fontFamily}`;
+      ctx.fillText(publisher.toUpperCase(), width / 2, height * 0.90);
     }
   }
 
@@ -92,14 +133,24 @@ export async function crearCanvasContratapaCustom(backCoverConfig, canvasSize = 
     const img = new Image();
     img.src = backCoverConfig.imageUri;
     await new Promise((res) => { img.onload = res; img.onerror = res; });
-    ctx.fillStyle = '#ffffff';
-    ctx.fillRect(0, 0, width, height);
-    const scale = Math.min(width / (img.width || width), height / (img.height || height));
+    
+    // Llenado al 100% de la hoja sin ningún margen blanco
+    const scale = Math.max(width / (img.width || width), height / (img.height || height));
     const w = (img.width || width) * scale;
     const h = (img.height || height) * scale;
     ctx.drawImage(img, (width - w) / 2, (height - h) / 2, w, h);
   } else if (backCoverConfig.type === 'template') {
-    const { synopsis = '', publisher = '', isbn = '', bgColor = '#1a1a2e', textColor = '#bafdc1', bgImageUri } = backCoverConfig;
+    const { 
+      synopsis = '', 
+      publisher = '', 
+      isbn = '', 
+      bgColor = '#1a1a2e', 
+      textColor = '#bafdc1', 
+      bgImageUri,
+      fontFamily = 'Georgia, serif',
+      fontSize = 50
+    } = backCoverConfig;
+
     ctx.fillStyle = bgColor || '#1a1a2e';
     ctx.fillRect(0, 0, width, height);
 
@@ -107,50 +158,53 @@ export async function crearCanvasContratapaCustom(backCoverConfig, canvasSize = 
       const img = new Image();
       img.src = bgImageUri;
       await new Promise((res) => { img.onload = res; img.onerror = res; });
+      const scale = Math.max(width / (img.width || width), height / (img.height || height));
+      const w = (img.width || width) * scale;
+      const h = (img.height || height) * scale;
       ctx.globalAlpha = 0.35;
-      ctx.drawImage(img, 0, 0, width, height);
+      ctx.drawImage(img, (width - w) / 2, (height - h) / 2, w, h);
       ctx.globalAlpha = 1.0;
     }
-
-    ctx.strokeStyle = textColor || '#bafdc1';
-    ctx.lineWidth = 12;
-    ctx.strokeRect(80, 80, width - 160, height - 160);
 
     ctx.fillStyle = textColor || '#bafdc1';
     ctx.textAlign = 'center';
 
+    const sideMargin = Math.round(width * 0.135);
+    const maxWidth = width - (sideMargin * 2);
+
     if (synopsis) {
-      ctx.font = '500 52px Georgia, serif';
+      ctx.font = `500 ${fontSize}px ${fontFamily}`;
       const words = synopsis.split(' ');
       let line = '';
-      let y = height * 0.35;
-      const maxWidth = width - 360;
+      let y = Math.round(height * 0.30);
+      const lineStep = Math.round(fontSize * 1.4);
+
       for (let n = 0; n < words.length; n++) {
-        const testLine = line + words[n] + ' ';
+        const testLine = line ? `${line} ${words[n]}` : words[n];
         const metrics = ctx.measureText(testLine);
-        if (metrics.width > maxWidth && n > 0) {
-          ctx.fillText(line.trim(), width / 2, y);
-          line = words[n] + ' ';
-          y += 70;
+        if (metrics.width > maxWidth && line) {
+          ctx.fillText(line, width / 2, y);
+          line = words[n];
+          y += lineStep;
         } else {
           line = testLine;
         }
       }
-      ctx.fillText(line.trim(), width / 2, y);
+      if (line) ctx.fillText(line, width / 2, y);
     }
 
     if (isbn) {
       ctx.fillStyle = '#ffffff';
-      ctx.fillRect(width / 2 - 200, height * 0.78 - 40, 400, 100);
+      ctx.fillRect(width / 2 - 200, height * 0.80 - 45, 400, 90);
       ctx.fillStyle = '#000000';
       ctx.font = 'bold 36px monospace';
-      ctx.fillText(`ISBN ${isbn}`, width / 2, height * 0.78 + 20);
+      ctx.fillText(`ISBN ${isbn}`, width / 2, height * 0.80 + 10);
     }
 
     if (publisher) {
       ctx.fillStyle = textColor || '#bafdc1';
-      ctx.font = '400 45px sans-serif';
-      ctx.fillText(publisher.toUpperCase(), width / 2, height * 0.88);
+      ctx.font = `400 38px ${fontFamily}`;
+      ctx.fillText(publisher.toUpperCase(), width / 2, height * 0.92);
     }
   }
 

@@ -193,6 +193,9 @@ export default function PdfToLibroTool() {
   const [templatePublisher, setTemplatePublisher] = useState('');
   const [templateBgColor, setTemplateBgColor] = useState('#1a1a2e');
   const [templateTextColor, setTemplateTextColor] = useState('#bafdc1');
+  const [templateFontFamily, setTemplateFontFamily] = useState('Georgia, serif');
+  const [templateFontSize, setTemplateFontSize] = useState(95);
+  const [templateLineHeight, setTemplateLineHeight] = useState(1.25);
   const [templateBgImageUri, setTemplateBgImageUri] = useState(null);
   const [coverPreviewUrl, setCoverPreviewUrl] = useState(null);
 
@@ -252,6 +255,9 @@ export default function PdfToLibroTool() {
             publisher: templatePublisher,
             bgColor: templateBgColor,
             textColor: templateTextColor,
+            fontFamily: templateFontFamily,
+            fontSize: templateFontSize,
+            lineHeightMultiplier: templateLineHeight,
             bgImageUri: templateBgImageUri
           };
       const canvas = await crearCanvasTapaCustom(config, coverCanvasSize);
@@ -262,7 +268,7 @@ export default function PdfToLibroTool() {
     };
     generatePreview();
     return () => { isCancelled = true; };
-  }, [hasCover, customCoverType, customCoverUploadUri, templateTitle, templateAuthor, templatePublisher, templateBgColor, templateTextColor, templateBgImageUri, coverCanvasSize]);
+  }, [hasCover, customCoverType, customCoverUploadUri, templateTitle, templateAuthor, templatePublisher, templateBgColor, templateTextColor, templateFontFamily, templateFontSize, templateLineHeight, templateBgImageUri, coverCanvasSize]);
 
   // Generar vista previa en tiempo real de la Contratapa Custom
   useEffect(() => {
@@ -281,6 +287,7 @@ export default function PdfToLibroTool() {
             isbn: backCoverIsbn,
             bgColor: backCoverBgColor,
             textColor: backCoverTextColor,
+            fontFamily: templateFontFamily,
             bgImageUri: backCoverBgImageUri
           };
       const canvas = await crearCanvasContratapaCustom(config, coverCanvasSize);
@@ -291,7 +298,7 @@ export default function PdfToLibroTool() {
     };
     generatePreview();
     return () => { isCancelled = true; };
-  }, [hasBackCover, customBackCoverType, customBackCoverUploadUri, backCoverSynopsis, backCoverPublisher, backCoverIsbn, backCoverBgColor, backCoverTextColor, backCoverBgImageUri, coverCanvasSize]);
+  }, [hasBackCover, customBackCoverType, customBackCoverUploadUri, backCoverSynopsis, backCoverPublisher, backCoverIsbn, backCoverBgColor, backCoverTextColor, templateFontFamily, backCoverBgImageUri, coverCanvasSize]);
 
   const handleFileChange = (e) => {
     const selected = e.target.files[0];
@@ -828,11 +835,82 @@ export default function PdfToLibroTool() {
                     )}
                   </div>
                 ) : (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                    <input type="text" placeholder="Título del Libro" value={templateTitle} onChange={(e) => setTemplateTitle(e.target.value)} className="input" style={{ fontSize: '0.78rem' }} />
-                    <input type="text" placeholder="Autor" value={templateAuthor} onChange={(e) => setTemplateAuthor(e.target.value)} className="input" style={{ fontSize: '0.78rem' }} />
-                    <input type="text" placeholder="Editorial" value={templatePublisher} onChange={(e) => setTemplatePublisher(e.target.value)} className="input" style={{ fontSize: '0.78rem' }} />
-                    <div style={{ display: 'flex', gap: '0.6rem' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
+                    {/* Botonera rápida de Emojis */}
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.25rem', alignItems: 'center', backgroundColor: 'var(--bg-surface-2)', padding: '0.4rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-subtle)' }}>
+                      <span style={{ fontSize: '0.68rem', color: 'var(--accent)', fontWeight: 700, marginRight: '0.2rem' }}>Insertar Emoji:</span>
+                      {['✨', '📘', '🎨', '📖', '✍️', '🌟', '📜', '💎', '🚀', '🔥', '💡', '✒️', '🏆', '👑', '🌿', '🗿', '📚', '🔮'].map(emoji => (
+                        <button
+                          key={emoji}
+                          type="button"
+                          onClick={() => setTemplateTitle(prev => prev + emoji)}
+                          title={`Insertar ${emoji} en el Título`}
+                          style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.9rem', padding: '2px 4px', borderRadius: '3px' }}
+                        >
+                          {emoji}
+                        </button>
+                      ))}
+                    </div>
+
+                    <input type="text" placeholder="Título del Libro (Multilínea con margen de 2 cm)" value={templateTitle} onChange={(e) => setTemplateTitle(e.target.value)} className="input" style={{ fontSize: '0.78rem' }} />
+                    <input type="text" placeholder="Autor / Creador" value={templateAuthor} onChange={(e) => setTemplateAuthor(e.target.value)} className="input" style={{ fontSize: '0.78rem' }} />
+                    <input type="text" placeholder="Editorial / Marca" value={templatePublisher} onChange={(e) => setTemplatePublisher(e.target.value)} className="input" style={{ fontSize: '0.78rem' }} />
+
+                    {/* Selector de Estilos Tipográficos Google / Editorial */}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem', marginTop: '0.2rem' }}>
+                      <span style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', fontWeight: 600 }}>Estilo de Tipografía:</span>
+                      <select
+                        value={templateFontFamily}
+                        onChange={(e) => setTemplateFontFamily(e.target.value)}
+                        className="input"
+                        style={{ fontSize: '0.78rem', backgroundColor: 'var(--bg-surface-2)', cursor: 'pointer' }}
+                      >
+                        <option value="Georgia, serif">Georgia (Editorial Clásico)</option>
+                        <option value="'Playfair Display', Georgia, serif">Playfair Display (Elegante)</option>
+                        <option value="'Cinzel', Georgia, serif">Cinzel (Romano Monumental)</option>
+                        <option value="'Outfit', sans-serif">Outfit (Geométrico Moderno)</option>
+                        <option value="'Montserrat', sans-serif">Montserrat (Posters & Titulares)</option>
+                        <option value="'Oswald', sans-serif">Oswald (Condensado Titular)</option>
+                        <option value="'Pacifico', cursive">Pacifico (Manuscrita / Cursiva)</option>
+                        <option value="'Roboto', sans-serif">Roboto (Sans-Serif Limpio)</option>
+                      </select>
+                    </div>
+
+                    {/* Regulador de Tamaño de Título e Interlineado */}
+                    <div style={{ display: 'flex', gap: '0.8rem', flexWrap: 'wrap', marginTop: '0.2rem' }}>
+                      <div style={{ flex: 1, minWidth: '130px' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.68rem', color: 'var(--text-secondary)' }}>
+                          <span>Tamaño Título:</span>
+                          <span className="font-mono" style={{ color: 'var(--accent)', fontWeight: 700 }}>{templateFontSize}px</span>
+                        </div>
+                        <input
+                          type="range"
+                          min="60"
+                          max="140"
+                          value={templateFontSize}
+                          onChange={(e) => setTemplateFontSize(Number(e.target.value))}
+                          style={{ width: '100%', accentColor: 'var(--accent)', cursor: 'pointer' }}
+                        />
+                      </div>
+
+                      <div style={{ flex: 1, minWidth: '130px' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.68rem', color: 'var(--text-secondary)' }}>
+                          <span>Altura de Línea:</span>
+                          <span className="font-mono" style={{ color: 'var(--accent)', fontWeight: 700 }}>{templateLineHeight}x</span>
+                        </div>
+                        <input
+                          type="range"
+                          min="1.0"
+                          max="1.6"
+                          step="0.05"
+                          value={templateLineHeight}
+                          onChange={(e) => setTemplateLineHeight(Number(e.target.value))}
+                          style={{ width: '100%', accentColor: 'var(--accent)', cursor: 'pointer' }}
+                        />
+                      </div>
+                    </div>
+
+                    <div style={{ display: 'flex', gap: '0.6rem', marginTop: '0.2rem' }}>
                       <div style={{ flex: 1 }}>
                         <span style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>Fondo:</span>
                         <input type="color" value={templateBgColor} onChange={(e) => setTemplateBgColor(e.target.value)} style={{ width: '100%', height: '28px', cursor: 'pointer' }} />
@@ -937,6 +1015,22 @@ export default function PdfToLibroTool() {
                   </div>
                 ) : (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                    {/* Botonera rápida de Emojis para Contratapa */}
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.25rem', alignItems: 'center', backgroundColor: 'var(--bg-surface-2)', padding: '0.4rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-subtle)' }}>
+                      <span style={{ fontSize: '0.68rem', color: 'var(--accent)', fontWeight: 700, marginRight: '0.2rem' }}>Insertar Emoji:</span>
+                      {['✨', '📘', '🎨', '📖', '✍️', '🌟', '📜', '💎', '🚀', '🔥', '💡', '✒️', '🏆', '👑', '🌿', '🗿', '📚', '🔮'].map(emoji => (
+                        <button
+                          key={emoji}
+                          type="button"
+                          onClick={() => setBackCoverSynopsis(prev => prev + emoji)}
+                          title={`Insertar ${emoji} en la Sinopsis`}
+                          style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.9rem', padding: '2px 4px', borderRadius: '3px' }}
+                        >
+                          {emoji}
+                        </button>
+                      ))}
+                    </div>
+
                     <textarea placeholder="Resumen / Sinopsis del libro..." value={backCoverSynopsis} onChange={(e) => setBackCoverSynopsis(e.target.value)} className="input" style={{ fontSize: '0.78rem', height: '60px', resize: 'vertical' }} />
                     <input type="text" placeholder="ISBN / Código (opcional)" value={backCoverIsbn} onChange={(e) => setBackCoverIsbn(e.target.value)} className="input" style={{ fontSize: '0.78rem' }} />
                     <input type="text" placeholder="Editorial / Créditos" value={backCoverPublisher} onChange={(e) => setBackCoverPublisher(e.target.value)} className="input" style={{ fontSize: '0.78rem' }} />
