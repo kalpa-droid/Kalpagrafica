@@ -177,14 +177,14 @@ export default function DesignEditorSection() {
           marginBottom: '1rem', border: '1px solid rgba(186,253,193,0.3)'
         }}>
           <Palette size={15} />
-          <span>Editor de Tarjetas & Diseños</span>
+          <span>Tools de Edición</span>
         </div>
 
         <h2 className="font-headline" style={{
           fontSize: 'clamp(2rem, 4vw, 3.2rem)', fontWeight: 700, letterSpacing: '-0.02em',
           color: 'var(--text-primary)', lineHeight: 1.15, marginBottom: '1.2rem'
         }}>
-          Editor de Tarjetas e Invitaciones
+          Tools de Edición (Tarjetas & Piezas Gráficas)
         </h2>
 
         <p style={{ color: 'var(--text-secondary)', fontSize: '1.05rem', lineHeight: 1.6 }}>

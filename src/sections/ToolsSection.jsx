@@ -51,7 +51,7 @@ export default function ToolsSection({ activeTab: externalTab, onTabChange }) {
           fontSize: 'clamp(2rem, 4vw, 3.2rem)', fontWeight: 700, letterSpacing: '-0.02em',
           color: 'var(--text-primary)', lineHeight: 1.15, marginBottom: '1.2rem'
         }}>
-          Herramientas de Diseño
+          Tools Diseño
         </h2>
 
         <p style={{ color: 'var(--text-secondary)', fontSize: '1.05rem', lineHeight: 1.6 }}>

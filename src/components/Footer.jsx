@@ -47,7 +47,7 @@ export default function Footer({ onNavigate }) {
             Navegación
           </h4>
           <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
-            {['logobook', 'herramientas', 'impresion', 'editor-tarjetas', 'educacion', 'comunidad'].map((sec) => (
+            {['logobook', 'impresion', 'editor-tarjetas', 'herramientas', 'educacion', 'comunidad'].map((sec) => (
               <li key={sec}>
                 <button
                   onClick={() => onNavigate(sec)}
@@ -57,13 +57,18 @@ export default function Footer({ onNavigate }) {
                     color: 'var(--text-secondary)',
                     fontSize: '0.88rem',
                     cursor: 'pointer',
-                    textTransform: 'capitalize',
                     transition: 'color 0.2s'
                   }}
                   onMouseEnter={(e) => e.target.style.color = 'var(--accent)'}
                   onMouseLeave={(e) => e.target.style.color = 'var(--text-secondary)'}
                 >
-                  {sec === 'logobook' ? 'Libro de Logos' : sec === 'herramientas' ? 'Herramientas (Delphi Tools)' : sec === 'impresion' ? 'Tools Impresión' : sec === 'editor-tarjetas' ? 'Editor de Tarjetas' : sec}
+                  {sec === 'logobook' ? 'Libro de Logos' 
+                    : sec === 'impresion' ? 'Tools Impresión' 
+                    : sec === 'editor-tarjetas' ? 'Tools de Edición' 
+                    : sec === 'herramientas' ? 'Tools Diseño' 
+                    : sec === 'educacion' ? 'Educación' 
+                    : sec === 'comunidad' ? 'Comunidad' 
+                    : sec}
                 </button>
               </li>
             ))}

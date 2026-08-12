@@ -86,16 +86,16 @@ export default function App() {
             <LogoBookSection />
           </div>
 
-          <div id="herramientas">
-            <ToolsSection activeTab={selectedToolTab} onTabChange={setSelectedToolTab} />
-          </div>
-
           <div id="impresion">
             <ImpresionSection />
           </div>
 
           <div id="editor-tarjetas">
             <DesignEditorSection />
+          </div>
+
+          <div id="herramientas">
+            <ToolsSection activeTab={selectedToolTab} onTabChange={setSelectedToolTab} />
           </div>
 
           <div id="educacion">

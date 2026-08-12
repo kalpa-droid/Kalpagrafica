@@ -19,10 +19,26 @@ import {
  */
 export const TOOLS_REGISTRY = [
   {
+    id: 'impresion-libro',
+    sectionId: 'impresion',
+    title: 'Maquetador PDF & Tapas A5',
+    category: 'Tools Impresión',
+    icon: BookOpen,
+    description: 'Creación de PDF fotocopia, tapas/contratapas A5 y recorte personalizado.'
+  },
+  {
+    id: 'editor-tarjetas',
+    sectionId: 'editor-tarjetas',
+    title: 'Tools de Edición (Tarjetas & Credenciales)',
+    category: 'Tools de Edición',
+    icon: CreditCard,
+    description: 'Maquetador interactivo 2D para tarjetas de presentación, credenciales y publicidad.'
+  },
+  {
     id: 'colour',
     sectionId: 'herramientas',
     title: 'Color OKLCH & Pantone® PMS',
-    category: 'Colorimetría',
+    category: 'Tools Diseño',
     icon: Palette,
     description: 'Conversión OKLCH, coincidencia Pantone Coated/Uncoated y armonías cromáticas.'
   },
@@ -30,7 +46,7 @@ export const TOOLS_REGISTRY = [
     id: 'type',
     sectionId: 'herramientas',
     title: 'Escala Tipográfica & Papel',
-    category: 'Editorial',
+    category: 'Tools Diseño',
     icon: Ruler,
     description: '15 presets de escalas tipográficas reales y cálculo de pliegos A4/A5.'
   },
@@ -38,7 +54,7 @@ export const TOOLS_REGISTRY = [
     id: 'analysis',
     sectionId: 'herramientas',
     title: 'Paletas & Visión Daltonismo',
-    category: 'Accesibilidad',
+    category: 'Tools Diseño',
     icon: ScanEye,
     description: 'Extracción de paletas desde imágenes y simulación diagnóstica de daltonismo.'
   },
@@ -46,7 +62,7 @@ export const TOOLS_REGISTRY = [
     id: 'svg',
     sectionId: 'herramientas',
     title: 'Optimizador SVG & Marcas de Agua',
-    category: 'Vectores',
+    category: 'Tools Diseño',
     icon: Code,
     description: 'Limpieza de código vectorial SVG y aplicación de marcas de agua.'
   },
@@ -54,7 +70,7 @@ export const TOOLS_REGISTRY = [
     id: 'social',
     sectionId: 'herramientas',
     title: 'Social Cropper WebP',
-    category: 'Medios',
+    category: 'Tools Diseño',
     icon: Crop,
     description: 'Recorte con proporciones oficiales para redes sociales y exportación WebP.'
   },
@@ -62,7 +78,7 @@ export const TOOLS_REGISTRY = [
     id: 'assets',
     sectionId: 'herramientas',
     title: 'Generador de Favicon & Assets',
-    category: 'Marca',
+    category: 'Tools Diseño',
     icon: FileImage,
     description: 'Exportación de paquetes de favicons web, app icons e identidades visuales.'
   },
@@ -70,24 +86,8 @@ export const TOOLS_REGISTRY = [
     id: 'cli',
     sectionId: 'herramientas',
     title: 'Comandos CLI @kalpa-droid',
-    category: 'Terminal',
+    category: 'Tools Diseño',
     icon: Terminal,
     description: 'Suite utilitaria ejecutable standalone directamente en la consola de comandos.'
-  },
-  {
-    id: 'impresion-libro',
-    sectionId: 'impresion',
-    title: 'Maquetador PDF & Tapas A5',
-    category: 'Impresión',
-    icon: BookOpen,
-    description: 'Creación de PDF fotocopia, tapas/contratapas A5 y recorte personalizado.'
-  },
-  {
-    id: 'editor-tarjetas',
-    sectionId: 'editor-tarjetas',
-    title: 'Editor Gráfico de Tarjetas',
-    category: 'Diseño Táctil',
-    icon: CreditCard,
-    description: 'Editor de tarjetas de presentación y credenciales con plantillas en tiempo real.'
   }
 ];

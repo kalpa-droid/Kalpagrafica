@@ -16,9 +16,9 @@ export default function Navbar({ activeSection, onNavigate, onOpenToolDrawer }) 
 
   const navItems = [
     { id: 'logobook', label: 'Libro de Logos' },
-    { id: 'herramientas', label: 'Herramientas' },
     { id: 'impresion', label: 'Tools Impresión' },
-    { id: 'editor-tarjetas', label: 'Editor Tarjetas' },
+    { id: 'editor-tarjetas', label: 'Tools de Edición' },
+    { id: 'herramientas', label: 'Tools Diseño' },
     { id: 'educacion', label: 'Educación' },
     { id: 'comunidad', label: 'Comunidad' },
   ];
