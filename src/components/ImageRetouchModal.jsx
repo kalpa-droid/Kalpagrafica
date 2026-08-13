@@ -17,30 +17,52 @@ export default function ImageRetouchModal({ src, onApply, onClose }) {
 
   const baseCanvasRef = useRef(null);
   const maskCanvasRef = useRef(null);
+  const workCanvasRef = useRef(null);
   const offscreenMaskRef = useRef(null);
 
   useEffect(() => {
     if (!src) return;
     const img = new window.Image();
-    img.crossOrigin = 'anonymous';
+    if (!src.startsWith('data:') && !src.startsWith('blob:')) {
+      img.crossOrigin = 'anonymous';
+    }
     img.onload = () => {
-      const scale = Math.min(1, MAX_WORK_DIM / Math.max(img.width, img.height));
-      const w = Math.max(1, Math.round(img.width * scale));
-      const h = Math.max(1, Math.round(img.height * scale));
+      const nw = img.naturalWidth || img.width || 500;
+      const nh = img.naturalHeight || img.height || 500;
+      const scale = Math.min(1, MAX_WORK_DIM / Math.max(nw, nh));
+      const w = Math.max(1, Math.round(nw * scale));
+      const h = Math.max(1, Math.round(nh * scale));
 
       const offCanvas = document.createElement('canvas');
       offCanvas.width = w;
       offCanvas.height = h;
       offscreenMaskRef.current = offCanvas;
 
-      for (const ref of [baseCanvasRef, maskCanvasRef, workCanvasRef]) {
-        if (!ref.current) continue;
-        ref.current.width = w;
-        ref.current.height = h;
+      if (!workCanvasRef.current) {
+        workCanvasRef.current = document.createElement('canvas');
       }
+      workCanvasRef.current.width = w;
+      workCanvasRef.current.height = h;
+
+      if (baseCanvasRef.current) {
+        baseCanvasRef.current.width = w;
+        baseCanvasRef.current.height = h;
+      }
+      if (maskCanvasRef.current) {
+        maskCanvasRef.current.width = w;
+        maskCanvasRef.current.height = h;
+      }
+
       workCanvasRef.current.getContext('2d').drawImage(img, 0, 0, w, h);
-      baseCanvasRef.current.getContext('2d').drawImage(img, 0, 0, w, h);
-      maskCanvasRef.current.getContext('2d').clearRect(0, 0, w, h);
+      if (baseCanvasRef.current) {
+        baseCanvasRef.current.getContext('2d').drawImage(img, 0, 0, w, h);
+      }
+      if (maskCanvasRef.current) {
+        maskCanvasRef.current.getContext('2d').clearRect(0, 0, w, h);
+      }
+    };
+    img.onerror = (err) => {
+      console.error('Error cargando imagen en borrador mágico:', err);
     };
     img.src = src;
   }, [src]);

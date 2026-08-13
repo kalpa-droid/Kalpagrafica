@@ -118,7 +118,6 @@ function drawCustomClipShape(ctx, width, height, clipShape, clipRotation = 0, cl
   const cx = width / 2;
   const cy = height / 2;
 
-  ctx.save();
   ctx.translate(cx, cy);
   ctx.rotate((clipRotation * Math.PI) / 180);
   ctx.scale(clipScaleX, clipScaleY);
@@ -240,8 +239,6 @@ function drawCustomClipShape(ctx, width, height, clipShape, clipRotation = 0, cl
       break;
     }
   }
-
-  ctx.restore();
 }
 
 // Generador de texturas/patrones en canvas
@@ -299,7 +296,9 @@ function URLImage({ image, ...props }) {
   useEffect(() => {
     if (!image.src) return;
     const img = new window.Image();
-    img.crossOrigin = 'Anonymous';
+    if (!image.src.startsWith('data:') && !image.src.startsWith('blob:')) {
+      img.crossOrigin = 'Anonymous';
+    }
     img.src = image.src;
     img.onload = () => setImgObj(img);
   }, [image.src]);
@@ -307,7 +306,11 @@ function URLImage({ image, ...props }) {
   useEffect(() => {
     if (!shapeRef.current) return;
     try {
-      shapeRef.current.cache({ pixelRatio: 2.5 });
+      shapeRef.current.clearCache();
+      const hasFilter = props.brightness || props.contrast || props.saturation || props.blurRadius;
+      if (hasFilter) {
+        shapeRef.current.cache({ pixelRatio: 2.5 });
+      }
       shapeRef.current.getLayer()?.batchDraw();
     } catch (e) {
       shapeRef.current.getLayer()?.batchDraw();
@@ -327,12 +330,13 @@ function URLImage({ image, ...props }) {
   if (!imgObj) return null;
 
   const { clipShape, clipRotation, clipScaleX, clipScaleY, ...restProps } = props;
+  const hasFilter = props.brightness || props.contrast || props.saturation || props.blurRadius;
 
   return (
     <KonvaImage
       ref={shapeRef}
       image={imgObj}
-      filters={[Konva.Filters.Brighten, Konva.Filters.Contrast, Konva.Filters.HSL, Konva.Filters.Blur]}
+      filters={hasFilter ? [Konva.Filters.Brighten, Konva.Filters.Contrast, Konva.Filters.HSL, Konva.Filters.Blur] : []}
       clipFunc={
         clipShape && clipShape !== 'none'
           ? (ctx) => drawCustomClipShape(ctx, props.width, props.height, clipShape, clipRotation || 0, clipScaleX || 1, clipScaleY || 1)
