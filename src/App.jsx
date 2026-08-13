@@ -6,14 +6,26 @@ import ProductModal from './components/ProductModal';
 import ToolDrawer from './components/ToolDrawer';
 
 // Helper de Carga Diferida con Auto-Reintento ante Despliegues de Vercel
+// Usa un guard en sessionStorage para evitar bucles infinitos de recarga
 function lazyWithRetry(componentImport) {
   return lazy(async () => {
+    const hasRefreshed = window.sessionStorage.getItem('chunk-retry-refresh');
     try {
-      return await componentImport();
+      const component = await componentImport();
+      // Si estamos aquí la carga fue exitosa — limpiar el flag de reintento
+      window.sessionStorage.removeItem('chunk-retry-refresh');
+      return component;
     } catch (error) {
-      console.warn('Falló la carga diferida del módulo. Recargando versión de Vercel...', error);
-      window.location.reload();
-      return new Promise(() => {});
+      if (!hasRefreshed) {
+        console.warn('[lazyWithRetry] Chunk load failed, forcing hard reload...', error);
+        window.sessionStorage.setItem('chunk-retry-refresh', 'true');
+        // Hard reload con cache-busting: añadir timestamp a la URL para forzar nueva descarga de index.html
+        window.location.href = window.location.pathname + '?v=' + Date.now();
+        return new Promise(() => {}); // Bloquear mientras recarga
+      }
+      // Si ya hicimos un reintento y sigue fallando, propagar el error al ErrorBoundary
+      window.sessionStorage.removeItem('chunk-retry-refresh');
+      throw error;
     }
   });
 }
@@ -30,32 +42,44 @@ class ErrorBoundary extends React.Component {
   }
 
   componentDidCatch(error, errorInfo) {
-    console.error('Error capturado por ErrorBoundary:', error, errorInfo);
+    console.error('[ErrorBoundary]', error, errorInfo);
   }
 
   render() {
     if (this.state.hasError) {
+      const errorMsg = this.state.error?.message || 'Error desconocido';
       return (
         <div style={{
-          padding: '4rem 2rem', textAlign: 'center', backgroundColor: 'var(--bg-surface)',
+          padding: '3rem 2rem', textAlign: 'center', backgroundColor: 'var(--bg-surface)',
           borderRadius: 'var(--radius-lg)', margin: '2rem auto', maxWidth: '600px',
           border: '1px solid var(--border-subtle)', boxShadow: 'var(--shadow-card)'
         }}>
-          <h3 style={{ fontSize: '1.2rem', color: 'var(--accent)', marginBottom: '0.8rem' }}>
-            ⚠️ Ocurrió una actualización en la aplicación
+          <h3 style={{ fontSize: '1.1rem', color: 'var(--accent)', marginBottom: '0.8rem' }}>
+            ⚠️ Error en este módulo
           </h3>
-          <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '1.5rem', lineHeight: 1.5 }}>
-            Se ha desplegado una versión optimizada en el servidor. Haz clic abajo para recargar la vista con los nuevos módulos.
+          <p style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', marginBottom: '0.8rem', lineHeight: 1.5 }}>
+            Se produjo un error al renderizar este componente. Podés intentar recargar la página.
           </p>
-          <button
-            className="btn btn-primary"
-            onClick={() => {
-              window.sessionStorage.clear();
-              window.location.reload();
-            }}
-          >
-            🔄 Recargar Aplicación
-          </button>
+          <pre style={{ fontSize: '0.7rem', color: '#F87171', backgroundColor: 'var(--bg-surface-2)', padding: '0.6rem', borderRadius: '6px', textAlign: 'left', overflowX: 'auto', marginBottom: '1rem', maxHeight: '120px', overflow: 'auto' }}>
+            {errorMsg}
+          </pre>
+          <div style={{ display: 'flex', gap: '0.6rem', justifyContent: 'center' }}>
+            <button
+              className="btn btn-primary"
+              onClick={() => {
+                window.sessionStorage.clear();
+                window.location.href = window.location.pathname + '?v=' + Date.now();
+              }}
+            >
+              🔄 Recargar Limpio
+            </button>
+            <button
+              className="btn btn-secondary"
+              onClick={() => this.setState({ hasError: false, error: null })}
+            >
+              🔁 Reintentar
+            </button>
+          </div>
         </div>
       );
     }
@@ -140,35 +164,45 @@ export default function App() {
         onOpenToolDrawer={() => setIsToolDrawerOpen(true)}
       />
 
-      {/* Main Content Area con Suspense Fallback y ErrorBoundary de Proteccion */}
+      {/* Main Content Area con Suspense Fallback y ErrorBoundary por Sección */}
       <main style={{ flex: 1 }}>
-        <ErrorBoundary>
-          <Suspense fallback={<SectionLoader />}>
+        <Suspense fallback={<SectionLoader />}>
+          <ErrorBoundary>
             <div id="logobook">
               <LogoBookSection />
             </div>
+          </ErrorBoundary>
 
+          <ErrorBoundary>
             <div id="impresion">
               <ImpresionSection activeTab={selectedImpresionTab} onTabChange={setSelectedImpresionTab} />
             </div>
+          </ErrorBoundary>
 
+          <ErrorBoundary>
             <div id="editor-tarjetas">
               <DesignEditorSection />
             </div>
+          </ErrorBoundary>
 
+          <ErrorBoundary>
             <div id="herramientas">
               <ToolsSection activeTab={selectedToolTab} onTabChange={setSelectedToolTab} />
             </div>
+          </ErrorBoundary>
 
+          <ErrorBoundary>
             <div id="educacion">
               <EducationSection />
             </div>
+          </ErrorBoundary>
 
+          <ErrorBoundary>
             <div id="comunidad">
               <CommunitySection />
             </div>
-          </Suspense>
-        </ErrorBoundary>
+          </ErrorBoundary>
+        </Suspense>
       </main>
 
       {/* Global Footer */}
