@@ -8,7 +8,6 @@ import {
 import { Stage, Layer, Text, Rect, Circle, Line, Star, Image as KonvaImage, Transformer } from 'react-konva';
 import Konva from 'konva';
 import jsPDF from 'jspdf';
-import ImageRetouchModal from '../components/ImageRetouchModal';
 
 // 30 Tipografías Web Gratuitas de Google Fonts (Estilos Únicos & Diversos)
 export const WEB_FONTS = [
@@ -64,6 +63,88 @@ export const EMOJI_CATEGORIES = [
   }
 ];
 
+// Clipart & Stickers Vectoriales Gratuitos
+export const CLIPART_PRESETS = [
+  {
+    category: 'Sellos & Ofertas',
+    items: [
+      { id: 'cl-1', name: 'Sello Oferta', text: '🔥 Oportunidad Única', bg: '#FF5555', fill: '#FFF' },
+      { id: 'cl-2', name: 'Sello Calidad', text: '⭐ 100% Calidad Garantizada', bg: '#C9A94D', fill: '#000' },
+      { id: 'cl-3', name: 'Sello Aprobado', text: '✅ APROBADO', bg: '#00B09B', fill: '#FFF' },
+      { id: 'cl-4', name: 'Sello Premium', text: '👑 EDICIÓN PREMIUM', bg: '#302B63', fill: '#BAFDC1' }
+    ]
+  },
+  {
+    category: 'Preimpresión & Imprenta',
+    items: [
+      { id: 'cl-5', name: 'CMYK Control', text: '🎯 Target CMYK Preimpresión', bg: '#111114', fill: '#BAFDC1' },
+      { id: 'cl-6', name: 'Marcas de Sangrado', text: '📐 Guía de Corte & Doblez', bg: '#1A1A1E', fill: '#FF7E5F' },
+      { id: 'cl-7', name: 'Eco Papel', text: '🌱 Impreso en Papel Reciclado', bg: '#2B580C', fill: '#F4F4F4' },
+      { id: 'cl-8', name: 'Auténtico', text: '🛡️ Certificado de Autenticidad', bg: '#141E30', fill: '#C9A94D' }
+    ]
+  }
+];
+
+// Catálogo de Formas Vectoriales Estilo Office & Affinity Studio
+export const VECTOR_SHAPES_CATALOG = [
+  { id: 'rect', name: 'Rectángulo', icon: '⬜' },
+  { id: 'circle', name: 'Círculo', icon: '⚪' },
+  { id: 'star', name: 'Estrella 5 Puntas', icon: '⭐' },
+  { id: 'star6', name: 'Estrella 6 Puntas', icon: '✡️' },
+  { id: 'star8', name: 'Estrella 8 Puntas', icon: '✳️' },
+  { id: 'heart', name: 'Corazón', icon: '❤️' },
+  { id: 'hexagon', name: 'Hexágono', icon: '🛑' },
+  { id: 'octagon', name: 'Octágono', icon: '☸️' },
+  { id: 'triangle', name: 'Triángulo', icon: '🔺' },
+  { id: 'diamond', name: 'Diamante', icon: '🔷' },
+  { id: 'shield', name: 'Escudo', icon: '🛡️' },
+  { id: 'badge', name: 'Insignia', icon: '🏷️' }
+];
+
+// Plantillas Predefinidas por Formato (Frente & Dorso)
+export const DESIGN_TEMPLATES = {
+  'business': [
+    {
+      id: 'tmpl-corp-tech',
+      name: 'Corporativa Tech',
+      frontBg: '#111114',
+      backBg: '#1A1A1E',
+      frontElements: [
+        { id: 'tf-1', type: 'text', text: 'KALPAGRÁFICA', x: 40, y: 40, fontSize: 26, fill: '#BAFDC1', fontFamily: 'Space Grotesk', fontWeight: 'bold' },
+        { id: 'tf-2', type: 'text', text: 'Estudio de Diseño & Preimpresión', x: 40, y: 80, fontSize: 13, fill: '#E5E5E7', fontFamily: 'Inter' },
+        { id: 'tf-3', type: 'rect', x: 40, y: 110, width: 460, height: 2, fill: '#BAFDC1' },
+        { id: 'tf-4', type: 'text', text: 'Ramiro G. | Director Creativo', x: 40, y: 130, fontSize: 14, fill: '#FFFFFF', fontFamily: 'Inter', fontWeight: '600' },
+        { id: 'tf-5', type: 'text', text: 'hola@kalpagrafica.com | +54 9 11 0000-0000', x: 40, y: 160, fontSize: 11, fill: '#9EA0A6', fontFamily: 'JetBrains Mono' },
+        { id: 'tf-6', type: 'text', text: 'www.kalpagrafica.com', x: 40, y: 185, fontSize: 11, fill: '#BAFDC1', fontFamily: 'JetBrains Mono' }
+      ],
+      backElements: [
+        { id: 'tb-1', type: 'circle', x: 270, y: 120, radius: 70, fill: '#BAFDC1', opacity: 0.15 },
+        { id: 'tb-2', type: 'text', text: 'KALPAGRÁFICA', x: 160, y: 105, fontSize: 28, fill: '#BAFDC1', fontFamily: 'Space Grotesk', fontWeight: 'bold' },
+        { id: 'tb-3', type: 'text', text: 'SOLUCIONES DE IMPRESIÓN DE ALTA PRECISIÓN', x: 110, y: 145, fontSize: 11, fill: '#9EA0A6', fontFamily: 'Inter' }
+      ]
+    },
+    {
+      id: 'tmpl-luxury-gold',
+      name: 'Luxury Dark & Gold',
+      frontBg: '#0A0A0C',
+      backBg: '#141418',
+      frontElements: [
+        { id: 'tf-1', type: 'rect', x: 20, y: 20, width: 500, height: 260, fill: 'transparent', stroke: '#C9A94D', strokeWidth: 1.5, dashStyle: 'solid' },
+        { id: 'tf-2', type: 'text', text: 'ESTUDIO PALACE', x: 150, y: 65, fontSize: 24, fill: '#C9A94D', fontFamily: 'Playfair Display', fontWeight: 'bold' },
+        { id: 'tf-3', type: 'text', text: 'ARQUITECTURA & INTERIORISMO', x: 140, y: 105, fontSize: 10, fill: '#E5E5E7', fontFamily: 'Cinzel' },
+        { id: 'tf-4', type: 'rect', x: 210, y: 130, width: 120, height: 1, fill: '#C9A94D' },
+        { id: 'tf-5', type: 'text', text: 'contacto@estudiopalace.com', x: 170, y: 155, fontSize: 11, fill: '#C9A94D', fontFamily: 'Inter' },
+        { id: 'tf-6', type: 'text', text: '+54 9 11 8888-9999 | Av. Alvear 1500', x: 140, y: 180, fontSize: 10, fill: '#9EA0A6', fontFamily: 'Inter' }
+      ],
+      backElements: [
+        { id: 'tb-1', type: 'star', x: 270, y: 100, numPoints: 8, innerRadius: 25, outerRadius: 50, fill: '#C9A94D', opacity: 0.8 },
+        { id: 'tb-2', type: 'text', text: 'ESTUDIO PALACE', x: 155, y: 170, fontSize: 22, fill: '#C9A94D', fontFamily: 'Playfair Display', fontWeight: 'bold' },
+        { id: 'tb-3', type: 'text', text: 'BUENOS AIRES', x: 215, y: 205, fontSize: 10, fill: '#9EA0A6', fontFamily: 'Cinzel' }
+      ]
+    }
+  ]
+};
+
 // Plantillas predefinidas de lienzo por categorías
 const PRESETS = [
   // --- REDES SOCIALES & DIGITAL ---
@@ -94,10 +175,11 @@ const PRESETS = [
   { id: 'legal', category: 'Impresión Estándar', name: 'Tamaño Oficio (Legal)', width: 612, height: 1008, unit: '216x356 mm' }
 ];
 
-// Definición de las 6 herramientas de creación (barra de pestañas desktop / barra de íconos mobile)
+// Definición de las 7 herramientas de creación
 const TAB_DEFS = [
   { id: 'canvas', label: 'Lienzo', icon: Sliders },
   { id: 'text', label: 'Texto', icon: Type },
+  { id: 'clipart', label: 'Clipart', icon: Sparkles },
   { id: 'emojis', label: 'Emojis', icon: Smile },
   { id: 'draw', label: 'Pincel', icon: Brush },
   { id: 'shapes', label: 'Formas', icon: Square },
@@ -132,6 +214,7 @@ export const GRADIENT_PRESETS = [
 
 // Función de trazado para recortes con forma, rotación y deformación
 function drawCustomClipShape(ctx, width, height, clipShape, clipRotation = 0, clipScaleX = 1, clipScaleY = 1) {
+  ctx.beginPath();
   if (!clipShape || clipShape === 'none') {
     ctx.rect(0, 0, width, height);
     return;
@@ -144,8 +227,6 @@ function drawCustomClipShape(ctx, width, height, clipShape, clipRotation = 0, cl
   ctx.rotate((clipRotation * Math.PI) / 180);
   ctx.scale(clipScaleX, clipScaleY);
   ctx.translate(-cx, -cy);
-
-  ctx.beginPath();
 
   const rx = width / 2;
   const ry = height / 2;
@@ -344,7 +425,98 @@ function createTexturePatternUrl({
   if (callback) callback(c.toDataURL('image/png'));
 }
 
-// Helper de Forma Konva con soporte para relleno sólido, degradados y texturas
+// Componente de Vista Previa de Imposición 2D en Pliego A4/A3
+function ImpositionPreview2D({ sheetFormat, orientation, impositionMode, manualSpacing, preset }) {
+  let sheetW = sheetFormat === 'a3' ? 297 : 210;
+  let sheetH = sheetFormat === 'a3' ? 420 : 297;
+
+  if (orientation === 'landscape') {
+    const tmp = sheetW;
+    sheetW = sheetH;
+    sheetH = tmp;
+  }
+
+  let cardW = preset.width / 4;
+  let cardH = preset.height / 4;
+  if (preset.unit && preset.unit.includes('mm')) {
+    const parts = preset.unit.replace(' mm', '').split('x');
+    if (parts.length === 2) {
+      cardW = parseFloat(parts[0]);
+      cardH = parseFloat(parts[1]);
+    }
+  }
+
+  const isBleed = impositionMode === 'duplex_bleed';
+  const bleed = isBleed ? 3.5 : 0;
+  const gap = isBleed ? 0 : (manualSpacing || 0);
+
+  const cellW = cardW + bleed * 2;
+  const cellH = cardH + bleed * 2;
+
+  const cols = Math.max(1, Math.floor((sheetW - 10) / (cellW + gap)));
+  const rows = Math.max(1, Math.floor((sheetH - 10) / (cellH + gap)));
+
+  const totalGridW = cols * cellW + (cols - 1) * gap;
+  const totalGridH = rows * cellH + (rows - 1) * gap;
+  const offsetX = (sheetW - totalGridW) / 2;
+  const offsetY = (sheetH - totalGridH) / 2;
+
+  const prevScale = 0.45;
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginTop: '0.6rem', padding: '0.6rem', backgroundColor: 'var(--bg-surface-2)', borderRadius: 'var(--radius-sm)' }}>
+      <div style={{ fontSize: '0.72rem', color: 'var(--accent)', fontWeight: 700, display: 'flex', justifyContent: 'space-between' }}>
+        <span>Vista Previa Pliego {sheetFormat.toUpperCase()} ({cols * rows} piezas)</span>
+        <span style={{ fontSize: '0.68rem', color: 'var(--text-secondary)' }}>{isBleed ? 'Dúplex Sangrado 3.5mm' : `Espaciado ${gap}mm`}</span>
+      </div>
+
+      <div style={{ display: 'flex', gap: '0.6rem', justifyContent: 'center' }}>
+        {/* Pliego Frente */}
+        <div style={{ textAlign: 'center' }}>
+          <span style={{ fontSize: '0.65rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '0.2rem' }}>Página 1 (Frente)</span>
+          <svg width={sheetW * prevScale} height={sheetH * prevScale} viewBox={`0 0 ${sheetW} ${sheetH}`} style={{ background: '#1e1e24', border: '1px solid var(--border-subtle)', borderRadius: '4px' }}>
+            {Array.from({ length: rows }).map((_, r) =>
+              Array.from({ length: cols }).map((_, c) => {
+                const x = offsetX + c * (cellW + gap);
+                const y = offsetY + r * (cellH + gap);
+                return (
+                  <g key={`f-${r}-${c}`}>
+                    <rect x={x} y={y} width={cellW} height={cellH} fill="#BAFDC1" opacity="0.35" stroke="#BAFDC1" strokeWidth="0.5" />
+                    {isBleed && <rect x={x + bleed} y={y + bleed} width={cardW} height={cardH} fill="none" stroke="#FF5555" strokeWidth="0.5" strokeDasharray="1,1" />}
+                  </g>
+                );
+              })
+            )}
+          </svg>
+        </div>
+
+        {/* Pliego Dorso (si es Dúplex) */}
+        {isBleed && (
+          <div style={{ textAlign: 'center' }}>
+            <span style={{ fontSize: '0.65rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '0.2rem' }}>Página 2 (Dorso Espejado)</span>
+            <svg width={sheetW * prevScale} height={sheetH * prevScale} viewBox={`0 0 ${sheetW} ${sheetH}`} style={{ background: '#1e1e24', border: '1px solid var(--border-subtle)', borderRadius: '4px' }}>
+              {Array.from({ length: rows }).map((_, r) =>
+                Array.from({ length: cols }).map((_, c) => {
+                  const frontX = offsetX + c * cellW;
+                  const backX = sheetW - frontX - cellW;
+                  const backY = offsetY + r * cellH;
+                  return (
+                    <g key={`b-${r}-${c}`}>
+                      <rect x={backX} y={backY} width={cellW} height={cellH} fill="#302b63" opacity="0.45" stroke="#BAFDC1" strokeWidth="0.5" />
+                      <rect x={backX + bleed} y={backY + bleed} width={cardW} height={cardH} fill="none" stroke="#FF5555" strokeWidth="0.5" strokeDasharray="1,1" />
+                    </g>
+                  );
+                })
+              )}
+            </svg>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// Helper de Forma Konva con soporte para relleno sólido, degradados, texturas, trazos discontinuos y sombras
 function ShapeElement({ el, isDrawingMode, setSelectedId, handleDragMove, handleDragEnd, updateSelected }) {
   const [fillPatternImg, setFillPatternImg] = useState(null);
 
@@ -412,12 +584,17 @@ function ShapeElement({ el, isDrawingMode, setSelectedId, handleDragMove, handle
     el.width, el.height, el.radius
   ]);
 
-  const { fillType, gradColor1, gradColor2, gradAngle, gradStyle, gradStop, patternType, patternColor, patternAngle, patternScale, patternSpacing, customImgSrc, ...cleanProps } = el;
+  const { fillType, gradColor1, gradColor2, gradAngle, gradStyle, gradStop, patternType, patternColor, patternAngle, patternScale, patternSpacing, customImgSrc, dashStyle, ...cleanProps } = el;
+
+  let dash = undefined;
+  if (dashStyle === 'dashed') dash = [10, 5];
+  if (dashStyle === 'dotted') dash = [3, 3];
 
   const commonProps = {
     key: el.id,
     id: el.id,
     ...cleanProps,
+    dash,
     fill: fillType && fillType !== 'color' ? undefined : el.fill,
     fillPriority: fillPatternImg ? 'pattern' : 'color',
     fillPatternImage: fillPatternImg || undefined,
@@ -430,8 +607,10 @@ function ShapeElement({ el, isDrawingMode, setSelectedId, handleDragMove, handle
 
   if (el.type === 'rect') return <Rect {...commonProps} />;
   if (el.type === 'circle') return <Circle {...commonProps} />;
-  if (el.type === 'star') return <Star {...commonProps} />;
-  return null;
+  if (el.type === 'star') return <Star {...commonProps} numPoints={5} innerRadius={(cleanProps.radius || 40)*0.45} outerRadius={cleanProps.radius || 40} />;
+  if (el.type === 'star6') return <Star {...commonProps} numPoints={6} innerRadius={(cleanProps.radius || 40)*0.5} outerRadius={cleanProps.radius || 40} />;
+  if (el.type === 'star8') return <Star {...commonProps} numPoints={8} innerRadius={(cleanProps.radius || 40)*0.5} outerRadius={cleanProps.radius || 40} />;
+  return <Rect {...commonProps} />;
 }
 
 // Helper de Imagen Konva con filtros no-destructivos y recorte por forma
@@ -496,18 +675,36 @@ function URLImage({ image, ...props }) {
 export default function DesignEditorSection() {
   const [preset, setPreset] = useState(PRESETS[0]);
   const [bgColor, setBgColor] = useState('#111114');
-  const [elements, setElements] = useState([
+  
+  // Dúplex Frente / Dorso
+  const [currentSide, setCurrentSide] = useState('front'); // 'front' | 'back'
+  const [elementsFront, setElementsFront] = useState([
     { id: 'el-1', type: 'text', text: 'KALPAGRÁFICA', x: 40, y: 50, fontSize: 26, fill: '#BAFDC1', fontFamily: 'Space Grotesk', fontWeight: 'bold' },
     { id: 'el-2', type: 'text', text: 'Estudio de Diseño & Preimpresión', x: 40, y: 90, fontSize: 14, fill: '#E5E5E7', fontFamily: 'Inter' },
     { id: 'el-3', type: 'rect', x: 40, y: 130, width: 460, height: 2, fill: '#BAFDC1' },
     { id: 'el-4', type: 'text', text: 'hola@kalpagrafica.com | +54 9 11 0000-0000', x: 40, y: 150, fontSize: 12, fill: '#9EA0A6', fontFamily: 'JetBrains Mono' }
   ]);
+  const [elementsBack, setElementsBack] = useState([
+    { id: 'eb-1', type: 'circle', x: 270, y: 120, radius: 70, fill: '#BAFDC1', opacity: 0.15 },
+    { id: 'eb-2', type: 'text', text: 'KALPAGRÁFICA', x: 160, y: 105, fontSize: 28, fill: '#BAFDC1', fontFamily: 'Space Grotesk', fontWeight: 'bold' },
+    { id: 'eb-3', type: 'text', text: 'SOLUCIONES DE IMPRESIÓN DE ALTA PRECISIÓN', x: 110, y: 145, fontSize: 11, fill: '#9EA0A6', fontFamily: 'Inter' }
+  ]);
+
+  const elements = currentSide === 'front' ? elementsFront : elementsBack;
+  const setElements = (updater) => {
+    if (typeof updater === 'function') {
+      if (currentSide === 'front') setElementsFront((prev) => updater(prev));
+      else setElementsBack((prev) => updater(prev));
+    } else {
+      if (currentSide === 'front') setElementsFront(updater);
+      else setElementsBack(updater);
+    }
+  };
   
   const [selectedId, setSelectedId] = useState(null);
-  const [activeTab, setActiveTab] = useState('canvas'); // Default tab: 'canvas' | 'text' | 'emojis' | 'draw' | 'shapes' | 'image'
-  const [retouchModalOpen, setRetouchModalOpen] = useState(false);
-  const [imagePropSubTab, setImagePropSubTab] = useState('filters'); // 'filters' | 'crop' | 'ai'
-  const [canvasBgMode, setCanvasBgMode] = useState('color'); // 'color' | 'gradient' | 'texture'
+  const [activeTab, setActiveTab] = useState('canvas');
+  const [imagePropSubTab, setImagePropSubTab] = useState('filters');
+  const [canvasBgMode, setCanvasBgMode] = useState('color');
   const [patternType, setPatternType] = useState('grid');
   const [patternColor, setPatternColor] = useState('#BAFDC1');
   const [patternAngle, setPatternAngle] = useState(0);
@@ -517,11 +714,24 @@ export default function DesignEditorSection() {
   const [presetCategory, setPresetCategory] = useState('Redes Sociales');
   const [impSheetFormat, setImpSheetFormat] = useState('a4');
   const [impOrientation, setImpOrientation] = useState('portrait');
+
+  // Imposición Flexible
+  const [impositionMode, setImpositionMode] = useState('duplex_bleed');
+  const [manualSpacing, setManualSpacing] = useState(2);
+
+  // Fondo Imagen
+  const [bgImgSrc, setBgImgSrc] = useState(null);
+  const [bgImgMode, setBgImgMode] = useState('cover');
+
+  // Pinceles Avanzados
+  const [brushType, setBrushType] = useState('basic');
+  const [brushOpacity, setBrushOpacity] = useState(1);
+
   const [gradColor1, setGradColor1] = useState('#111114');
   const [gradColor2, setGradColor2] = useState('#302b63');
   const [gradAngle, setGradAngle] = useState(135);
   const [gradStop, setGradStop] = useState(50);
-  const [gradStyle, setGradStyle] = useState('smooth'); // 'smooth' | 'sharp' | 'radial'
+  const [gradStyle, setGradStyle] = useState('smooth');
   const [bgImageObj, setBgImageObj] = useState(null);
 
   // Renderizar fondo CSS (sólido, degradado a la mitad, radial o textura) a objeto canvas Konva
@@ -978,30 +1188,14 @@ export default function DesignEditorSection() {
     }, 100);
   };
 
-  // Generador de PDF Mosaico Dúplex A4/A3 con Sangrado y marcas de corte
+  // Generador de PDF Mosaico Flexible (Dúplex Sangrado 3.5mm o Frente Simple con Espaciado Manual)
   const exportImpositionPDF = async () => {
     try {
       if (!stageRef.current) return;
       setSelectedId(null);
-
       await new Promise((res) => setTimeout(res, 100));
 
-      const stage = stageRef.current;
-      const prevW = stage.width(), prevH = stage.height();
-      const prevScale = stage.scale();
-
-      stage.width(preset.width);
-      stage.height(preset.height);
-      stage.scale({ x: 1, y: 1 });
-      stage.batchDraw();
-
-      const dataURL = stage.toDataURL({ pixelRatio: 3 });
-
-      stage.width(prevW);
-      stage.height(prevH);
-      stage.scale(prevScale);
-      stage.batchDraw();
-
+      const isDuplex = impositionMode === 'duplex_bleed';
       let sheetW = impSheetFormat === 'a3' ? 297 : 210;
       let sheetH = impSheetFormat === 'a3' ? 420 : 297;
 
@@ -1021,27 +1215,45 @@ export default function DesignEditorSection() {
         }
       }
 
-      const bleed = 3.5; // 3.5mm bleed
+      const bleed = isDuplex ? 3.5 : 0;
+      const gap = isDuplex ? 0 : (manualSpacing || 0);
+
       const cellW = cardW + bleed * 2;
       const cellH = cardH + bleed * 2;
 
-      const colsNormal = Math.max(1, Math.floor((sheetW - 10) / cellW));
-      const rowsNormal = Math.max(1, Math.floor((sheetH - 10) / cellH));
+      const cols = Math.max(1, Math.floor((sheetW - 10) / (cellW + gap)));
+      const rows = Math.max(1, Math.floor((sheetH - 10) / (cellH + gap)));
 
-      const colsRotated = Math.max(1, Math.floor((sheetW - 10) / cellH));
-      const rowsRotated = Math.max(1, Math.floor((sheetH - 10) / cellW));
+      const totalGridW = cols * cellW + (cols - 1) * gap;
+      const totalGridH = rows * cellH + (rows - 1) * gap;
+      const offsetX = (sheetW - totalGridW) / 2;
+      const offsetY = (sheetH - totalGridH) / 2;
 
-      const yieldNormal = colsNormal * rowsNormal;
-      const yieldRotated = colsRotated * rowsRotated;
+      const stage = stageRef.current;
+      const prevW = stage.width(), prevH = stage.height();
+      const prevScale = stage.scale();
+      stage.width(preset.width);
+      stage.height(preset.height);
+      stage.scale({ x: 1, y: 1 });
+      stage.batchDraw();
 
-      const useRotated = yieldRotated > yieldNormal;
-      const cols = useRotated ? colsRotated : colsNormal;
-      const rows = useRotated ? rowsRotated : rowsNormal;
+      const savedSide = currentSide;
+      setCurrentSide('front');
+      await new Promise((r) => setTimeout(r, 60));
+      const frontDataURL = stage.toDataURL({ pixelRatio: 3 });
 
-      const gridWidth = cols * cellW;
-      const gridHeight = rows * cellH;
-      const offsetX = (sheetW - gridWidth) / 2;
-      const offsetY = (sheetH - gridHeight) / 2;
+      let backDataURL = null;
+      if (isDuplex) {
+        setCurrentSide('back');
+        await new Promise((r) => setTimeout(r, 60));
+        backDataURL = stage.toDataURL({ pixelRatio: 3 });
+      }
+
+      setCurrentSide(savedSide);
+      stage.width(prevW);
+      stage.height(prevH);
+      stage.scale(prevScale);
+      stage.batchDraw();
 
       const pdf = new jsPDF({
         orientation: sheetW > sheetH ? 'landscape' : 'portrait',
@@ -1049,13 +1261,13 @@ export default function DesignEditorSection() {
         format: [sheetW, sheetH]
       });
 
-      // PÁGINA 1: ANVERSO + MARCAS DE CORTE
+      // PÁGINA 1: FRENTE + MARCAS DE CORTE
       for (let r = 0; r < rows; r++) {
         for (let c = 0; c < cols; c++) {
-          const x = offsetX + c * cellW;
-          const y = offsetY + r * cellH;
+          const x = offsetX + c * (cellW + gap);
+          const y = offsetY + r * (cellH + gap);
 
-          pdf.addImage(dataURL, 'PNG', x, y, cellW, cellH);
+          pdf.addImage(frontDataURL, 'PNG', x, y, cellW, cellH);
 
           pdf.setDrawColor(0, 0, 0);
           pdf.setLineWidth(0.15);
@@ -1082,20 +1294,22 @@ export default function DesignEditorSection() {
         }
       }
 
-      // PÁGINA 2: REVERSO (DORSO ESPEJADO LONG-EDGE FLIP)
-      pdf.addPage([sheetW, sheetH], sheetW > sheetH ? 'landscape' : 'portrait');
+      // PÁGINA 2: REVERSO (DORSO ESPEJADO LONG-EDGE FLIP SI ES DÚPLEX)
+      if (isDuplex && backDataURL) {
+        pdf.addPage([sheetW, sheetH], sheetW > sheetH ? 'landscape' : 'portrait');
 
-      for (let r = 0; r < rows; r++) {
-        for (let c = 0; c < cols; c++) {
-          const frontX = offsetX + c * cellW;
-          const backX = sheetW - frontX - cellW;
-          const backY = offsetY + r * cellH;
+        for (let r = 0; r < rows; r++) {
+          for (let c = 0; c < cols; c++) {
+            const frontX = offsetX + c * cellW;
+            const backX = sheetW - frontX - cellW;
+            const backY = offsetY + r * cellH;
 
-          pdf.addImage(dataURL, 'PNG', backX, backY, cellW, cellH);
+            pdf.addImage(backDataURL, 'PNG', backX, backY, cellW, cellH);
+          }
         }
       }
 
-      pdf.save(`Mosaico_${impSheetFormat.toUpperCase()}_Duplex_${preset.name.replace(/\s+/g, '_')}.pdf`);
+      pdf.save(`Mosaico_${impSheetFormat.toUpperCase()}_${isDuplex ? 'Duplex_Sangrado' : 'Frente_Simple'}_${preset.name.replace(/\s+/g, '_')}.pdf`);
     } catch (err) {
       console.error('Error al generar PDF de Imposición:', err);
       alert('Hubo un problema al generar el PDF impositado. Intenta nuevamente.');
@@ -1105,8 +1319,7 @@ export default function DesignEditorSection() {
   const selectedElement = elements.find((el) => el.id === selectedId);
 
   // ---------------------------------------------------------------------
-  // Contenido de la pestaña de herramientas activa — se reutiliza tal cual
-  // en el panel fijo de desktop y en el panel desplegable de mobile.
+  // Contenido de la pestaña de herramientas activa
   // ---------------------------------------------------------------------
   const renderActiveTabContent = () => (
     <>
@@ -1177,7 +1390,39 @@ export default function DesignEditorSection() {
             </div>
           </div>
 
-          {/* Bloque 2: Fondo del Lienzo (Color Sólido, Textura, Degradado) */}
+          {/* Bloque 2: Plantillas Predefinidas por Formato */}
+          {DESIGN_TEMPLATES[preset.id] && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem', backgroundColor: 'var(--bg-surface-2)', padding: '0.8rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-subtle)' }}>
+              <span style={{ fontSize: '0.8rem', color: 'var(--accent)', fontWeight: 700, textTransform: 'uppercase' }}>
+                🌟 Plantillas Predefinidas (Frente & Dorso)
+              </span>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '0.4rem' }}>
+                {DESIGN_TEMPLATES[preset.id].map((tmpl) => (
+                  <button
+                    key={tmpl.id}
+                    type="button"
+                    onClick={() => {
+                      if (window.confirm(`¿Cargar la plantilla "${tmpl.name}"? Reemplazará los elementos del frente y dorso.`)) {
+                        setBgColor(tmpl.frontBg);
+                        setElementsFront(JSON.parse(JSON.stringify(tmpl.frontElements)));
+                        setElementsBack(JSON.parse(JSON.stringify(tmpl.backElements)));
+                        setSelectedId(null);
+                      }
+                    }}
+                    style={{
+                      padding: '0.5rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-subtle)',
+                      backgroundColor: 'var(--bg-surface)', color: 'var(--text-primary)', cursor: 'pointer',
+                      fontSize: '0.72rem', fontWeight: 700, textAlign: 'center'
+                    }}
+                  >
+                    🎨 {tmpl.name}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Bloque 3: Fondo del Lienzo (Color Sólido, Textura, Degradado, Imagen) */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
             <h4 style={{ fontSize: '0.82rem', color: 'var(--accent)', fontWeight: 700, margin: 0, textTransform: 'uppercase' }}>
               🎨 Fondo del Lienzo
@@ -1185,66 +1430,28 @@ export default function DesignEditorSection() {
 
             {/* Selector Modo Fondo */}
             <div style={{ display: 'flex', gap: '0.3rem', backgroundColor: 'var(--bg-surface-2)', padding: '3px', borderRadius: 'var(--radius-sm)' }}>
-              <button
-                type="button"
-                onClick={() => setCanvasBgMode('color')}
-                style={{
-                  flex: 1, padding: '0.35rem 0.2rem', fontSize: '0.7rem', fontWeight: 700, borderRadius: 'var(--radius-sm)',
-                  backgroundColor: canvasBgMode === 'color' ? 'var(--accent)' : 'transparent',
-                  color: canvasBgMode === 'color' ? '#000' : 'var(--text-secondary)', border: 'none', cursor: 'pointer'
-                }}
-              >
-                🎨 Sólido
-              </button>
-              <button
-                type="button"
-                onClick={() => setCanvasBgMode('texture')}
-                style={{
-                  flex: 1, padding: '0.35rem 0.2rem', fontSize: '0.7rem', fontWeight: 700, borderRadius: 'var(--radius-sm)',
-                  backgroundColor: canvasBgMode === 'texture' ? 'var(--accent)' : 'transparent',
-                  color: canvasBgMode === 'texture' ? '#000' : 'var(--text-secondary)', border: 'none', cursor: 'pointer'
-                }}
-              >
-                🏁 Textura
-              </button>
-              <button
-                type="button"
-                onClick={() => setCanvasBgMode('gradient')}
-                style={{
-                  flex: 1, padding: '0.35rem 0.2rem', fontSize: '0.7rem', fontWeight: 700, borderRadius: 'var(--radius-sm)',
-                  backgroundColor: canvasBgMode === 'gradient' ? 'var(--accent)' : 'transparent',
-                  color: canvasBgMode === 'gradient' ? '#000' : 'var(--text-secondary)', border: 'none', cursor: 'pointer'
-                }}
-              >
-                🌈 Degradado
-              </button>
+              {['color', 'texture', 'gradient', 'image'].map((mode) => (
+                <button
+                  key={mode}
+                  type="button"
+                  onClick={() => setCanvasBgMode(mode)}
+                  style={{
+                    flex: 1, padding: '0.35rem 0.1rem', fontSize: '0.66rem', fontWeight: 700, borderRadius: 'var(--radius-sm)',
+                    backgroundColor: canvasBgMode === mode ? 'var(--accent)' : 'transparent',
+                    color: canvasBgMode === mode ? '#000' : 'var(--text-secondary)', border: 'none', cursor: 'pointer'
+                  }}
+                >
+                  {mode === 'color' ? '🎨 Sólido' : mode === 'texture' ? '📐 Trama' : mode === 'gradient' ? '🌈 Degradado' : '🖼️ Imagen'}
+                </button>
+              ))}
             </div>
 
-            {/* Color Sólido */}
-            {canvasBgMode === 'color' && (
-              <div>
-                <label style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '0.4rem', fontWeight: 600 }}>
-                  Color Sólido de Fondo:
-                </label>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem' }}>
-                  <input
-                    type="color"
-                    value={typeof bgColor === 'string' && bgColor.startsWith('#') ? bgColor : '#111114'}
-                    onChange={(e) => setBgColor(e.target.value)}
-                    style={{ width: '45px', height: '36px', border: 'none', borderRadius: '4px', cursor: 'pointer', backgroundColor: 'transparent' }}
-                  />
-                  <span style={{ fontSize: '0.85rem', color: 'var(--text-primary)' }} className="font-mono">{typeof bgColor === 'string' && bgColor.startsWith('#') ? bgColor : 'Textura/Degradado'}</span>
-                </div>
-              </div>
-            )}
-
-            {/* Textura con Inclinación, Escala, Espaciado e Imagen Propia */}
-            {canvasBgMode === 'texture' && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
-                {/* Botón para subir PNG propio */}
+            {/* Imagen de Fondo con Ajuste Cover / Contain / Stretch */}
+            {canvasBgMode === 'image' && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem', backgroundColor: 'var(--bg-surface-2)', padding: '0.6rem', borderRadius: 'var(--radius-sm)' }}>
                 <label className="btn btn-secondary btn-sm" style={{ width: '100%', justifyContent: 'center', gap: '0.4rem', cursor: 'pointer' }}>
                   <Upload size={14} />
-                  <span>Subir Ícono / Imagen propia para Trama</span>
+                  <span>Subir Imagen para Fondo</span>
                   <input
                     type="file" accept="image/*" style={{ display: 'none' }}
                     onChange={(e) => {
@@ -1253,267 +1460,107 @@ export default function DesignEditorSection() {
                       const reader = new FileReader();
                       reader.onload = (ev) => {
                         const url = ev.target.result;
-                        setCustomImgSrc(url);
-                        createTexturePatternUrl({
-                          patternType, bgColor: typeof bgColor === 'string' && bgColor.startsWith('#') ? bgColor : '#111114',
-                          patternColor, patternAngle, patternScale, patternSpacing, customImgSrc: url
-                        }, (dataUrl) => setBgColor(dataUrl));
+                        setBgImgSrc(url);
+                        setBgColor(url);
                       };
                       reader.readAsDataURL(file);
                     }}
                   />
                 </label>
 
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.4rem' }}>
-                  {[
-                    { id: 'grid', label: 'Cuadrícula', icon: '📐' },
-                    { id: 'dots', label: 'Puntos', icon: '⚪' },
-                    { id: 'stripes', label: 'Franjas', icon: '📊' },
-                    { id: 'noise', label: 'Ruido HD', icon: '📺' },
-                    { id: 'paper', label: 'Lino/Papel', icon: '📜' }
-                  ].map((pat) => (
-                    <button
-                      key={pat.id}
-                      type="button"
-                      onClick={() => {
-                        setPatternType(pat.id);
-                        setCustomImgSrc(null);
-                        createTexturePatternUrl({
-                          patternType: pat.id, bgColor: typeof bgColor === 'string' && bgColor.startsWith('#') ? bgColor : '#111114',
-                          patternColor, patternAngle, patternScale, patternSpacing, customImgSrc: null
-                        }, (dataUrl) => setBgColor(dataUrl));
-                      }}
-                      style={{
-                        padding: '0.5rem 0.3rem', borderRadius: 'var(--radius-sm)',
-                        border: `1.5px solid ${patternType === pat.id && !customImgSrc ? 'var(--accent)' : 'var(--border-subtle)'}`,
-                        backgroundColor: patternType === pat.id && !customImgSrc ? 'var(--accent-muted)' : 'var(--bg-surface-2)',
-                        color: patternType === pat.id && !customImgSrc ? 'var(--accent)' : 'var(--text-primary)',
-                        cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.2rem'
-                      }}
-                    >
-                      <span style={{ fontSize: '1.1rem' }}>{pat.icon}</span>
-                      <span style={{ fontSize: '0.68rem', fontWeight: 600 }}>{pat.label}</span>
-                    </button>
-                  ))}
-                </div>
-
-                {/* Sliders de Inclinación, Escala y Espaciado */}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem', backgroundColor: 'var(--bg-surface-2)', padding: '0.6rem', borderRadius: 'var(--radius-sm)' }}>
-                  <div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: 'var(--text-secondary)' }}>
-                      <span>Inclinación de Trama:</span>
-                      <span className="font-mono" style={{ color: 'var(--accent)', fontWeight: 700 }}>{patternAngle}°</span>
-                    </div>
-                    <input
-                      type="range" min={0} max={360} step={5}
-                      value={patternAngle}
-                      onChange={(e) => {
-                        const ang = Number(e.target.value);
-                        setPatternAngle(ang);
-                        createTexturePatternUrl({
-                          patternType, bgColor: typeof bgColor === 'string' && bgColor.startsWith('#') ? bgColor : '#111114',
-                          patternColor, patternAngle: ang, patternScale, patternSpacing, customImgSrc
-                        }, (dataUrl) => setBgColor(dataUrl));
-                      }}
-                      style={{ width: '100%', accentColor: 'var(--accent)' }}
-                    />
-                  </div>
-
-                  <div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: 'var(--text-secondary)' }}>
-                      <span>Escala / Tamaño de Trama:</span>
-                      <span className="font-mono" style={{ color: 'var(--accent)', fontWeight: 700 }}>{patternScale.toFixed(1)}x</span>
-                    </div>
-                    <input
-                      type="range" min={0.3} max={3.0} step={0.1}
-                      value={patternScale}
-                      onChange={(e) => {
-                        const sc = Number(e.target.value);
-                        setPatternScale(sc);
-                        createTexturePatternUrl({
-                          patternType, bgColor: typeof bgColor === 'string' && bgColor.startsWith('#') ? bgColor : '#111114',
-                          patternColor, patternAngle, patternScale: sc, patternSpacing, customImgSrc
-                        }, (dataUrl) => setBgColor(dataUrl));
-                      }}
-                      style={{ width: '100%', accentColor: 'var(--accent)' }}
-                    />
-                  </div>
-
-                  <div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: 'var(--text-secondary)' }}>
-                      <span>Espaciado / Separación:</span>
-                      <span className="font-mono" style={{ color: 'var(--accent)', fontWeight: 700 }}>{patternSpacing}px</span>
-                    </div>
-                    <input
-                      type="range" min={15} max={120} step={5}
-                      value={patternSpacing}
-                      onChange={(e) => {
-                        const sp = Number(e.target.value);
-                        setPatternSpacing(sp);
-                        createTexturePatternUrl({
-                          patternType, bgColor: typeof bgColor === 'string' && bgColor.startsWith('#') ? bgColor : '#111114',
-                          patternColor, patternAngle, patternScale, patternSpacing: sp, customImgSrc
-                        }, (dataUrl) => setBgColor(dataUrl));
-                      }}
-                      style={{ width: '100%', accentColor: 'var(--accent)' }}
-                    />
-                  </div>
-
-                  <div>
-                    <label style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '0.2rem' }}>Color de Trama:</label>
-                    <input
-                      type="color"
-                      value={patternColor}
-                      onChange={(e) => {
-                        setPatternColor(e.target.value);
-                        createTexturePatternUrl({
-                          patternType, bgColor: typeof bgColor === 'string' && bgColor.startsWith('#') ? bgColor : '#111114',
-                          patternColor: e.target.value, patternAngle, patternScale, patternSpacing, customImgSrc
-                        }, (dataUrl) => setBgColor(dataUrl));
-                      }}
-                      style={{ width: '100%', height: '30px', border: 'none', borderRadius: '4px', cursor: 'pointer', backgroundColor: 'transparent' }}
-                    />
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Degradados */}
-            {canvasBgMode === 'gradient' && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.9rem' }}>
-                <span style={{ fontSize: '0.78rem', color: 'var(--accent)', fontWeight: 700 }}>
-                  Generador Personalizado (Mitad / 2 Colores / Ángulo):
-                </span>
-
-                {/* Modo de Mezcla / Transición */}
-                <div style={{ display: 'flex', gap: '0.3rem', backgroundColor: 'var(--bg-surface-2)', padding: '3px', borderRadius: 'var(--radius-sm)' }}>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setGradStyle('smooth');
-                      const css = `linear-gradient(${gradAngle}deg, ${gradColor1} 0%, ${gradColor2} 100%)`;
-                      setBgColor(css);
-                    }}
-                    style={{
-                      flex: 1, padding: '0.3rem 0.1rem', fontSize: '0.68rem', fontWeight: 600, borderRadius: 'var(--radius-sm)',
-                      backgroundColor: gradStyle === 'smooth' ? 'var(--accent)' : 'transparent',
-                      color: gradStyle === 'smooth' ? '#000' : 'var(--text-secondary)', border: 'none', cursor: 'pointer'
-                    }}
-                  >
-                    🌊 Suave
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setGradStyle('sharp');
-                      const css = `linear-gradient(${gradAngle}deg, ${gradColor1} 0% ${gradStop}%, ${gradColor2} ${gradStop}% 100%)`;
-                      setBgColor(css);
-                    }}
-                    style={{
-                      flex: 1, padding: '0.3rem 0.1rem', fontSize: '0.68rem', fontWeight: 600, borderRadius: 'var(--radius-sm)',
-                      backgroundColor: gradStyle === 'sharp' ? 'var(--accent)' : 'transparent',
-                      color: gradStyle === 'sharp' ? '#000' : 'var(--text-secondary)', border: 'none', cursor: 'pointer'
-                    }}
-                  >
-                    ✂️ Mitad 50/50
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setGradStyle('radial');
-                      const css = `radial-gradient(circle at center, ${gradColor1} 0%, ${gradColor2} 100%)`;
-                      setBgColor(css);
-                    }}
-                    style={{
-                      flex: 1, padding: '0.3rem 0.1rem', fontSize: '0.68rem', fontWeight: 600, borderRadius: 'var(--radius-sm)',
-                      backgroundColor: gradStyle === 'radial' ? 'var(--accent)' : 'transparent',
-                      color: gradStyle === 'radial' ? '#000' : 'var(--text-secondary)', border: 'none', cursor: 'pointer'
-                    }}
-                  >
-                    🎯 Radial
-                  </button>
-                </div>
-
-                {/* Selector de los 2 Colores */}
-                <div style={{ display: 'flex', gap: '0.6rem' }}>
-                  <div style={{ flex: 1 }}>
-                    <label style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '0.2rem' }}>Color 1 (Mitad 1):</label>
-                    <input
-                      type="color"
-                      value={gradColor1}
-                      onChange={(e) => {
-                        setGradColor1(e.target.value);
-                        const c1 = e.target.value;
-                        const css = gradStyle === 'sharp'
-                          ? `linear-gradient(${gradAngle}deg, ${c1} 0% ${gradStop}%, ${gradColor2} ${gradStop}% 100%)`
-                          : gradStyle === 'radial'
-                          ? `radial-gradient(circle at center, ${c1} 0%, ${gradColor2} 100%)`
-                          : `linear-gradient(${gradAngle}deg, ${c1} 0%, ${gradColor2} 100%)`;
-                        setBgColor(css);
-                      }}
-                      style={{ width: '100%', height: '34px', border: 'none', borderRadius: '4px', cursor: 'pointer', backgroundColor: 'transparent' }}
-                    />
-                  </div>
-
-                  <div style={{ flex: 1 }}>
-                    <label style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '0.2rem' }}>Color 2 (Mitad 2):</label>
-                    <input
-                      type="color"
-                      value={gradColor2}
-                      onChange={(e) => {
-                        setGradColor2(e.target.value);
-                        const c2 = e.target.value;
-                        const css = gradStyle === 'sharp'
-                          ? `linear-gradient(${gradAngle}deg, ${gradColor1} 0% ${gradStop}%, ${c2} ${gradStop}% 100%)`
-                          : gradStyle === 'radial'
-                          ? `radial-gradient(circle at center, ${gradColor1} 0%, ${c2} 100%)`
-                          : `linear-gradient(${gradAngle}deg, ${gradColor1} 0%, ${c2} 100%)`;
-                        setBgColor(css);
-                      }}
-                      style={{ width: '100%', height: '34px', border: 'none', borderRadius: '4px', cursor: 'pointer', backgroundColor: 'transparent' }}
-                    />
-                  </div>
-                </div>
-
-                {/* Slider de Ángulo */}
-                {gradStyle !== 'radial' && (
-                  <div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: 'var(--text-secondary)' }}>
-                      <span>Ángulo de Inclinación:</span>
-                      <span className="font-mono" style={{ color: 'var(--accent)', fontWeight: 700 }}>{gradAngle}°</span>
-                    </div>
-                    <input
-                      type="range" min={0} max={360} step={5}
-                      value={gradAngle}
-                      onChange={(e) => {
-                        const a = Number(e.target.value);
-                        setGradAngle(a);
-                        const css = gradStyle === 'sharp'
-                          ? `linear-gradient(${a}deg, ${gradColor1} 0% ${gradStop}%, ${gradColor2} ${gradStop}% 100%)`
-                          : `linear-gradient(${a}deg, ${gradColor1} 0%, ${gradColor2} 100%)`;
-                        setBgColor(css);
-                      }}
-                      style={{ width: '100%', accentColor: 'var(--accent)' }}
-                    />
+                {bgImgSrc && (
+                  <div style={{ display: 'flex', gap: '0.3rem' }}>
+                    {[
+                      { id: 'cover', label: 'Rellenar' },
+                      { id: 'contain', label: 'Encajar' },
+                      { id: 'stretch', label: 'Deformar' }
+                    ].map((fit) => (
+                      <button
+                        key={fit.id}
+                        type="button"
+                        onClick={() => setBgImgMode(fit.id)}
+                        style={{
+                          flex: 1, padding: '0.3rem 0.1rem', fontSize: '0.68rem', fontWeight: 600, borderRadius: 'var(--radius-sm)',
+                          backgroundColor: bgImgMode === fit.id ? 'var(--accent)' : 'var(--bg-surface)',
+                          color: bgImgMode === fit.id ? '#000' : 'var(--text-primary)', border: '1px solid var(--border-subtle)', cursor: 'pointer'
+                        }}
+                      >
+                        {fit.label}
+                      </button>
+                    ))}
                   </div>
                 )}
               </div>
             )}
+
+            {/* Color Sólido */}
+            {canvasBgMode === 'color' && (
+              <div style={{ display: 'flex', gap: '0.6rem', alignItems: 'center' }}>
+                <input
+                  type="color"
+                  value={typeof bgColor === 'string' && bgColor.startsWith('#') ? bgColor : '#111114'}
+                  onChange={(e) => setBgColor(e.target.value)}
+                  style={{ width: '45px', height: '36px', border: 'none', borderRadius: '4px', cursor: 'pointer', backgroundColor: 'transparent' }}
+                />
+                <span style={{ fontSize: '0.85rem', color: 'var(--text-primary)' }} className="font-mono">
+                  {typeof bgColor === 'string' && bgColor.startsWith('#') ? bgColor : 'Sólido Custom'}
+                </span>
+              </div>
+            )}
           </div>
 
-          {/* Bloque 3: Mosaico Imprimible A4 / A3 con Sangrado Frente y Dorso */}
+          {/* Bloque 4: Imposición Flexible (Dúplex Sangrado vs Frente Simple con Espaciado) */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem', backgroundColor: 'var(--bg-surface-2)', padding: '0.8rem', borderRadius: 'var(--radius-md)', border: '1px dashed var(--accent)' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
               <Printer size={16} color="var(--accent)" />
               <span style={{ fontSize: '0.8rem', color: 'var(--accent)', fontWeight: 700, textTransform: 'uppercase' }}>
-                🖨️ Mosaico A4 / A3 con Sangrado
+                🖨️ Imposición Flexible A4 / A3
               </span>
             </div>
 
-            <p style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', lineHeight: 1.35, margin: 0 }}>
-              Calcula y repite automáticamente la pieza en una hoja de impresión con canaletas de 7.0 mm, marcas de corte en el frente y <strong>sangrado envolvente de 3.5 mm espejado en el dorso</strong>.
-            </p>
+            {/* Selector Modo Imposición */}
+            <div style={{ display: 'flex', gap: '0.3rem', backgroundColor: 'var(--bg-surface)', padding: '2px', borderRadius: 'var(--radius-sm)' }}>
+              <button
+                type="button"
+                onClick={() => setImpositionMode('duplex_bleed')}
+                style={{
+                  flex: 1, padding: '0.35rem 0.2rem', fontSize: '0.66rem', fontWeight: 700, borderRadius: 'var(--radius-sm)',
+                  backgroundColor: impositionMode === 'duplex_bleed' ? 'var(--accent)' : 'transparent',
+                  color: impositionMode === 'duplex_bleed' ? '#000' : 'var(--text-secondary)', border: 'none', cursor: 'pointer'
+                }}
+              >
+                🖨️ Dúplex (Sangrado 3.5mm)
+              </button>
+              <button
+                type="button"
+                onClick={() => setImpositionMode('front_single')}
+                style={{
+                  flex: 1, padding: '0.35rem 0.2rem', fontSize: '0.66rem', fontWeight: 700, borderRadius: 'var(--radius-sm)',
+                  backgroundColor: impositionMode === 'front_single' ? 'var(--accent)' : 'transparent',
+                  color: impositionMode === 'front_single' ? '#000' : 'var(--text-secondary)', border: 'none', cursor: 'pointer'
+                }}
+              >
+                ✂️ Frente (Espaciado Manual)
+              </button>
+            </div>
 
+            {/* Slider de Espaciado Manual (si es Frente Simple) */}
+            {impositionMode === 'front_single' && (
+              <div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: 'var(--text-secondary)' }}>
+                  <span>Espaciado entre Tarjetas:</span>
+                  <span className="font-mono" style={{ color: 'var(--accent)', fontWeight: 700 }}>{manualSpacing} mm</span>
+                </div>
+                <input
+                  type="range" min={0} max={10} step={0.5}
+                  value={manualSpacing}
+                  onChange={(e) => setManualSpacing(Number(e.target.value))}
+                  style={{ width: '100%', accentColor: 'var(--accent)' }}
+                />
+              </div>
+            )}
+
+            {/* Formato Hoja A4 / A3 */}
             <div style={{ display: 'flex', gap: '0.5rem' }}>
               <div style={{ flex: 1 }}>
                 <label style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '0.2rem' }}>Formato Hoja:</label>
@@ -1540,14 +1587,23 @@ export default function DesignEditorSection() {
               </div>
             </div>
 
+            {/* Vista Previa Visual 2D del Pliego A4/A3 */}
+            <ImpositionPreview2D
+              sheetFormat={impSheetFormat}
+              orientation={impOrientation}
+              impositionMode={impositionMode}
+              manualSpacing={manualSpacing}
+              preset={preset}
+            />
+
             <button
               type="button"
               className="btn btn-primary btn-sm"
               onClick={exportImpositionPDF}
-              style={{ width: '100%', justifyContent: 'center', gap: '0.5rem', marginTop: '0.2rem' }}
+              style={{ width: '100%', justifyContent: 'center', gap: '0.5rem', marginTop: '0.4rem' }}
             >
               <FileText size={15} />
-              <span>Generar PDF Mosaico A4/A3 Dúplex</span>
+              <span>Generar PDF Mosaico {impSheetFormat.toUpperCase()} ({impositionMode === 'duplex_bleed' ? 'Dúplex' : 'Frente'})</span>
             </button>
           </div>
         </div>
@@ -1568,28 +1624,16 @@ export default function DesignEditorSection() {
             <span>Añadir Bloque de Texto</span>
           </button>
 
-          <label style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '0.5rem', fontWeight: 600 }}>
-            Catálogo de 30 Fuentes Gratuitas:
-          </label>
-
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
             {WEB_FONTS.map((font) => (
               <button
                 key={font.name}
                 onClick={() => addText(font.name, font.name, 22)}
                 style={{
-                  backgroundColor: 'var(--bg-surface-2)',
-                  border: '1px solid var(--border-subtle)',
-                  borderRadius: 'var(--radius-md)',
-                  padding: '0.6rem 0.8rem',
-                  textAlign: 'left',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  transition: 'all 0.2s'
+                  backgroundColor: 'var(--bg-surface-2)', border: '1px solid var(--border-subtle)',
+                  borderRadius: 'var(--radius-md)', padding: '0.6rem 0.8rem', textAlign: 'left',
+                  cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between'
                 }}
-                className="font-item-btn"
               >
                 <span style={{ fontFamily: font.name, fontSize: '0.95rem', color: 'var(--text-primary)' }}>
                   {font.name}
@@ -1603,14 +1647,43 @@ export default function DesignEditorSection() {
         </div>
       )}
 
+      {activeTab === 'clipart' && (
+        <div>
+          <h4 style={{ fontSize: '0.85rem', color: 'var(--accent)', fontWeight: 700, marginBottom: '0.8rem', textTransform: 'uppercase' }}>
+            Clipart & Stickers Vectoriales
+          </h4>
+
+          {CLIPART_PRESETS.map((cat) => (
+            <div key={cat.category} style={{ marginBottom: '1rem' }}>
+              <span style={{ fontSize: '0.74rem', color: 'var(--luxury)', fontWeight: 700, display: 'block', marginBottom: '0.4rem' }}>
+                {cat.category}
+              </span>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '0.4rem' }}>
+                {cat.items.map((item) => (
+                  <button
+                    key={item.id}
+                    type="button"
+                    onClick={() => addText(item.text, 'Space Grotesk', 16)}
+                    style={{
+                      padding: '0.5rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-subtle)',
+                      backgroundColor: item.bg, color: item.fill, fontWeight: 700, fontSize: '0.72rem',
+                      cursor: 'pointer', textAlign: 'center'
+                    }}
+                  >
+                    {item.name}
+                  </button>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
       {activeTab === 'emojis' && (
         <div>
           <h4 style={{ fontSize: '0.85rem', color: 'var(--accent)', fontWeight: 700, marginBottom: '0.8rem', textTransform: 'uppercase' }}>
             Emojis & Stickers (WhatsApp Style)
           </h4>
-          <p style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', marginBottom: '1rem', lineHeight: 1.35 }}>
-            Toca cualquier emoji para insertarlo en el lienzo como sticker escalable.
-          </p>
 
           {EMOJI_CATEGORIES.map((cat) => (
             <div key={cat.name} style={{ marginBottom: '1.2rem' }}>
@@ -1623,19 +1696,9 @@ export default function DesignEditorSection() {
                     key={idx}
                     onClick={() => addEmoji(emojiChar)}
                     style={{
-                      fontSize: '1.4rem',
-                      backgroundColor: 'var(--bg-surface-2)',
-                      border: '1px solid var(--border-subtle)',
-                      borderRadius: 'var(--radius-sm)',
-                      padding: '0.3rem',
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      transition: 'all 0.2s'
+                      fontSize: '1.4rem', backgroundColor: 'var(--bg-surface-2)', border: '1px solid var(--border-subtle)',
+                      borderRadius: 'var(--radius-sm)', padding: '0.3rem', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center'
                     }}
-                    title={`Insertar ${emojiChar}`}
-                    className="emoji-btn"
                   >
                     {emojiChar}
                   </button>
@@ -1649,56 +1712,71 @@ export default function DesignEditorSection() {
       {activeTab === 'draw' && (
         <div>
           <h4 style={{ fontSize: '0.85rem', color: 'var(--accent)', fontWeight: 700, marginBottom: '0.8rem', textTransform: 'uppercase' }}>
-            Pincel de Dibujo Libre
+            Pincel de Dibujo Libre (Multitrazos)
           </h4>
 
-          <div style={{
-            padding: '1rem',
-            backgroundColor: 'var(--bg-surface-2)',
-            borderRadius: 'var(--radius-md)',
-            border: isDrawingMode ? '1px solid var(--accent)' : '1px solid var(--border-subtle)',
-            marginBottom: '1.2rem'
-          }}>
+          <div style={{ padding: '0.8rem', backgroundColor: 'var(--bg-surface-2)', borderRadius: 'var(--radius-md)', marginBottom: '1rem' }}>
             <button
-              onClick={() => {
-                setIsDrawingMode(!isDrawingMode);
-                setSelectedId(null);
-                if (isMobile) setMobileToolOpen(false);
-              }}
+              onClick={() => { setIsDrawingMode(!isDrawingMode); setSelectedId(null); }}
               className={`btn ${isDrawingMode ? 'btn-primary' : 'btn-secondary'} btn-sm`}
-              style={{ width: '100%', justifyContent: 'center', gap: '0.5rem', marginBottom: '0.8rem' }}
+              style={{ width: '100%', justifyContent: 'center', gap: '0.5rem', marginBottom: '0.6rem' }}
             >
               <Brush size={16} />
-              <span>{isDrawingMode ? 'Modo Pincel ACTIVO' : 'Activar Pincel de Dibujo'}</span>
+              <span>{isDrawingMode ? 'Modo Pincel ACTIVO' : 'Activar Pincel'}</span>
             </button>
-            <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', lineHeight: 1.35, textAlign: 'center' }}>
-              {isDrawingMode ? 'Arrastra sobre el lienzo para dibujar libremente.' : 'Haz clic para comenzar a trazar sobre el lienzo.'}
-            </p>
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
             <div>
+              <label style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '0.3rem' }}>
+                Tipo de Pincel:
+              </label>
+              <select
+                value={brushType}
+                onChange={(e) => setBrushType(e.target.value)}
+                style={{ width: '100%', padding: '0.4rem', backgroundColor: 'var(--bg-surface-2)', color: 'var(--text-primary)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-sm)', fontSize: '0.78rem' }}
+              >
+                <option value="basic">🖌️ Pincel Estándar</option>
+                <option value="marker">🖍️ Resaltador (Marcador Transparente)</option>
+                <option value="calligraphy">✒️ Pluma Caligráfica</option>
+                <option value="neon">⚡ Resplandor Neón</option>
+              </select>
+            </div>
+
+            <div>
               <label style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '0.3rem' }}>
-                Color del Pincel
+                Color del Trazo
               </label>
               <input
                 type="color"
                 value={brushColor}
                 onChange={(e) => setBrushColor(e.target.value)}
-                style={{ width: '100%', height: '36px', border: 'none', borderRadius: '4px', cursor: 'pointer', backgroundColor: 'transparent' }}
+                style={{ width: '100%', height: '34px', border: 'none', borderRadius: '4px', cursor: 'pointer', backgroundColor: 'transparent' }}
               />
             </div>
 
             <div>
-              <label style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '0.3rem' }}>
-                Grosor del Trazo ({brushSize}px)
-              </label>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: 'var(--text-secondary)' }}>
+                <span>Grosor del Trazo:</span>
+                <span className="font-mono" style={{ color: 'var(--accent)', fontWeight: 700 }}>{brushSize}px</span>
+              </div>
               <input
-                type="range"
-                min={1}
-                max={30}
+                type="range" min={1} max={40}
                 value={brushSize}
                 onChange={(e) => setBrushSize(Number(e.target.value))}
+                style={{ width: '100%', accentColor: 'var(--accent)' }}
+              />
+            </div>
+
+            <div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: 'var(--text-secondary)' }}>
+                <span>Transparencia Pincel:</span>
+                <span className="font-mono" style={{ color: 'var(--accent)', fontWeight: 700 }}>{Math.round(brushOpacity * 100)}%</span>
+              </div>
+              <input
+                type="range" min={0.1} max={1} step={0.05}
+                value={brushOpacity}
+                onChange={(e) => setBrushOpacity(Number(e.target.value))}
                 style={{ width: '100%', accentColor: 'var(--accent)' }}
               />
             </div>
@@ -1709,21 +1787,42 @@ export default function DesignEditorSection() {
       {activeTab === 'shapes' && (
         <div>
           <h4 style={{ fontSize: '0.85rem', color: 'var(--accent)', fontWeight: 700, marginBottom: '0.8rem', textTransform: 'uppercase' }}>
-            Añadir Formas & Figuras
+            Añadir Formas Vectoriales (Office & Affinity Style)
           </h4>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
-            <button className="btn btn-secondary btn-sm" onClick={addRect} style={{ justifyContent: 'flex-start', gap: '0.6rem' }}>
-              <Square size={16} />
-              <span>Rectángulo / Tarjeta</span>
-            </button>
-            <button className="btn btn-secondary btn-sm" onClick={addCircle} style={{ justifyContent: 'flex-start', gap: '0.6rem' }}>
-              <CircleIcon size={16} />
-              <span>Círculo / Sello</span>
-            </button>
-            <button className="btn btn-secondary btn-sm" onClick={addStar} style={{ justifyContent: 'flex-start', gap: '0.6rem' }}>
-              <Sparkles size={16} />
-              <span>Estrella de 5 Puntas</span>
-            </button>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '0.4rem' }}>
+            {VECTOR_SHAPES_CATALOG.map((shape) => (
+              <button
+                key={shape.id}
+                type="button"
+                className="btn btn-secondary btn-sm"
+                onClick={() => {
+                  if (shape.id === 'rect') addRect();
+                  else if (shape.id === 'circle') addCircle();
+                  else if (shape.id === 'star') addStar();
+                  else {
+                    saveStateToHistory();
+                    const newEl = {
+                      id: `${shape.id}-${Date.now()}`,
+                      type: shape.id,
+                      x: preset.width / 2 - 40,
+                      y: preset.height / 2 - 40,
+                      radius: 40,
+                      width: 80,
+                      height: 80,
+                      fill: '#BAFDC1',
+                      opacity: 1,
+                      rotation: 0
+                    };
+                    setElements((prev) => [...prev, newEl]);
+                    setSelectedId(newEl.id);
+                  }
+                }}
+                style={{ justifyContent: 'flex-start', gap: '0.4rem', fontSize: '0.72rem' }}
+              >
+                <span>{shape.icon}</span>
+                <span>{shape.name}</span>
+              </button>
+            ))}
           </div>
         </div>
       )}
@@ -1731,7 +1830,7 @@ export default function DesignEditorSection() {
       {activeTab === 'image' && (
         <div>
           <h4 style={{ fontSize: '0.85rem', color: 'var(--accent)', fontWeight: 700, marginBottom: '0.8rem', textTransform: 'uppercase' }}>
-            Añadir Imagen & Filtros
+            Añadir Imagen & Logo
           </h4>
           <label className="btn btn-primary btn-sm" style={{ width: '100%', justifyContent: 'center', gap: '0.6rem', cursor: 'pointer', marginBottom: '1.2rem' }}>
             <ImageIcon size={16} />
@@ -1976,19 +2075,7 @@ export default function DesignEditorSection() {
                   border: 'none', cursor: 'pointer'
                 }}
               >
-                ✂️ Forma
-              </button>
-              <button
-                type="button"
-                onClick={() => setImagePropSubTab('ai')}
-                style={{
-                  flex: 1, padding: '0.35rem 0.2rem', fontSize: '0.7rem', fontWeight: 700, borderRadius: 'var(--radius-sm)',
-                  backgroundColor: imagePropSubTab === 'ai' ? 'var(--accent)' : 'transparent',
-                  color: imagePropSubTab === 'ai' ? '#000' : 'var(--text-secondary)',
-                  border: 'none', cursor: 'pointer'
-                }}
-              >
-                🪄 IA
+                ✂️ Forma Recorte
               </button>
             </div>
 
@@ -2120,24 +2207,24 @@ export default function DesignEditorSection() {
                 )}
               </div>
             )}
-
-            {imagePropSubTab === 'ai' && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
-                <button
-                  className="btn btn-secondary btn-sm"
-                  onClick={() => setRetouchModalOpen(true)}
-                  style={{ justifyContent: 'center', gap: '0.5rem', width: '100%', padding: '0.7rem' }}
-                >
-                  <Wand2 size={16} color="var(--accent)" />
-                  <span>Abrir Borrador Mágico & Quitar Fondo (IA)</span>
-                </button>
-                <span style={{ fontSize: '0.72rem', color: 'var(--text-disabled)', textAlign: 'center' }}>
-                  Elimina objetos no deseados o quita el fondo 100% nativo en el navegador.
-                </span>
-              </div>
-            )}
           </>
         )}
+
+        {/* Opacidad / Transparencia Universal para cualquier elemento */}
+        <div style={{ marginTop: '0.8rem', paddingTop: '0.8rem', borderTop: '1px solid var(--border-subtle)' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: 'var(--text-secondary)' }}>
+            <span>Opacidad / Transparencia Global:</span>
+            <span className="font-mono" style={{ color: 'var(--accent)', fontWeight: 700 }}>
+              {Math.round((selectedElement.opacity ?? 1) * 100)}%
+            </span>
+          </div>
+          <input
+            type="range" min={0} max={1} step={0.05}
+            value={selectedElement.opacity ?? 1}
+            onChange={(e) => updateSelected('opacity', Number(e.target.value))}
+            style={{ width: '100%', accentColor: 'var(--accent)' }}
+          />
+        </div>
 
         <div style={{ paddingTop: '0.8rem', borderTop: '1px solid var(--border-subtle)', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
           <button className="btn btn-secondary btn-sm" onClick={duplicateSelected} style={{ gap: '0.4rem', justifyContent: 'center' }}>
@@ -2169,22 +2256,49 @@ export default function DesignEditorSection() {
   // ---------------------------------------------------------------------
   const stageInner = (
     <>
-      <div style={{
-        position: 'absolute', top: '0.8rem', left: '1rem', fontSize: '0.72rem',
-        color: 'var(--text-disabled)', display: 'flex', alignItems: 'center', gap: '0.4rem', zIndex: 2
-      }}>
-        <span className="font-mono" style={{ color: 'var(--accent)' }}>{preset.width}x{preset.height}px</span>
-        <span>({preset.unit})</span>
+      {/* Conmutador Frente / Dorso */}
+      <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '0.8rem', gap: '0.5rem' }}>
+        <button
+          type="button"
+          onClick={() => { setCurrentSide('front'); setSelectedId(null); }}
+          style={{
+            padding: '0.45rem 1.2rem', borderRadius: 'var(--radius-full)', fontWeight: 700, fontSize: '0.8rem',
+            backgroundColor: currentSide === 'front' ? 'var(--accent)' : 'var(--bg-surface-2)',
+            color: currentSide === 'front' ? '#000' : 'var(--text-secondary)',
+            border: `1.5px solid ${currentSide === 'front' ? 'var(--accent)' : 'var(--border-subtle)'}`,
+            cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.4rem', boxShadow: 'var(--shadow-subtle)'
+          }}
+        >
+          📄 Frente (Anverso) {elementsFront.length > 0 && `(${elementsFront.length})`}
+        </button>
+
+        <button
+          type="button"
+          onClick={() => { setCurrentSide('back'); setSelectedId(null); }}
+          style={{
+            padding: '0.45rem 1.2rem', borderRadius: 'var(--radius-full)', fontWeight: 700, fontSize: '0.8rem',
+            backgroundColor: currentSide === 'back' ? 'var(--accent)' : 'var(--bg-surface-2)',
+            color: currentSide === 'back' ? '#000' : 'var(--text-secondary)',
+            border: `1.5px solid ${currentSide === 'back' ? 'var(--accent)' : 'var(--border-subtle)'}`,
+            cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.4rem', boxShadow: 'var(--shadow-subtle)'
+          }}
+        >
+          📄 Dorso (Reverso) {elementsBack.length > 0 && `(${elementsBack.length})`}
+        </button>
       </div>
 
-      <div style={{
-        boxShadow: '0 12px 35px rgba(0,0,0,0.6), 0 0 15px rgba(186, 253, 193, 0.08)',
-        border: '1px solid var(--border-strong)',
-        borderRadius: '4px',
-        position: 'relative',
-        background: bgColor,
-        overflow: 'hidden'
-      }}>
+      <div
+        style={{
+          width: preset.width * displayScale,
+          height: preset.height * displayScale,
+          position: 'relative',
+          boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.7)',
+          borderRadius: '4px',
+          overflow: 'hidden',
+          backgroundColor: '#111114',
+          transition: 'width 0.2s, height 0.2s'
+        }}
+      >
         <Stage
           width={preset.width * displayScale}
           height={preset.height * displayScale}
@@ -2224,7 +2338,7 @@ export default function DesignEditorSection() {
                   />
                 );
               }
-              if (el.type === 'rect' || el.type === 'circle' || el.type === 'star') {
+              if (el.type === 'rect' || el.type === 'circle' || el.type === 'star' || el.type === 'star6' || el.type === 'star8') {
                 return (
                   <ShapeElement
                     key={el.id}
