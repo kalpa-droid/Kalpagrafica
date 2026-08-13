@@ -2596,14 +2596,6 @@ export default function DesignEditorSection() {
         </div>
       )}
 
-      {/* Modal de Retoque de Imagen IA */}
-      {retouchModalOpen && selectedElement?.type === 'image' && (
-        <ImageRetouchModal
-          src={selectedElement.src}
-          onApply={(newSrc) => { updateSelectedWithHistory('src', newSrc); setRetouchModalOpen(false); }}
-          onClose={() => setRetouchModalOpen(false)}
-        />
-      )}
 
       <style>{`
         .font-item-btn:hover { border-color: var(--accent) !important; background-color: var(--accent-muted) !important; }
