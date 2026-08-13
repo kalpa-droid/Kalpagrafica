@@ -211,6 +211,27 @@ export async function crearCanvasContratapaCustom(backCoverConfig, canvasSize = 
   return canvas;
 }
 
+// Cuenta cuántas hojas en blanco deben ir inmediatamente detrás de la tapa, combinando en UN SOLO
+// cálculo dos necesidades que antes se resolvían por separado y podían pisarse entre sí:
+//  1) la elección estética del usuario ("Retiro de Tapa": dejar la vuelta de la tapa en blanco), y
+//  2) la corrección automática de alineación de foliado (que el N° de página referenciado caiga
+//     del lado correcto: impar=derecha, par=izquierda), si el usuario cargó esa sincronización.
+// Cada hoja en blanco insertada ANTES de la página de referencia invierte el lado en el que termina
+// cayendo esa página, así que hay que sumar ambos efectos antes de decidir si hace falta 1 hoja más.
+function contarBlancosDetrasDeTapa(blankBehindCoverChecked, refPdfPage, refBookPage, refPageSide) {
+  let count = blankBehindCoverChecked ? 1 : 0;
+  if (refPdfPage > 0 && refBookPage > 0) {
+    const isBookPageOdd = refBookPage % 2 !== 0;
+    const expectedSide = isBookPageOdd ? 'derecha' : 'izquierda';
+    const flipped = count % 2 === 1;
+    const sideAfterBase = flipped ? (refPageSide === 'derecha' ? 'izquierda' : 'derecha') : refPageSide;
+    if (sideAfterBase !== expectedSide) {
+      count += 1;
+    }
+  }
+  return count;
+}
+
 async function procesarComoImagenes(file, mode, options = {}, onProgress) {
   const {
     hasCover = false,
@@ -226,7 +247,8 @@ async function procesarComoImagenes(file, mode, options = {}, onProgress) {
     customBackCover = null,
     paperSize = 'A4',
     deletedPages = [],
-    pageOrder = []
+    pageOrder = [],
+    blankBehindCover = true
   } = options;
 
   const coverCanvasSize = getCoverCanvasSize(paperSize);
@@ -242,6 +264,13 @@ async function procesarComoImagenes(file, mode, options = {}, onProgress) {
 
   let isFirstProcessedSheet = true;
 
+  const insertarBlancosDetrasDeTapa = (count, width, height) => {
+    for (let i = 0; i < count; i++) {
+      const blankPage = newPdf.addPage([width, height]);
+      blankPage.drawRectangle({ x: 0, y: 0, width: 0, height: 0 });
+    }
+  };
+
   // Si se generó o subió una Tapa Custom, se inserta en la Página 1
   let effectiveRefPdfPage = refPdfPage;
   if (!hasCover && customCover && (customCover.type === 'upload' || customCover.type === 'template')) {
@@ -250,24 +279,25 @@ async function procesarComoImagenes(file, mode, options = {}, onProgress) {
       const coverImg = await newPdf.embedJpg(coverCanvas.toDataURL('image/jpeg', 0.92));
       const pageC = newPdf.addPage([coverCanvas.width, coverCanvas.height]);
       pageC.drawImage(coverImg, { x: 0, y: 0, width: coverCanvas.width, height: coverCanvas.height });
-      coverCanvas.width = 0; coverCanvas.height = 0;
 
       // Al haber agregado la tapa al inicio, la página del PDF desplaza su índice +1
       if (effectiveRefPdfPage > 0) {
         effectiveRefPdfPage += 1;
       }
+
+      const blanksNeeded = contarBlancosDetrasDeTapa(blankBehindCover, effectiveRefPdfPage, refBookPage, refPageSide);
+      insertarBlancosDetrasDeTapa(blanksNeeded, coverCanvas.width, coverCanvas.height);
+
+      coverCanvas.width = 0; coverCanvas.height = 0;
     }
   }
 
-  // Evaluar si se requiere una página en blanco de ajuste justo detrás de la tapa
-  let needBlankPageBehindCover = false;
-  if (effectiveRefPdfPage > 0 && refBookPage > 0) {
-    const isBookPageOdd = refBookPage % 2 !== 0;
-    const expectedSide = isBookPageOdd ? 'derecha' : 'izquierda';
-    if (refPageSide !== expectedSide) {
-      needBlankPageBehindCover = true;
-    }
-  }
+  // Cantidad unificada de hojas en blanco a insertar detrás de la tapa cuando la tapa proviene
+  // del propio PDF fuente (hasCover=true); se calcula una sola vez y se usa en los 3 puntos de
+  // inserción posibles (fotocopia lado derecho, fotocopia lado izquierdo, PDF normal).
+  const blanksBehindSourceCover = hasCover
+    ? contarBlancosDetrasDeTapa(blankBehindCover, effectiveRefPdfPage, refBookPage, refPageSide)
+    : 0;
 
   const hasSplitIds = mode === 'fotocopia' && pageOrder && pageOrder.length > 0 && String(pageOrder[0]).includes('_');
 
@@ -280,7 +310,11 @@ async function procesarComoImagenes(file, mode, options = {}, onProgress) {
       const sheetNum = parseInt(parts[0], 10);
       const side = parts[1]; // 'L' | 'R'
 
-      if (deletedPages && deletedPages.includes(sheetNum)) continue;
+      // deletedPages puede contener tanto números de hoja completa (eliminación desde el Paso 2,
+      // antes de dividir en mitades) como IDs de mitad individual tipo "3_L"/"3_R" (eliminación
+      // de una sola mitad desde el Paso 3 Foliado). Antes solo se comparaba contra sheetNum, así que
+      // borrar una sola mitad en el Paso 3 se veía tachado en pantalla pero igual salía en el PDF final.
+      if (deletedPages && (deletedPages.includes(sheetNum) || deletedPages.includes(itemId))) continue;
 
       if (onProgress) {
         const avance = 10 + Math.floor(((idx + 1) / pageOrder.length) * 45);
@@ -414,11 +448,8 @@ async function procesarComoImagenes(file, mode, options = {}, onProgress) {
 
         rightCanvas.width = 0; rightCanvas.height = 0;
 
-        // Si se requiere ajuste detrás de la tapa, se inserta 1 hoja A5 en blanco inmediatamente
-        if (needBlankPageBehindCover) {
-          const blankPage = newPdf.addPage([rightW, fullH]);
-          blankPage.drawRectangle({ x: 0, y: 0, width: 0, height: 0 });
-        }
+        // Hojas en blanco unificadas (checkbox "Retiro de Tapa" + corrección de alineación si hace falta)
+        insertarBlancosDetrasDeTapa(blanksBehindSourceCover, rightW, fullH);
       } else {
         const leftCanvas = document.createElement('canvas');
         leftCanvas.width = leftW; leftCanvas.height = fullH;
@@ -439,6 +470,12 @@ async function procesarComoImagenes(file, mode, options = {}, onProgress) {
 
         leftCanvas.width = 0; leftCanvas.height = 0;
         rightCanvas.width = 0; rightCanvas.height = 0;
+
+        // Si esta primera hoja YA incluye la tapa (del lado izquierdo, caso menos común),
+        // las hojas en blanco van después del par completo (tapa + su página compañera).
+        if (isFirstProcessedSheet && hasCover) {
+          insertarBlancosDetrasDeTapa(blanksBehindSourceCover, rightW, fullH);
+        }
       }
 
       if (finalCanvas !== tempCanvas) { finalCanvas.width = 0; finalCanvas.height = 0; }
@@ -449,10 +486,10 @@ async function procesarComoImagenes(file, mode, options = {}, onProgress) {
       const newPage = newPdf.addPage([tempCanvas.width, tempCanvas.height]);
       newPage.drawImage(jpgImage, { x: 0, y: 0, width: tempCanvas.width, height: tempCanvas.height });
 
-      // Si es la 1ª página y es la tapa con ajuste necesario detrás de la tapa
-      if (pageNum === 1 && hasCover && needBlankPageBehindCover) {
-        const blankPage = newPdf.addPage([tempCanvas.width, tempCanvas.height]);
-        blankPage.drawRectangle({ x: 0, y: 0, width: 0, height: 0 });
+      // Si es la 1ª página y es la tapa: se insertan las hojas en blanco unificadas
+      // (checkbox "Retiro de Tapa" + corrección de alineación de foliado si hace falta)
+      if (pageNum === 1 && hasCover) {
+        insertarBlancosDetrasDeTapa(blanksBehindSourceCover, tempCanvas.width, tempCanvas.height);
       }
     }
 
@@ -479,22 +516,18 @@ export async function pdfToLibro(file, mode, options = {}, onProgress) {
   await inyectarPDFjs();
 
   const { 
-    hasCover = false,
     hasBackCover = false, 
     customBackCover = null, 
     paperSize = 'A4',
-    blankBehindCover = true,
     blankInFrontBackCover = true
   } = options;
 
   const pagesDoc = await procesarComoImagenes(file, mode, options, onProgress);
   const coverCanvasSize = getCoverCanvasSize(paperSize);
 
-  // 1. Si se solicitó la vuelta de tapa en blanco (Retiro de Tapa)
-  if (blankBehindCover && pagesDoc.getPageCount() > 0) {
-    const blankBehind = pagesDoc.insertPage(1, [coverCanvasSize.width, coverCanvasSize.height]);
-    blankBehind.drawRectangle({ x: 0, y: 0, width: 0, height: 0 });
-  }
+  // (La hoja en blanco detrás de la tapa ya se resuelve dentro de procesarComoImagenes(),
+  // en un único cálculo unificado que evita insertarla dos veces o pisar la corrección
+  // automática de alineación de foliado — ver contarBlancosDetrasDeTapa)
 
   // 2. Manejo de Contratapa y Retiro de Contratapa
   let backCoverCanvas = null;
