@@ -37,6 +37,16 @@ class ErrorBoundary extends React.Component {
 
   componentDidCatch(error, errorInfo) {
     console.error('Error capturado por ErrorBoundary:', error, errorInfo);
+    if (
+      error?.name === 'ChunkLoadError' ||
+      error?.message?.includes('Loading chunk') ||
+      error?.message?.includes('Importing a module script failed') ||
+      error?.message?.includes('dynamically imported module') ||
+      error?.message?.includes('Failed to fetch dynamically imported module')
+    ) {
+      window.sessionStorage.removeItem('page-has-been-refreshed');
+      window.location.reload();
+    }
   }
 
   render() {
@@ -48,10 +58,10 @@ class ErrorBoundary extends React.Component {
           border: '1px solid var(--border-subtle)', boxShadow: 'var(--shadow-card)'
         }}>
           <h3 style={{ fontSize: '1.2rem', color: 'var(--accent)', marginBottom: '0.8rem' }}>
-            ⚠️ Ocurrió una actualización o un inconveniente de renderizado
+            ⚠️ Ocurrió una actualización en la aplicación
           </h3>
           <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '1.5rem', lineHeight: 1.5 }}>
-            La aplicación ha sido actualizada o se produjo un cambio de versión en el servidor. Haz clic abajo para recargar la vista limpiamente.
+            Se ha desplegado una versión optimizada en el servidor. Haz clic abajo para recargar la vista con los nuevos módulos.
           </p>
           <button
             className="btn btn-primary"
