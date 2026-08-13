@@ -490,46 +490,67 @@ export async function pdfToLibro(file, mode, options = {}, onProgress) {
   const pagesDoc = await procesarComoImagenes(file, mode, options, onProgress);
   const coverCanvasSize = getCoverCanvasSize(paperSize);
 
-  // Si se solicitó la vuelta de tapa en blanco (Retiro de Tapa) y no se había insertado previamente
+  // 1. Si se solicitó la vuelta de tapa en blanco (Retiro de Tapa)
   if (blankBehindCover && pagesDoc.getPageCount() > 0) {
-    // Insertamos la página en blanco justo después de la portada (Página 1)
     const blankBehind = pagesDoc.insertPage(1, [coverCanvasSize.width, coverCanvasSize.height]);
     blankBehind.drawRectangle({ x: 0, y: 0, width: 0, height: 0 });
   }
 
-  // Si hay una Contratapa Custom para agregar
+  // 2. Manejo de Contratapa y Retiro de Contratapa
   let backCoverCanvas = null;
   if (!hasBackCover && customBackCover && (customBackCover.type === 'upload' || customBackCover.type === 'template')) {
     backCoverCanvas = await crearCanvasContratapaCustom(customBackCover, coverCanvasSize);
   }
 
-  // Si se solicitó la vuelta de contratapa en blanco (Retiro de Contratapa)
-  if (blankInFrontBackCover) {
-    const blankInFront = pagesDoc.addPage([coverCanvasSize.width, coverCanvasSize.height]);
-    blankInFront.drawRectangle({ x: 0, y: 0, width: 0, height: 0 });
-  }
+  if (hasBackCover && pagesDoc.getPageCount() > 1) {
+    // Si el PDF ya incluye la contratapa como su última página:
+    // Extraemos la última página temporalmente para colocar la hoja en blanco e hiper-emparejar a múltiplos de 4.
+    const lastIdx = pagesDoc.getPageCount() - 1;
+    const tempBCDoc = await PDFDocument.create();
+    const [extractedBC] = await tempBCDoc.copyPages(pagesDoc, [lastIdx]);
+    tempBCDoc.addPage(extractedBC);
+    pagesDoc.removePage(lastIdx);
 
-  const currentCount = pagesDoc.getPageCount();
-  if (currentCount === 0) {
-    throw new Error('No quedan páginas activas después de aplicar la exclusión.');
-  }
+    // Retiro de contratapa en blanco
+    if (blankInFrontBackCover) {
+      const blankInFront = pagesDoc.addPage([coverCanvasSize.width, coverCanvasSize.height]);
+      blankInFront.drawRectangle({ x: 0, y: 0, width: 0, height: 0 });
+    }
 
-  // Calcular el total de páginas incluyendo la contratapa custom si existe
-  const targetCount = backCoverCanvas ? currentCount + 1 : currentCount;
-  const remainder = (4 - (targetCount % 4)) % 4;
+    // Resto de páginas de cortesía para completar múltiplo de 4
+    const totalWithBC = pagesDoc.getPageCount() + 1;
+    const remainder = (4 - (totalWithBC % 4)) % 4;
+    for (let i = 0; i < remainder; i++) {
+      const blank = pagesDoc.addPage([coverCanvasSize.width, coverCanvasSize.height]);
+      blank.drawRectangle({ x: 0, y: 0, width: 0, height: 0 });
+    }
 
-  // Insertar páginas en blanco de cortesía para completar el pliego de 4 páginas
-  for (let i = 0; i < remainder; i++) {
-    const blank = pagesDoc.addPage([coverCanvasSize.width, coverCanvasSize.height]);
-    blank.drawRectangle({ x: 0, y: 0, width: 0, height: 0 });
-  }
+    // Devolvemos la contratapa original al final absoluto del documento
+    const [bcBack] = await pagesDoc.copyPages(tempBCDoc, [0]);
+    pagesDoc.addPage(bcBack);
 
-  // Insertar la contratapa al final absoluto si fue generada
-  if (backCoverCanvas) {
-    const backCoverImg = await pagesDoc.embedJpg(backCoverCanvas.toDataURL('image/jpeg', 0.92));
-    const pageBC = pagesDoc.addPage([backCoverCanvas.width, backCoverCanvas.height]);
-    pageBC.drawImage(backCoverImg, { x: 0, y: 0, width: backCoverCanvas.width, height: backCoverCanvas.height });
-    backCoverCanvas.width = 0; backCoverCanvas.height = 0;
+  } else {
+    // Si la contratapa es custom (creada o subida)
+    if (blankInFrontBackCover) {
+      const blankInFront = pagesDoc.addPage([coverCanvasSize.width, coverCanvasSize.height]);
+      blankInFront.drawRectangle({ x: 0, y: 0, width: 0, height: 0 });
+    }
+
+    const currentCount = pagesDoc.getPageCount();
+    const targetCount = backCoverCanvas ? currentCount + 1 : currentCount;
+    const remainder = (4 - (targetCount % 4)) % 4;
+
+    for (let i = 0; i < remainder; i++) {
+      const blank = pagesDoc.addPage([coverCanvasSize.width, coverCanvasSize.height]);
+      blank.drawRectangle({ x: 0, y: 0, width: 0, height: 0 });
+    }
+
+    if (backCoverCanvas) {
+      const backCoverImg = await pagesDoc.embedJpg(backCoverCanvas.toDataURL('image/jpeg', 0.92));
+      const pageBC = pagesDoc.addPage([backCoverCanvas.width, backCoverCanvas.height]);
+      pageBC.drawImage(backCoverImg, { x: 0, y: 0, width: backCoverCanvas.width, height: backCoverCanvas.height });
+      backCoverCanvas.width = 0; backCoverCanvas.height = 0;
+    }
   }
 
   const bookletDoc = await PDFDocument.create();

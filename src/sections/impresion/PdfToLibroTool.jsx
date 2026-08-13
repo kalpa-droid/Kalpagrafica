@@ -209,18 +209,18 @@ export default function PdfToLibroTool() {
   const changeStep = (stepNum) => {
     setActiveStep(stepNum);
     setTimeout(() => {
-      const container = document.getElementById('pdf-libro-tool-container');
-      if (container) {
-        const yOffset = -80;
-        const y = container.getBoundingClientRect().top + window.pageYOffset + yOffset;
+      const stepElem = document.getElementById(`pdf-step-${stepNum}`) || document.getElementById('pdf-libro-tool-container');
+      if (stepElem) {
+        const navbarHeight = 90;
+        const y = stepElem.getBoundingClientRect().top + window.pageYOffset - navbarHeight;
         window.scrollTo({ top: Math.max(0, y), behavior: 'smooth' });
       }
-    }, 50);
+    }, 60);
   };
 
-  const handleToggleDeletePage = (pageNum) => {
+  const handleToggleDeletePage = (targetId) => {
     setDeletedPages(prev =>
-      prev.includes(pageNum) ? prev.filter(p => p !== pageNum) : [...prev, pageNum]
+      prev.includes(targetId) ? prev.filter(p => p !== targetId) : [...prev, targetId]
     );
   };
 
@@ -500,7 +500,7 @@ export default function PdfToLibroTool() {
 
       {/* ETAPA 1: CARGA DE ARCHIVO Y SELECTOR DE FORMATO */}
       {activeStep === 1 && (
-        <div style={{ marginBottom: '1.5rem', backgroundColor: 'var(--bg-surface-2)', padding: '1.2rem', borderRadius: 'var(--radius-md)', border: '1.5px solid var(--accent)' }}>
+        <div id="pdf-step-1" style={{ marginBottom: '1.5rem', backgroundColor: 'var(--bg-surface-2)', padding: '1.2rem', borderRadius: 'var(--radius-md)', border: '1.5px solid var(--accent)' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.8rem' }}>
             <label style={{ fontSize: '0.88rem', color: 'var(--accent)', fontWeight: 700 }}>
               1. Subir archivo PDF y elegir formato de origen:
@@ -626,7 +626,7 @@ export default function PdfToLibroTool() {
 
       {/* ETAPA 2: PREPARACIÓN DE PÁGINAS (ORGANIZAR ⬅️ ➡️, ELIMINAR 🗑️, GIRAR 🔄 Y CORTAR ✂️) */}
       {file && activeStep === 2 && (
-        <div style={{ marginBottom: '1.5rem', backgroundColor: 'var(--bg-surface-2)', padding: '1.2rem', borderRadius: 'var(--radius-md)', border: '1.5px solid var(--accent)' }}>
+        <div id="pdf-step-2" style={{ marginBottom: '1.5rem', backgroundColor: 'var(--bg-surface-2)', padding: '1.2rem', borderRadius: 'var(--radius-md)', border: '1.5px solid var(--accent)' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.8rem' }}>
             <div style={{ fontSize: '0.88rem', color: 'var(--accent)', fontWeight: 700 }}>
               2. Organizar y Ajustar Páginas (Reordenar ⬅️ ➡️, Eliminar 🗑️, Girar 🔄 y Cortar ✂️)
@@ -675,7 +675,7 @@ export default function PdfToLibroTool() {
 
       {/* ETAPA 3: FOLIADO DE REFERENCIA (IDENTIFICAR 1 SOLA PÁGINA CORTADA) */}
       {file && activeStep === 3 && (
-        <div style={{ marginBottom: '1.5rem', backgroundColor: 'var(--bg-surface-2)', padding: '1.2rem', borderRadius: 'var(--radius-md)', border: '1.5px solid var(--accent)' }}>
+        <div id="pdf-step-3" style={{ marginBottom: '1.5rem', backgroundColor: 'var(--bg-surface-2)', padding: '1.2rem', borderRadius: 'var(--radius-md)', border: '1.5px solid var(--accent)' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.8rem' }}>
             <div style={{ fontSize: '0.88rem', color: 'var(--accent)', fontWeight: 700 }}>
               3. Foliado de Referencia (Identificar 1 SOLA página con número impreso)
@@ -752,7 +752,7 @@ export default function PdfToLibroTool() {
 
       {/* ETAPA 4: GESTIÓN DE TAPA Y CONTRATAPA EXTERIOR */}
       {file && activeStep === 4 && (
-        <div style={{ marginBottom: '1.5rem', backgroundColor: 'var(--bg-surface-2)', padding: '1.2rem', borderRadius: 'var(--radius-md)', border: '1.5px solid var(--accent)' }}>
+        <div id="pdf-step-4" style={{ marginBottom: '1.5rem', backgroundColor: 'var(--bg-surface-2)', padding: '1.2rem', borderRadius: 'var(--radius-md)', border: '1.5px solid var(--accent)' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.8rem' }}>
             <div style={{ fontSize: '0.88rem', color: 'var(--accent)', fontWeight: 700 }}>
               4. Gestión de Tapa y Contratapa Exterior del Libro
@@ -1116,7 +1116,7 @@ export default function PdfToLibroTool() {
 
       {/* ETAPA 5: DIAGRAMA TÉCNICO Y BOTÓN GENERAR */}
       {file && activeStep === 5 && (
-        <div style={{ marginBottom: '1.5rem', backgroundColor: 'var(--bg-surface-2)', padding: '1.2rem', borderRadius: 'var(--radius-md)', border: '1.5px solid var(--accent)' }}>
+        <div id="pdf-step-5" style={{ marginBottom: '1.5rem', backgroundColor: 'var(--bg-surface-2)', padding: '1.2rem', borderRadius: 'var(--radius-md)', border: '1.5px solid var(--accent)' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
             <div style={{ fontSize: '0.88rem', color: 'var(--accent)', fontWeight: 700 }}>
               5. Maquetación Final y Generación de PDF Imprimible

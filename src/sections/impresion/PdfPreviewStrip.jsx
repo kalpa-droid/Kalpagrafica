@@ -189,7 +189,7 @@ function LightboxModal({
         {/* Botón Tachito Eliminar / Restaurar */}
         {onDeletePage && (
           <button
-            onClick={() => onDeletePage(sheetNum)}
+            onClick={() => onDeletePage(isFoliadoStep && mode === 'fotocopia' ? item.id : sheetNum)}
             style={{
               backgroundColor: isDeleted ? 'rgba(248,113,113,0.3)' : 'rgba(248,113,113,0.18)',
               border: '1px solid #F87171',
@@ -557,7 +557,7 @@ function ThumbnailCard({
 
         {/* Botón Tachito Eliminar / Restaurar */}
         <button
-          onClick={(e) => { e.stopPropagation(); onDeletePage(sheetNum); }}
+          onClick={(e) => { e.stopPropagation(); onDeletePage(isFoliadoStep && mode === 'fotocopia' ? item.id : sheetNum); }}
           title={isDeleted ? "Restaurar página" : "Eliminar esta página"}
           style={{
             backgroundColor: isDeleted ? '#F87171' : 'rgba(248, 113, 113, 0.15)',
@@ -846,10 +846,11 @@ export default function PdfPreviewStrip({
     }
   }
 
-  const activeItemsCount = itemsToRender.filter(item => !deletedPages.includes(item.sheetNum)).length;
+  const isItemDeleted = (item) => deletedPages.includes(item.id) || deletedPages.includes(item.sheetNum) || deletedPages.includes(String(item.sheetNum));
+  const activeItemsCount = itemsToRender.filter(item => !isItemDeleted(item)).length;
   const itemsToDisplay = showDeletedCards
     ? itemsToRender
-    : itemsToRender.filter(item => !deletedPages.includes(item.sheetNum));
+    : itemsToRender.filter(item => !isItemDeleted(item));
 
   return (
     <div style={{
@@ -950,7 +951,7 @@ export default function PdfPreviewStrip({
                   splitOffset={pageSplitOffsets[item.sheetNum] !== undefined ? pageSplitOffsets[item.sheetNum] : 50}
                   onAdjustSplit={onAdjustSplitPage}
                   onOpenLightbox={(it) => setLightboxItem(it)}
-                  isDeleted={deletedPages.includes(item.sheetNum)}
+                  isDeleted={isItemDeleted(item)}
                   onDeletePage={onDeletePage}
                   onMovePage={onMovePage}
                   isFirst={index === 0}
@@ -1000,7 +1001,7 @@ export default function PdfPreviewStrip({
             if (idx < itemsToRender.length - 1) setLightboxItem(itemsToRender[idx + 1]);
           }}
           onSelect={(sNum, bNum, sSide) => onSelectPage(sNum, bNum, sSide)}
-          isDeleted={deletedPages.includes(lightboxItem.sheetNum)}
+          isDeleted={isItemDeleted(lightboxItem)}
           onDeletePage={onDeletePage}
           onMovePage={onMovePage}
           positionIndex={itemsToRender.findIndex(it => it.id === lightboxItem.id) + 1}
