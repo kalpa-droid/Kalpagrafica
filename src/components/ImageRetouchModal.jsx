@@ -17,7 +17,7 @@ export default function ImageRetouchModal({ src, onApply, onClose }) {
 
   const baseCanvasRef = useRef(null);
   const maskCanvasRef = useRef(null);
-  const workCanvasRef = useRef(null);
+  const offscreenMaskRef = useRef(null);
 
   useEffect(() => {
     if (!src) return;
@@ -27,6 +27,12 @@ export default function ImageRetouchModal({ src, onApply, onClose }) {
       const scale = Math.min(1, MAX_WORK_DIM / Math.max(img.width, img.height));
       const w = Math.max(1, Math.round(img.width * scale));
       const h = Math.max(1, Math.round(img.height * scale));
+
+      const offCanvas = document.createElement('canvas');
+      offCanvas.width = w;
+      offCanvas.height = h;
+      offscreenMaskRef.current = offCanvas;
+
       for (const ref of [baseCanvasRef, maskCanvasRef, workCanvasRef]) {
         if (!ref.current) continue;
         ref.current.width = w;
@@ -40,11 +46,18 @@ export default function ImageRetouchModal({ src, onApply, onClose }) {
   }, [src]);
 
   const paintAt = (x, y) => {
-    const ctx = maskCanvasRef.current.getContext('2d');
-    ctx.fillStyle = 'rgba(248, 82, 82, 0.55)';
-    ctx.beginPath();
-    ctx.arc(x, y, brushSize / 2, 0, Math.PI * 2);
-    ctx.fill();
+    if (!offscreenMaskRef.current || !maskCanvasRef.current) return;
+    const offCtx = offscreenMaskRef.current.getContext('2d');
+    offCtx.fillStyle = '#FF0000';
+    offCtx.beginPath();
+    offCtx.arc(x, y, brushSize / 2, 0, Math.PI * 2);
+    offCtx.fill();
+
+    const displayCtx = maskCanvasRef.current.getContext('2d');
+    displayCtx.clearRect(0, 0, displayCtx.canvas.width, displayCtx.canvas.height);
+    displayCtx.globalAlpha = 0.45;
+    displayCtx.drawImage(offscreenMaskRef.current, 0, 0);
+    displayCtx.globalAlpha = 1.0;
     setHasMask(true);
   };
 
@@ -62,12 +75,15 @@ export default function ImageRetouchModal({ src, onApply, onClose }) {
   const onPointerUp = () => setIsDrawing(false);
 
   const clearMask = () => {
+    if (offscreenMaskRef.current) {
+      offscreenMaskRef.current.getContext('2d').clearRect(0, 0, offscreenMaskRef.current.width, offscreenMaskRef.current.height);
+    }
     maskCanvasRef.current?.getContext('2d').clearRect(0, 0, maskCanvasRef.current.width, maskCanvasRef.current.height);
     setHasMask(false);
   };
 
   const applyMagicEraser = async () => {
-    if (!hasMask) return;
+    if (!hasMask || !offscreenMaskRef.current) return;
     setIsProcessing(true);
     setProgress(0);
     const w = workCanvasRef.current.width;
@@ -75,10 +91,10 @@ export default function ImageRetouchModal({ src, onApply, onClose }) {
     const workCtx = workCanvasRef.current.getContext('2d');
     const imageData = workCtx.getImageData(0, 0, w, h);
 
-    const maskCtx = maskCanvasRef.current.getContext('2d');
+    const maskCtx = offscreenMaskRef.current.getContext('2d');
     const maskPixels = maskCtx.getImageData(0, 0, w, h).data;
     const mask = new Uint8Array(w * h);
-    for (let i = 0; i < mask.length; i++) mask[i] = maskPixels[i * 4 + 3] > 20 ? 1 : 0;
+    for (let i = 0; i < mask.length; i++) mask[i] = maskPixels[i * 4] > 50 ? 1 : 0;
 
     const result = await contentAwareFill(imageData, mask, {
       patchRadius: 4,

@@ -14,12 +14,22 @@ async function getSegmenter() {
   _segmenterPromise = (async () => {
     const { ImageSegmenter, FilesetResolver } = await import('@mediapipe/tasks-vision');
     const vision = await FilesetResolver.forVisionTasks(WASM_BASE);
-    return ImageSegmenter.createFromOptions(vision, {
-      baseOptions: { modelAssetPath: MODEL_URL, delegate: 'GPU' },
-      outputCategoryMask: true,
-      outputConfidenceMasks: false,
-      runningMode: 'IMAGE'
-    });
+    try {
+      return await ImageSegmenter.createFromOptions(vision, {
+        baseOptions: { modelAssetPath: MODEL_URL, delegate: 'GPU' },
+        outputCategoryMask: true,
+        outputConfidenceMasks: false,
+        runningMode: 'IMAGE'
+      });
+    } catch (gpuErr) {
+      console.warn('MediaPipe GPU segmenter not supported, falling back to CPU:', gpuErr);
+      return await ImageSegmenter.createFromOptions(vision, {
+        baseOptions: { modelAssetPath: MODEL_URL, delegate: 'CPU' },
+        outputCategoryMask: true,
+        outputConfidenceMasks: false,
+        runningMode: 'IMAGE'
+      });
+    }
   })();
   return _segmenterPromise;
 }
@@ -29,8 +39,18 @@ function loadImageElement(input) {
     const el = new Image();
     el.crossOrigin = 'anonymous';
     el.onload = () => resolve(el);
-    el.onerror = (e) => reject(new Error('No se pudo cargar la imagen para segmentar.'));
-    el.src = typeof input === 'string' ? input : URL.createObjectURL(input);
+    el.onerror = (e) => reject(new Error('No se pudo cargar la imagen para segmentar. Asegúrate de seleccionar una imagen válida.'));
+    
+    if (typeof input === 'string') {
+      el.src = input;
+    } else if (input instanceof Blob || input instanceof File) {
+      const reader = new FileReader();
+      reader.onload = (ev) => { el.src = ev.target.result; };
+      reader.onerror = () => reject(new Error('Error al leer el archivo de imagen.'));
+      reader.readAsDataURL(input);
+    } else {
+      reject(new Error('Formato de entrada no válido.'));
+    }
   });
 }
 
@@ -51,8 +71,8 @@ export async function removeImageBackground(input, opts = {}) {
   
   // Escalar inteligentemente si la imagen supera los 1200px
   const maxDim = opts.maxDim || 1200;
-  let w = imgEl.naturalWidth || imgEl.width;
-  let h = imgEl.naturalHeight || imgEl.height;
+  let w = imgEl.naturalWidth || imgEl.width || 800;
+  let h = imgEl.naturalHeight || imgEl.height || 600;
 
   if (w > maxDim || h > maxDim) {
     if (w > h) {

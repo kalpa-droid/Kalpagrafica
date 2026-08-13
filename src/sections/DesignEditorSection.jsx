@@ -82,7 +82,216 @@ const TAB_DEFS = [
   { id: 'canvas', label: 'Lienzo', icon: Sliders }
 ];
 
-// Helper de Imagen Konva con filtros no-destructivos
+// 12 Formas geométricas y decorativas para recorte de imágenes
+export const SHAPE_CROP_TYPES = [
+  { id: 'none', label: 'Original', icon: '🖼️' },
+  { id: 'rect', label: 'Cuadrado', icon: '⬜' },
+  { id: 'rounded', label: 'Redondeado', icon: '🔲' },
+  { id: 'circle', label: 'Círculo / Óvalo', icon: '⚪' },
+  { id: 'star', label: 'Estrella', icon: '⭐' },
+  { id: 'heart', label: 'Corazón', icon: '❤️' },
+  { id: 'hexagon', label: 'Hexágono', icon: '🛑' },
+  { id: 'octagon', label: 'Octágono', icon: '☸️' },
+  { id: 'diamond', label: 'Diamante', icon: '🔷' },
+  { id: 'shield', label: 'Escudo', icon: '🛡️' },
+  { id: 'badge', label: 'Insignia', icon: '🏷️' },
+  { id: 'triangle', label: 'Triángulo', icon: '🔺' }
+];
+
+// Presets de Degradados para Lienzo
+export const GRADIENT_PRESETS = [
+  { name: 'Cyberpunk', colors: ['#0f0c29', '#302b63', '#24243e'], angle: 135 },
+  { name: 'Sunset Gold', colors: ['#ff7e5f', '#feb47b'], angle: 45 },
+  { name: 'Neon Emerald', colors: ['#00b09b', '#96c93d'], angle: 90 },
+  { name: 'Pastel Dream', colors: ['#a1c4fd', '#c2e9fb'], angle: 120 },
+  { name: 'Royal Velvet', colors: ['#141e30', '#243b55'], angle: 180 },
+  { name: 'Kalpa Slate', colors: ['#111114', '#1f2421', '#0b1612'], angle: 135 }
+];
+
+// Función de trazado para recortes con forma, rotación y deformación
+function drawCustomClipShape(ctx, width, height, clipShape, clipRotation = 0, clipScaleX = 1, clipScaleY = 1) {
+  if (!clipShape || clipShape === 'none') {
+    ctx.rect(0, 0, width, height);
+    return;
+  }
+
+  const cx = width / 2;
+  const cy = height / 2;
+
+  ctx.save();
+  ctx.translate(cx, cy);
+  ctx.rotate((clipRotation * Math.PI) / 180);
+  ctx.scale(clipScaleX, clipScaleY);
+  ctx.translate(-cx, -cy);
+
+  ctx.beginPath();
+
+  const rx = width / 2;
+  const ry = height / 2;
+
+  switch (clipShape) {
+    case 'rect': {
+      ctx.rect(0, 0, width, height);
+      break;
+    }
+    case 'rounded': {
+      const r = Math.min(width, height) * 0.18;
+      if (typeof ctx.roundRect === 'function') {
+        ctx.roundRect(0, 0, width, height, r);
+      } else {
+        ctx.rect(0, 0, width, height);
+      }
+      break;
+    }
+    case 'circle': {
+      ctx.ellipse(cx, cy, rx, ry, 0, 0, Math.PI * 2);
+      break;
+    }
+    case 'star': {
+      const spikes = 5;
+      const outerR = Math.min(rx, ry);
+      const innerR = outerR * 0.45;
+      let rot = (Math.PI / 2) * 3;
+      let x = cx;
+      let y = cy;
+      const step = Math.PI / spikes;
+
+      ctx.moveTo(cx, cy - outerR);
+      for (let i = 0; i < spikes; i++) {
+        x = cx + Math.cos(rot) * outerR;
+        y = cy + Math.sin(rot) * outerR;
+        ctx.lineTo(x, y);
+        rot += step;
+
+        x = cx + Math.cos(rot) * innerR;
+        y = cy + Math.sin(rot) * innerR;
+        ctx.lineTo(x, y);
+        rot += step;
+      }
+      ctx.lineTo(cx, cy - outerR);
+      ctx.closePath();
+      break;
+    }
+    case 'heart': {
+      ctx.moveTo(cx, height * 0.85);
+      ctx.bezierCurveTo(cx - width * 0.55, height * 0.45, cx - width * 0.45, 0, cx, height * 0.3);
+      ctx.bezierCurveTo(cx + width * 0.45, 0, cx + width * 0.55, height * 0.45, cx, height * 0.85);
+      ctx.closePath();
+      break;
+    }
+    case 'hexagon': {
+      const r = Math.min(rx, ry);
+      for (let i = 0; i < 6; i++) {
+        const a = (i * Math.PI) / 3;
+        const x = cx + r * Math.cos(a);
+        const y = cy + r * Math.sin(a);
+        if (i === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      }
+      ctx.closePath();
+      break;
+    }
+    case 'octagon': {
+      const r = Math.min(rx, ry);
+      for (let i = 0; i < 8; i++) {
+        const a = (i * Math.PI) / 4 + Math.PI / 8;
+        const x = cx + r * Math.cos(a);
+        const y = cy + r * Math.sin(a);
+        if (i === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      }
+      ctx.closePath();
+      break;
+    }
+    case 'diamond': {
+      ctx.moveTo(cx, 0);
+      ctx.lineTo(width, cy);
+      ctx.lineTo(cx, height);
+      ctx.lineTo(0, cy);
+      ctx.closePath();
+      break;
+    }
+    case 'shield': {
+      ctx.moveTo(cx, 0);
+      ctx.lineTo(width, 0);
+      ctx.quadraticCurveTo(width, height * 0.65, cx, height);
+      ctx.quadraticCurveTo(0, height * 0.65, 0, 0);
+      ctx.closePath();
+      break;
+    }
+    case 'badge': {
+      ctx.moveTo(cx, 0);
+      ctx.quadraticCurveTo(width, 0, width, cy);
+      ctx.quadraticCurveTo(width, height, cx, height);
+      ctx.quadraticCurveTo(0, height, 0, cy);
+      ctx.quadraticCurveTo(0, 0, cx, 0);
+      ctx.closePath();
+      break;
+    }
+    case 'triangle': {
+      ctx.moveTo(cx, 0);
+      ctx.lineTo(width, height);
+      ctx.lineTo(0, height);
+      ctx.closePath();
+      break;
+    }
+    default: {
+      ctx.rect(0, 0, width, height);
+      break;
+    }
+  }
+
+  ctx.restore();
+}
+
+// Generador de texturas/patrones en canvas
+function createTexturePatternUrl(patternType, bgColor = '#111114', patternColor = '#BAFDC1') {
+  const c = document.createElement('canvas');
+  c.width = 40;
+  c.height = 40;
+  const ctx = c.getContext('2d');
+
+  ctx.fillStyle = bgColor;
+  ctx.fillRect(0, 0, 40, 40);
+
+  ctx.fillStyle = patternColor;
+  ctx.strokeStyle = patternColor;
+  ctx.lineWidth = 1.5;
+
+  if (patternType === 'grid') {
+    ctx.globalAlpha = 0.25;
+    ctx.strokeRect(0, 0, 40, 40);
+  } else if (patternType === 'dots') {
+    ctx.globalAlpha = 0.4;
+    ctx.beginPath();
+    ctx.arc(10, 10, 2.5, 0, Math.PI * 2);
+    ctx.arc(30, 30, 2.5, 0, Math.PI * 2);
+    ctx.fill();
+  } else if (patternType === 'stripes') {
+    ctx.globalAlpha = 0.3;
+    ctx.beginPath();
+    ctx.moveTo(0, 40); ctx.lineTo(40, 0);
+    ctx.moveTo(-10, 10); ctx.lineTo(10, -10);
+    ctx.moveTo(30, 50); ctx.lineTo(50, 30);
+    ctx.stroke();
+  } else if (patternType === 'noise') {
+    ctx.globalAlpha = 0.15;
+    for (let i = 0; i < 120; i++) {
+      const rx = Math.random() * 40;
+      const ry = Math.random() * 40;
+      ctx.fillRect(rx, ry, 1.5, 1.5);
+    }
+  } else if (patternType === 'paper') {
+    ctx.globalAlpha = 0.1;
+    for (let i = 0; i < 40; i += 4) {
+      ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(40, i); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, 40); ctx.stroke();
+    }
+  }
+  return c.toDataURL('image/png');
+}
+
+// Helper de Imagen Konva con filtros no-destructivos y recorte por forma
 function URLImage({ image, ...props }) {
   const [imgObj, setImgObj] = useState(null);
   const shapeRef = useRef(null);
@@ -97,17 +306,39 @@ function URLImage({ image, ...props }) {
 
   useEffect(() => {
     if (!shapeRef.current) return;
-    shapeRef.current.cache();
-    shapeRef.current.getLayer()?.batchDraw();
-  }, [imgObj, props.brightness, props.contrast, props.saturation, props.blurRadius]);
+    try {
+      shapeRef.current.cache({ pixelRatio: 2.5 });
+      shapeRef.current.getLayer()?.batchDraw();
+    } catch (e) {
+      shapeRef.current.getLayer()?.batchDraw();
+    }
+  }, [
+    imgObj,
+    props.brightness,
+    props.contrast,
+    props.saturation,
+    props.blurRadius,
+    props.clipShape,
+    props.clipRotation,
+    props.clipScaleX,
+    props.clipScaleY
+  ]);
 
   if (!imgObj) return null;
+
+  const { clipShape, clipRotation, clipScaleX, clipScaleY, ...restProps } = props;
+
   return (
     <KonvaImage
       ref={shapeRef}
       image={imgObj}
       filters={[Konva.Filters.Brighten, Konva.Filters.Contrast, Konva.Filters.HSL, Konva.Filters.Blur]}
-      {...props}
+      clipFunc={
+        clipShape && clipShape !== 'none'
+          ? (ctx) => drawCustomClipShape(ctx, props.width, props.height, clipShape, clipRotation || 0, clipScaleX || 1, clipScaleY || 1)
+          : undefined
+      }
+      {...restProps}
     />
   );
 }
@@ -125,6 +356,15 @@ export default function DesignEditorSection() {
   const [selectedId, setSelectedId] = useState(null);
   const [activeTab, setActiveTab] = useState('text'); // 'text' | 'emojis' | 'draw' | 'shapes' | 'image' | 'canvas'
   const [retouchModalOpen, setRetouchModalOpen] = useState(false);
+  const [imagePropSubTab, setImagePropSubTab] = useState('filters'); // 'filters' | 'crop' | 'ai'
+  const [canvasBgMode, setCanvasBgMode] = useState('color'); // 'color' | 'gradient' | 'texture'
+  const [patternType, setPatternType] = useState('grid');
+  const [patternColor, setPatternColor] = useState('#BAFDC1');
+  const [gradColor1, setGradColor1] = useState('#111114');
+  const [gradColor2, setGradColor2] = useState('#302b63');
+  const [gradAngle, setGradAngle] = useState(135);
+  const [gradStop, setGradStop] = useState(50);
+  const [gradStyle, setGradStyle] = useState('smooth'); // 'smooth' | 'sharp' | 'radial'
 
   // Modo Dibujo Libre Pincel
   const [isDrawingMode, setIsDrawingMode] = useState(false);
@@ -292,30 +532,58 @@ export default function DesignEditorSection() {
     if (isMobile) { setMobileToolOpen(false); setMobilePropsOpen(true); }
   };
 
-  // Carga de Imagen
+  // Carga de Imagen HD sin distorsión y auto-conversión a PNG
   const handleImageUpload = (e) => {
     const file = e.target.files[0];
     if (!file) return;
     saveStateToHistory();
-    const url = URL.createObjectURL(file);
-    const newEl = {
-      id: 'img-' + Date.now(),
-      type: 'image',
-      src: url,
-      x: preset.width / 2 - 75,
-      y: preset.height / 2 - 75,
-      width: 150,
-      height: 150,
-      brightness: 0,
-      contrast: 0,
-      saturation: 0,
-      blurRadius: 0,
-      opacity: 1,
-      rotation: 0
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const tempImg = new window.Image();
+      tempImg.crossOrigin = 'anonymous';
+      tempImg.onload = () => {
+        const convCanvas = document.createElement('canvas');
+        const nw = tempImg.naturalWidth || tempImg.width || 400;
+        const nh = tempImg.naturalHeight || tempImg.height || 400;
+        convCanvas.width = nw;
+        convCanvas.height = nh;
+        const convCtx = convCanvas.getContext('2d');
+        convCtx.drawImage(tempImg, 0, 0);
+        const pngUrl = convCanvas.toDataURL('image/png', 1.0);
+
+        const maxInitial = Math.min(preset.width * 0.65, preset.height * 0.65);
+        const scale = Math.min(1, maxInitial / Math.max(nw, nh));
+        const initW = Math.round(nw * scale);
+        const initH = Math.round(nh * scale);
+
+        const newEl = {
+          id: 'img-' + Date.now(),
+          type: 'image',
+          src: pngUrl,
+          x: Math.round(preset.width / 2 - initW / 2),
+          y: Math.round(preset.height / 2 - initH / 2),
+          width: initW,
+          height: initH,
+          brightness: 0,
+          contrast: 0,
+          saturation: 0,
+          blurRadius: 0,
+          opacity: 1,
+          rotation: 0,
+          clipShape: 'none',
+          clipRotation: 0,
+          clipScaleX: 1,
+          clipScaleY: 1
+        };
+        setElements((prev) => [...prev, newEl]);
+        setSelectedId(newEl.id);
+        if (isMobile) { setMobileToolOpen(false); setMobilePropsOpen(true); }
+      };
+      tempImg.src = event.target.result;
     };
-    setElements((prev) => [...prev, newEl]);
-    setSelectedId(newEl.id);
-    if (isMobile) { setMobileToolOpen(false); setMobilePropsOpen(true); }
+    reader.readAsDataURL(file);
+    e.target.value = '';
   };
 
   // Modificar Propiedades del Elemento Seleccionado
@@ -685,25 +953,318 @@ export default function DesignEditorSection() {
       )}
 
       {activeTab === 'canvas' && (
-        <div>
-          <h4 style={{ fontSize: '0.85rem', color: 'var(--accent)', fontWeight: 700, marginBottom: '0.8rem', textTransform: 'uppercase' }}>
-            Fondo & Dimensiones del Lienzo
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+          <h4 style={{ fontSize: '0.85rem', color: 'var(--accent)', fontWeight: 700, margin: 0, textTransform: 'uppercase' }}>
+            Fondo del Lienzo, Degradados & Texturas
           </h4>
 
-          <div style={{ marginBottom: '1.2rem' }}>
-            <label style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '0.4rem', fontWeight: 600 }}>
-              Color de Fondo:
-            </label>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem' }}>
-              <input
-                type="color"
-                value={bgColor}
-                onChange={(e) => setBgColor(e.target.value)}
-                style={{ width: '45px', height: '36px', border: 'none', borderRadius: '4px', cursor: 'pointer', backgroundColor: 'transparent' }}
-              />
-              <span style={{ fontSize: '0.85rem', color: 'var(--text-primary)' }} className="font-mono">{bgColor}</span>
-            </div>
+          {/* Selector Modo Fondo: Color Sólido | Texturas | Degradados */}
+          <div style={{ display: 'flex', gap: '0.3rem', backgroundColor: 'var(--bg-surface-2)', padding: '3px', borderRadius: 'var(--radius-sm)' }}>
+            <button
+              type="button"
+              onClick={() => setCanvasBgMode('color')}
+              style={{
+                flex: 1, padding: '0.35rem 0.2rem', fontSize: '0.7rem', fontWeight: 700, borderRadius: 'var(--radius-sm)',
+                backgroundColor: canvasBgMode === 'color' ? 'var(--accent)' : 'transparent',
+                color: canvasBgMode === 'color' ? '#000' : 'var(--text-secondary)',
+                border: 'none', cursor: 'pointer'
+              }}
+            >
+              🎨 Sólido
+            </button>
+            <button
+              type="button"
+              onClick={() => setCanvasBgMode('texture')}
+              style={{
+                flex: 1, padding: '0.35rem 0.2rem', fontSize: '0.7rem', fontWeight: 700, borderRadius: 'var(--radius-sm)',
+                backgroundColor: canvasBgMode === 'texture' ? 'var(--accent)' : 'transparent',
+                color: canvasBgMode === 'texture' ? '#000' : 'var(--text-secondary)',
+                border: 'none', cursor: 'pointer'
+              }}
+            >
+              🏁 Textura
+            </button>
+            <button
+              type="button"
+              onClick={() => setCanvasBgMode('gradient')}
+              style={{
+                flex: 1, padding: '0.35rem 0.2rem', fontSize: '0.7rem', fontWeight: 700, borderRadius: 'var(--radius-sm)',
+                backgroundColor: canvasBgMode === 'gradient' ? 'var(--accent)' : 'transparent',
+                color: canvasBgMode === 'gradient' ? '#000' : 'var(--text-secondary)',
+                border: 'none', cursor: 'pointer'
+              }}
+            >
+              🌈 Degradado
+            </button>
           </div>
+
+          {canvasBgMode === 'color' && (
+            <div>
+              <label style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '0.4rem', fontWeight: 600 }}>
+                Color Sólido de Fondo:
+              </label>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem' }}>
+                <input
+                  type="color"
+                  value={typeof bgColor === 'string' && bgColor.startsWith('#') ? bgColor : '#111114'}
+                  onChange={(e) => setBgColor(e.target.value)}
+                  style={{ width: '45px', height: '36px', border: 'none', borderRadius: '4px', cursor: 'pointer', backgroundColor: 'transparent' }}
+                />
+                <span style={{ fontSize: '0.85rem', color: 'var(--text-primary)' }} className="font-mono">{typeof bgColor === 'string' && bgColor.startsWith('#') ? bgColor : 'Textura/Degradado'}</span>
+              </div>
+            </div>
+          )}
+
+          {canvasBgMode === 'texture' && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
+              <label style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', fontWeight: 600 }}>
+                Selecciona una Textura o Patrón:
+              </label>
+              
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.4rem' }}>
+                {[
+                  { id: 'grid', label: 'Cuadrícula', icon: '📐' },
+                  { id: 'dots', label: 'Puntos', icon: '⚪' },
+                  { id: 'stripes', label: 'Franjas', icon: '📊' },
+                  { id: 'noise', label: 'Ruido HD', icon: '📺' },
+                  { id: 'paper', label: 'Lino/Papel', icon: '📜' }
+                ].map((pat) => (
+                  <button
+                    key={pat.id}
+                    type="button"
+                    onClick={() => {
+                      setPatternType(pat.id);
+                      const texUrl = createTexturePatternUrl(pat.id, typeof bgColor === 'string' && bgColor.startsWith('#') ? bgColor : '#111114', patternColor);
+                      setBgColor(texUrl);
+                    }}
+                    style={{
+                      padding: '0.5rem 0.3rem', borderRadius: 'var(--radius-sm)',
+                      border: `1.5px solid ${patternType === pat.id ? 'var(--accent)' : 'var(--border-subtle)'}`,
+                      backgroundColor: patternType === pat.id ? 'var(--accent-muted)' : 'var(--bg-surface-2)',
+                      color: patternType === pat.id ? 'var(--accent)' : 'var(--text-primary)',
+                      cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.2rem'
+                    }}
+                  >
+                    <span style={{ fontSize: '1.1rem' }}>{pat.icon}</span>
+                    <span style={{ fontSize: '0.68rem', fontWeight: 600 }}>{pat.label}</span>
+                  </button>
+                ))}
+              </div>
+
+              <div style={{ display: 'flex', gap: '0.8rem', alignItems: 'center' }}>
+                <div style={{ flex: 1 }}>
+                  <label style={{ fontSize: '0.72rem', color: 'var(--text-secondary)' }}>Color de Trama:</label>
+                  <input
+                    type="color"
+                    value={patternColor}
+                    onChange={(e) => {
+                      setPatternColor(e.target.value);
+                      const texUrl = createTexturePatternUrl(patternType, typeof bgColor === 'string' && bgColor.startsWith('#') ? bgColor : '#111114', e.target.value);
+                      setBgColor(texUrl);
+                    }}
+                    style={{ width: '100%', height: '32px', border: 'none', borderRadius: '4px', cursor: 'pointer', backgroundColor: 'transparent' }}
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+
+          {canvasBgMode === 'gradient' && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.9rem' }}>
+              <span style={{ fontSize: '0.78rem', color: 'var(--accent)', fontWeight: 700 }}>
+                Generador Personalizado (Mitad / 2 Colores / Ángulo):
+              </span>
+
+              {/* Modo de Mezcla / Transición */}
+              <div style={{ display: 'flex', gap: '0.3rem', backgroundColor: 'var(--bg-surface-2)', padding: '3px', borderRadius: 'var(--radius-sm)' }}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setGradStyle('smooth');
+                    const css = `linear-gradient(${gradAngle}deg, ${gradColor1} 0%, ${gradColor2} 100%)`;
+                    setBgColor(css);
+                  }}
+                  style={{
+                    flex: 1, padding: '0.3rem 0.1rem', fontSize: '0.68rem', fontWeight: 600, borderRadius: 'var(--radius-sm)',
+                    backgroundColor: gradStyle === 'smooth' ? 'var(--accent)' : 'transparent',
+                    color: gradStyle === 'smooth' ? '#000' : 'var(--text-secondary)', border: 'none', cursor: 'pointer'
+                  }}
+                >
+                  🌊 Suave
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setGradStyle('sharp');
+                    const css = `linear-gradient(${gradAngle}deg, ${gradColor1} 0% ${gradStop}%, ${gradColor2} ${gradStop}% 100%)`;
+                    setBgColor(css);
+                  }}
+                  style={{
+                    flex: 1, padding: '0.3rem 0.1rem', fontSize: '0.68rem', fontWeight: 600, borderRadius: 'var(--radius-sm)',
+                    backgroundColor: gradStyle === 'sharp' ? 'var(--accent)' : 'transparent',
+                    color: gradStyle === 'sharp' ? '#000' : 'var(--text-secondary)', border: 'none', cursor: 'pointer'
+                  }}
+                >
+                  ✂️ Mitad 50/50
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setGradStyle('radial');
+                    const css = `radial-gradient(circle at center, ${gradColor1} 0%, ${gradColor2} 100%)`;
+                    setBgColor(css);
+                  }}
+                  style={{
+                    flex: 1, padding: '0.3rem 0.1rem', fontSize: '0.68rem', fontWeight: 600, borderRadius: 'var(--radius-sm)',
+                    backgroundColor: gradStyle === 'radial' ? 'var(--accent)' : 'transparent',
+                    color: gradStyle === 'radial' ? '#000' : 'var(--text-secondary)', border: 'none', cursor: 'pointer'
+                  }}
+                >
+                  🎯 Radial
+                </button>
+              </div>
+
+              {/* Selector de los 2 Colores */}
+              <div style={{ display: 'flex', gap: '0.6rem' }}>
+                <div style={{ flex: 1 }}>
+                  <label style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '0.2rem' }}>Color 1 (Mitad 1):</label>
+                  <input
+                    type="color"
+                    value={gradColor1}
+                    onChange={(e) => {
+                      setGradColor1(e.target.value);
+                      const c1 = e.target.value;
+                      const css = gradStyle === 'sharp'
+                        ? `linear-gradient(${gradAngle}deg, ${c1} 0% ${gradStop}%, ${gradColor2} ${gradStop}% 100%)`
+                        : gradStyle === 'radial'
+                        ? `radial-gradient(circle at center, ${c1} 0%, ${gradColor2} 100%)`
+                        : `linear-gradient(${gradAngle}deg, ${c1} 0%, ${gradColor2} 100%)`;
+                      setBgColor(css);
+                    }}
+                    style={{ width: '100%', height: '34px', border: 'none', borderRadius: '4px', cursor: 'pointer', backgroundColor: 'transparent' }}
+                  />
+                </div>
+
+                <div style={{ flex: 1 }}>
+                  <label style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '0.2rem' }}>Color 2 (Mitad 2):</label>
+                  <input
+                    type="color"
+                    value={gradColor2}
+                    onChange={(e) => {
+                      setGradColor2(e.target.value);
+                      const c2 = e.target.value;
+                      const css = gradStyle === 'sharp'
+                        ? `linear-gradient(${gradAngle}deg, ${gradColor1} 0% ${gradStop}%, ${c2} ${gradStop}% 100%)`
+                        : gradStyle === 'radial'
+                        ? `radial-gradient(circle at center, ${gradColor1} 0%, ${c2} 100%)`
+                        : `linear-gradient(${gradAngle}deg, ${gradColor1} 0%, ${c2} 100%)`;
+                      setBgColor(css);
+                    }}
+                    style={{ width: '100%', height: '34px', border: 'none', borderRadius: '4px', cursor: 'pointer', backgroundColor: 'transparent' }}
+                  />
+                </div>
+              </div>
+
+              {/* Slider de Ángulo */}
+              {gradStyle !== 'radial' && (
+                <div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: 'var(--text-secondary)' }}>
+                    <span>Ángulo de Inclinación:</span>
+                    <span className="font-mono" style={{ color: 'var(--accent)', fontWeight: 700 }}>{gradAngle}°</span>
+                  </div>
+                  <input
+                    type="range" min={0} max={360} step={5}
+                    value={gradAngle}
+                    onChange={(e) => {
+                      const a = Number(e.target.value);
+                      setGradAngle(a);
+                      const css = gradStyle === 'sharp'
+                        ? `linear-gradient(${a}deg, ${gradColor1} 0% ${gradStop}%, ${gradColor2} ${gradStop}% 100%)`
+                        : `linear-gradient(${a}deg, ${gradColor1} 0%, ${gradColor2} 100%)`;
+                      setBgColor(css);
+                    }}
+                    style={{ width: '100%', accentColor: 'var(--accent)' }}
+                  />
+                  {/* Botones de Ángulos Rápidos */}
+                  <div style={{ display: 'flex', gap: '0.3rem', marginTop: '0.3rem' }}>
+                    {[
+                      { label: '↔️ Horiz (0°)', angle: 0 },
+                      { label: '↕️ Vert (90°)', angle: 90 },
+                      { label: '↘️ Diag (135°)', angle: 135 }
+                    ].map((ang) => (
+                      <button
+                        key={ang.angle}
+                        type="button"
+                        onClick={() => {
+                          setGradAngle(ang.angle);
+                          const css = gradStyle === 'sharp'
+                            ? `linear-gradient(${ang.angle}deg, ${gradColor1} 0% ${gradStop}%, ${gradColor2} ${gradStop}% 100%)`
+                            : `linear-gradient(${ang.angle}deg, ${gradColor1} 0%, ${gradColor2} 100%)`;
+                          setBgColor(css);
+                        }}
+                        style={{
+                          flex: 1, padding: '0.25rem', fontSize: '0.62rem', borderRadius: 'var(--radius-sm)',
+                          backgroundColor: gradAngle === ang.angle ? 'var(--accent-muted)' : 'var(--bg-surface-2)',
+                          color: gradAngle === ang.angle ? 'var(--accent)' : 'var(--text-secondary)',
+                          border: '1px solid var(--border-subtle)', cursor: 'pointer'
+                        }}
+                      >
+                        {ang.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Slider de Posición de Mitad */}
+              {gradStyle === 'sharp' && (
+                <div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: 'var(--text-secondary)' }}>
+                    <span>Punto de Corte de la Mitad:</span>
+                    <span className="font-mono" style={{ color: 'var(--accent)', fontWeight: 700 }}>{gradStop}%</span>
+                  </div>
+                  <input
+                    type="range" min={10} max={90} step={1}
+                    value={gradStop}
+                    onChange={(e) => {
+                      const st = Number(e.target.value);
+                      setGradStop(st);
+                      const css = `linear-gradient(${gradAngle}deg, ${gradColor1} 0% ${st}%, ${gradColor2} ${st}% 100%)`;
+                      setBgColor(css);
+                    }}
+                    style={{ width: '100%', accentColor: 'var(--accent)' }}
+                  />
+                </div>
+              )}
+
+              <div style={{ paddingTop: '0.6rem', borderTop: '1px dashed var(--border-subtle)' }}>
+                <label style={{ fontSize: '0.74rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '0.4rem', fontWeight: 600 }}>
+                  Presets de Degradados Predefinidos:
+                </label>
+
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '0.4rem' }}>
+                  {GRADIENT_PRESETS.map((grad) => (
+                    <button
+                      key={grad.name}
+                      type="button"
+                      onClick={() => {
+                        const cssGrad = `linear-gradient(${grad.angle}deg, ${grad.colors.join(', ')})`;
+                        setBgColor(cssGrad);
+                      }}
+                      style={{
+                        padding: '0.5rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-subtle)',
+                        background: `linear-gradient(${grad.angle}deg, ${grad.colors.join(', ')})`,
+                        color: '#fff', fontSize: '0.7rem', fontWeight: 700, textShadow: '0 1px 3px rgba(0,0,0,0.8)',
+                        cursor: 'pointer', textAlign: 'center'
+                      }}
+                    >
+                      {grad.name}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
 
           <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', backgroundColor: 'var(--bg-surface-2)', padding: '0.8rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-subtle)' }}>
             <div><strong>Resolución:</strong> {preset.width} x {preset.height} px</div>
@@ -803,62 +1364,190 @@ export default function DesignEditorSection() {
 
         {selectedElement.type === 'image' && (
           <>
-            <button
-              className="btn btn-secondary btn-sm"
-              onClick={() => setRetouchModalOpen(true)}
-              style={{ justifyContent: 'center', gap: '0.5rem', width: '100%' }}
-            >
-              <Wand2 size={15} />
-              <span>Retocar Imagen con IA</span>
-            </button>
-
-            <div style={{ paddingTop: '0.6rem', borderTop: '1px solid var(--border-subtle)' }}>
-              <label style={{ fontSize: '0.76rem', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '0.3rem', marginBottom: '0.2rem' }}>
-                <Sun size={13} /> Brillo ({selectedElement.brightness ?? 0})
-              </label>
-              <input
-                type="range" min={-1} max={1} step={0.05}
-                value={selectedElement.brightness ?? 0}
-                onChange={(e) => updateSelected('brightness', Number(e.target.value))}
-                style={{ width: '100%', accentColor: 'var(--accent)' }}
-              />
+            {/* Sub-pestañas de propiedades de imagen */}
+            <div style={{ display: 'flex', gap: '0.3rem', marginBottom: '0.8rem', backgroundColor: 'var(--bg-surface-2)', padding: '3px', borderRadius: 'var(--radius-sm)' }}>
+              <button
+                type="button"
+                onClick={() => setImagePropSubTab('filters')}
+                style={{
+                  flex: 1, padding: '0.35rem 0.2rem', fontSize: '0.7rem', fontWeight: 700, borderRadius: 'var(--radius-sm)',
+                  backgroundColor: imagePropSubTab === 'filters' ? 'var(--accent)' : 'transparent',
+                  color: imagePropSubTab === 'filters' ? '#000' : 'var(--text-secondary)',
+                  border: 'none', cursor: 'pointer'
+                }}
+              >
+                ☀️ Filtros
+              </button>
+              <button
+                type="button"
+                onClick={() => setImagePropSubTab('crop')}
+                style={{
+                  flex: 1, padding: '0.35rem 0.2rem', fontSize: '0.7rem', fontWeight: 700, borderRadius: 'var(--radius-sm)',
+                  backgroundColor: imagePropSubTab === 'crop' ? 'var(--accent)' : 'transparent',
+                  color: imagePropSubTab === 'crop' ? '#000' : 'var(--text-secondary)',
+                  border: 'none', cursor: 'pointer'
+                }}
+              >
+                ✂️ Forma
+              </button>
+              <button
+                type="button"
+                onClick={() => setImagePropSubTab('ai')}
+                style={{
+                  flex: 1, padding: '0.35rem 0.2rem', fontSize: '0.7rem', fontWeight: 700, borderRadius: 'var(--radius-sm)',
+                  backgroundColor: imagePropSubTab === 'ai' ? 'var(--accent)' : 'transparent',
+                  color: imagePropSubTab === 'ai' ? '#000' : 'var(--text-secondary)',
+                  border: 'none', cursor: 'pointer'
+                }}
+              >
+                🪄 IA
+              </button>
             </div>
 
-            <div>
-              <label style={{ fontSize: '0.76rem', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '0.3rem', marginBottom: '0.2rem' }}>
-                <ContrastIcon size={13} /> Contraste ({selectedElement.contrast ?? 0})
-              </label>
-              <input
-                type="range" min={-100} max={100} step={1}
-                value={selectedElement.contrast ?? 0}
-                onChange={(e) => updateSelected('contrast', Number(e.target.value))}
-                style={{ width: '100%', accentColor: 'var(--accent)' }}
-              />
-            </div>
+            {imagePropSubTab === 'filters' && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
+                <div>
+                  <label style={{ fontSize: '0.76rem', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '0.3rem', marginBottom: '0.2rem' }}>
+                    <Sun size={13} /> Brillo ({selectedElement.brightness ?? 0})
+                  </label>
+                  <input
+                    type="range" min={-1} max={1} step={0.05}
+                    value={selectedElement.brightness ?? 0}
+                    onChange={(e) => updateSelected('brightness', Number(e.target.value))}
+                    style={{ width: '100%', accentColor: 'var(--accent)' }}
+                  />
+                </div>
 
-            <div>
-              <label style={{ fontSize: '0.76rem', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '0.3rem', marginBottom: '0.2rem' }}>
-                <Droplet size={13} /> Saturación ({selectedElement.saturation ?? 0})
-              </label>
-              <input
-                type="range" min={-2} max={5} step={0.1}
-                value={selectedElement.saturation ?? 0}
-                onChange={(e) => updateSelected('saturation', Number(e.target.value))}
-                style={{ width: '100%', accentColor: 'var(--accent)' }}
-              />
-            </div>
+                <div>
+                  <label style={{ fontSize: '0.76rem', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '0.3rem', marginBottom: '0.2rem' }}>
+                    <ContrastIcon size={13} /> Contraste ({selectedElement.contrast ?? 0})
+                  </label>
+                  <input
+                    type="range" min={-100} max={100} step={1}
+                    value={selectedElement.contrast ?? 0}
+                    onChange={(e) => updateSelected('contrast', Number(e.target.value))}
+                    style={{ width: '100%', accentColor: 'var(--accent)' }}
+                  />
+                </div>
 
-            <div>
-              <label style={{ fontSize: '0.76rem', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '0.3rem', marginBottom: '0.2rem' }}>
-                <Focus size={13} /> Desenfoque ({selectedElement.blurRadius ?? 0})
-              </label>
-              <input
-                type="range" min={0} max={20} step={1}
-                value={selectedElement.blurRadius ?? 0}
-                onChange={(e) => updateSelected('blurRadius', Number(e.target.value))}
-                style={{ width: '100%', accentColor: 'var(--accent)' }}
-              />
-            </div>
+                <div>
+                  <label style={{ fontSize: '0.76rem', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '0.3rem', marginBottom: '0.2rem' }}>
+                    <Droplet size={13} /> Saturación ({selectedElement.saturation ?? 0})
+                  </label>
+                  <input
+                    type="range" min={-2} max={5} step={0.1}
+                    value={selectedElement.saturation ?? 0}
+                    onChange={(e) => updateSelected('saturation', Number(e.target.value))}
+                    style={{ width: '100%', accentColor: 'var(--accent)' }}
+                  />
+                </div>
+
+                <div>
+                  <label style={{ fontSize: '0.76rem', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '0.3rem', marginBottom: '0.2rem' }}>
+                    <Focus size={13} /> Desenfoque ({selectedElement.blurRadius ?? 0})
+                  </label>
+                  <input
+                    type="range" min={0} max={20} step={1}
+                    value={selectedElement.blurRadius ?? 0}
+                    onChange={(e) => updateSelected('blurRadius', Number(e.target.value))}
+                    style={{ width: '100%', accentColor: 'var(--accent)' }}
+                  />
+                </div>
+              </div>
+            )}
+
+            {imagePropSubTab === 'crop' && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
+                <span style={{ fontSize: '0.76rem', color: 'var(--accent)', fontWeight: 700 }}>
+                  Recorte con 12 Formas Geométricas & Decorativas:
+                </span>
+                
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '0.35rem' }}>
+                  {SHAPE_CROP_TYPES.map((shape) => (
+                    <button
+                      key={shape.id}
+                      type="button"
+                      onClick={() => updateSelectedWithHistory('clipShape', shape.id)}
+                      style={{
+                        padding: '0.4rem 0.2rem',
+                        borderRadius: 'var(--radius-sm)',
+                        border: `1.5px solid ${(selectedElement.clipShape || 'none') === shape.id ? 'var(--accent)' : 'var(--border-subtle)'}`,
+                        backgroundColor: (selectedElement.clipShape || 'none') === shape.id ? 'var(--accent-muted)' : 'var(--bg-surface-2)',
+                        color: (selectedElement.clipShape || 'none') === shape.id ? 'var(--accent)' : 'var(--text-primary)',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        gap: '0.15rem'
+                      }}
+                      title={shape.label}
+                    >
+                      <span style={{ fontSize: '1rem' }}>{shape.icon}</span>
+                      <span style={{ fontSize: '0.58rem', fontWeight: 600, textAlign: 'center', lineHeight: 1.1 }}>{shape.label}</span>
+                    </button>
+                  ))}
+                </div>
+
+                {selectedElement.clipShape && selectedElement.clipShape !== 'none' && (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem', marginTop: '0.4rem', paddingTop: '0.6rem', borderTop: '1px dashed var(--border-subtle)' }}>
+                    <div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: 'var(--text-secondary)' }}>
+                        <span>Rotación de la Forma:</span>
+                        <span className="font-mono" style={{ color: 'var(--accent)', fontWeight: 700 }}>{selectedElement.clipRotation || 0}°</span>
+                      </div>
+                      <input
+                        type="range" min={0} max={360} step={1}
+                        value={selectedElement.clipRotation || 0}
+                        onChange={(e) => updateSelected('clipRotation', Number(e.target.value))}
+                        style={{ width: '100%', accentColor: 'var(--accent)' }}
+                      />
+                    </div>
+
+                    <div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: 'var(--text-secondary)' }}>
+                        <span>Deformar Ancho (Escala X):</span>
+                        <span className="font-mono" style={{ color: 'var(--accent)', fontWeight: 700 }}>{(selectedElement.clipScaleX || 1).toFixed(2)}x</span>
+                      </div>
+                      <input
+                        type="range" min={0.2} max={2.5} step={0.05}
+                        value={selectedElement.clipScaleX || 1}
+                        onChange={(e) => updateSelected('clipScaleX', Number(e.target.value))}
+                        style={{ width: '100%', accentColor: 'var(--accent)' }}
+                      />
+                    </div>
+
+                    <div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: 'var(--text-secondary)' }}>
+                        <span>Deformar Alto (Escala Y):</span>
+                        <span className="font-mono" style={{ color: 'var(--accent)', fontWeight: 700 }}>{(selectedElement.clipScaleY || 1).toFixed(2)}x</span>
+                      </div>
+                      <input
+                        type="range" min={0.2} max={2.5} step={0.05}
+                        value={selectedElement.clipScaleY || 1}
+                        onChange={(e) => updateSelected('clipScaleY', Number(e.target.value))}
+                        style={{ width: '100%', accentColor: 'var(--accent)' }}
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {imagePropSubTab === 'ai' && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
+                <button
+                  className="btn btn-secondary btn-sm"
+                  onClick={() => setRetouchModalOpen(true)}
+                  style={{ justifyContent: 'center', gap: '0.5rem', width: '100%', padding: '0.7rem' }}
+                >
+                  <Wand2 size={16} color="var(--accent)" />
+                  <span>Abrir Borrador Mágico & Quitar Fondo (IA)</span>
+                </button>
+                <span style={{ fontSize: '0.72rem', color: 'var(--text-disabled)', textAlign: 'center' }}>
+                  Elimina objetos no deseados o quita el fondo 100% nativo en el navegador.
+                </span>
+              </div>
+            )}
           </>
         )}
 
@@ -1220,7 +1909,9 @@ export default function DesignEditorSection() {
           {/* Bandeja inferior (bottom sheet) de Propiedades */}
           {mobilePropsOpen && selectedElement && (
             <div style={{
-              position: 'fixed', left: 0, right: 0, bottom: 0, maxHeight: '65vh', backgroundColor: 'var(--bg-surface)',
+              position: 'fixed', left: 0, right: 0, bottom: 0,
+              maxHeight: selectedElement?.type === 'image' ? '40vh' : '58vh',
+              backgroundColor: 'var(--bg-surface)',
               borderTopLeftRadius: 'var(--radius-lg)', borderTopRightRadius: 'var(--radius-lg)',
               boxShadow: '0 -8px 30px rgba(0,0,0,0.5)', zIndex: 2002, display: 'flex', flexDirection: 'column'
             }}>
