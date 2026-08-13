@@ -64,22 +64,44 @@ export const EMOJI_CATEGORIES = [
   }
 ];
 
-// Plantillas predefinidas de lienzo
+// Plantillas predefinidas de lienzo por categorías
 const PRESETS = [
-  { id: 'business', name: 'Tarjeta de Presentación', width: 540, height: 300, unit: '90x50 mm' },
-  { id: 'invitation', name: 'Invitación de Evento', width: 400, height: 600, unit: '100x150 mm' },
-  { id: 'tag', name: 'Etiqueta de Producto', width: 400, height: 400, unit: '60x60 mm' },
-  { id: 'social', name: 'Post de Redes Social', width: 500, height: 500, unit: '1080x1080 px' }
+  // --- REDES SOCIALES & DIGITAL ---
+  { id: 'ig-portrait', category: 'Redes Sociales', name: 'Instagram Retrato 4:5', width: 500, height: 625, unit: '1080x1350 px' },
+  { id: 'ig-square', category: 'Redes Sociales', name: 'Instagram Cuadrado 1:1', width: 500, height: 500, unit: '1080x1080 px' },
+  { id: 'ig-story', category: 'Redes Sociales', name: 'Story / Reels / TikTok 9:16', width: 405, height: 720, unit: '1080x1920 px' },
+  { id: 'fb-banner', category: 'Redes Sociales', name: 'Banner de Facebook', width: 600, height: 228, unit: '820x312 px' },
+  { id: 'li-banner', category: 'Redes Sociales', name: 'Banner de LinkedIn', width: 600, height: 150, unit: '1584x396 px' },
+  { id: 'yt-banner', category: 'Redes Sociales', name: 'Banner de YouTube', width: 640, height: 360, unit: '2560x1440 px' },
+  { id: 'tw-banner', category: 'Redes Sociales', name: 'Banner Twitter / X', width: 600, height: 200, unit: '1500x500 px' },
+  { id: 'pin-23', category: 'Redes Sociales', name: 'Pin de Pinterest 2:3', width: 440, height: 660, unit: '1000x1500 px' },
+  { id: 'totem-slim', category: 'Redes Sociales', name: 'Pantalla Tótems 80x1920', width: 180, height: 720, unit: '80x1920 px' },
+
+  // --- TARJETAS & PAPELERÍA ---
+  { id: 'business', category: 'Tarjetas & Papelería', name: 'Tarjeta de Presentación', width: 540, height: 300, unit: '90x50 mm' },
+  { id: 'business-eu', category: 'Tarjetas & Papelería', name: 'Tarjeta Europea', width: 510, height: 330, unit: '85x55 mm' },
+  { id: 'invitation', category: 'Tarjetas & Papelería', name: 'Invitación de Evento', width: 400, height: 600, unit: '100x150 mm' },
+  { id: 'tag-sq', category: 'Tarjetas & Papelería', name: 'Etiqueta Cuadrada 60x60', width: 400, height: 400, unit: '60x60 mm' },
+  { id: 'tag-sm', category: 'Tarjetas & Papelería', name: 'Etiqueta Pequeña 50x50', width: 330, height: 330, unit: '50x50 mm' },
+  { id: 'bookmark', category: 'Tarjetas & Papelería', name: 'Separador / Marcapáginas', width: 300, height: 1080, unit: '50x180 mm' },
+
+  // --- IMPRESIÓN ESTÁNDAR ---
+  { id: 'a3', category: 'Impresión Estándar', name: 'Hoja A3', width: 840, height: 1188, unit: '297x420 mm' },
+  { id: 'a4', category: 'Impresión Estándar', name: 'Hoja A4', width: 595, height: 842, unit: '210x297 mm' },
+  { id: 'a5', category: 'Impresión Estándar', name: 'Hoja A5', width: 420, height: 595, unit: '148x210 mm' },
+  { id: 'b5', category: 'Impresión Estándar', name: 'Hoja B5', width: 500, height: 708, unit: '176x250 mm' },
+  { id: 'letter', category: 'Impresión Estándar', name: 'Tamaño Carta (Letter)', width: 612, height: 792, unit: '216x279 mm' },
+  { id: 'legal', category: 'Impresión Estándar', name: 'Tamaño Oficio (Legal)', width: 612, height: 1008, unit: '216x356 mm' }
 ];
 
 // Definición de las 6 herramientas de creación (barra de pestañas desktop / barra de íconos mobile)
 const TAB_DEFS = [
+  { id: 'canvas', label: 'Lienzo', icon: Sliders },
   { id: 'text', label: 'Texto', icon: Type },
   { id: 'emojis', label: 'Emojis', icon: Smile },
   { id: 'draw', label: 'Pincel', icon: Brush },
   { id: 'shapes', label: 'Formas', icon: Square },
-  { id: 'image', label: 'Imagen', icon: ImageIcon },
-  { id: 'canvas', label: 'Lienzo', icon: Sliders }
+  { id: 'image', label: 'Imagen', icon: ImageIcon }
 ];
 
 // 12 Formas geométricas y decorativas para recorte de imágenes
@@ -241,51 +263,175 @@ function drawCustomClipShape(ctx, width, height, clipShape, clipRotation = 0, cl
   }
 }
 
-// Generador de texturas/patrones en canvas
-function createTexturePatternUrl(patternType, bgColor = '#111114', patternColor = '#BAFDC1') {
+// Generador de texturas/patrones en canvas con soporte para inclinación, escala, espaciado e imagen propia
+function createTexturePatternUrl({
+  patternType = 'grid',
+  bgColor = '#111114',
+  patternColor = '#BAFDC1',
+  patternAngle = 0,
+  patternScale = 1,
+  patternSpacing = 35,
+  customImgSrc = null
+}, callback) {
+  const tileSize = Math.max(16, Math.round(patternSpacing * patternScale));
   const c = document.createElement('canvas');
-  c.width = 40;
-  c.height = 40;
+  c.width = tileSize;
+  c.height = tileSize;
   const ctx = c.getContext('2d');
 
   ctx.fillStyle = bgColor;
-  ctx.fillRect(0, 0, 40, 40);
+  ctx.fillRect(0, 0, tileSize, tileSize);
+
+  const cx = tileSize / 2;
+  const cy = tileSize / 2;
+
+  ctx.save();
+  ctx.translate(cx, cy);
+  ctx.rotate((patternAngle * Math.PI) / 180);
+  ctx.translate(-cx, -cy);
+
+  if (customImgSrc) {
+    const img = new window.Image();
+    if (!customImgSrc.startsWith('data:') && !customImgSrc.startsWith('blob:')) {
+      img.crossOrigin = 'anonymous';
+    }
+    img.onload = () => {
+      ctx.drawImage(img, cx - (tileSize * 0.35), cy - (tileSize * 0.35), tileSize * 0.7, tileSize * 0.7);
+      ctx.restore();
+      if (callback) callback(c.toDataURL('image/png'));
+    };
+    img.onerror = () => {
+      ctx.restore();
+      if (callback) callback(c.toDataURL('image/png'));
+    };
+    img.src = customImgSrc;
+    return;
+  }
 
   ctx.fillStyle = patternColor;
   ctx.strokeStyle = patternColor;
-  ctx.lineWidth = 1.5;
+  ctx.lineWidth = Math.max(1, 1.5 * patternScale);
 
   if (patternType === 'grid') {
-    ctx.globalAlpha = 0.25;
-    ctx.strokeRect(0, 0, 40, 40);
+    ctx.globalAlpha = 0.3;
+    ctx.strokeRect(0, 0, tileSize, tileSize);
   } else if (patternType === 'dots') {
-    ctx.globalAlpha = 0.4;
+    ctx.globalAlpha = 0.45;
     ctx.beginPath();
-    ctx.arc(10, 10, 2.5, 0, Math.PI * 2);
-    ctx.arc(30, 30, 2.5, 0, Math.PI * 2);
+    ctx.arc(cx, cy, Math.max(1.5, 3 * patternScale), 0, Math.PI * 2);
     ctx.fill();
   } else if (patternType === 'stripes') {
-    ctx.globalAlpha = 0.3;
+    ctx.globalAlpha = 0.35;
     ctx.beginPath();
-    ctx.moveTo(0, 40); ctx.lineTo(40, 0);
-    ctx.moveTo(-10, 10); ctx.lineTo(10, -10);
-    ctx.moveTo(30, 50); ctx.lineTo(50, 30);
+    ctx.moveTo(0, tileSize);
+    ctx.lineTo(tileSize, 0);
     ctx.stroke();
   } else if (patternType === 'noise') {
-    ctx.globalAlpha = 0.15;
-    for (let i = 0; i < 120; i++) {
-      const rx = Math.random() * 40;
-      const ry = Math.random() * 40;
-      ctx.fillRect(rx, ry, 1.5, 1.5);
+    ctx.globalAlpha = 0.2;
+    for (let i = 0; i < 80; i++) {
+      const rx = Math.random() * tileSize;
+      const ry = Math.random() * tileSize;
+      ctx.fillRect(rx, ry, 1.5 * patternScale, 1.5 * patternScale);
     }
   } else if (patternType === 'paper') {
-    ctx.globalAlpha = 0.1;
-    for (let i = 0; i < 40; i += 4) {
-      ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(40, i); ctx.stroke();
-      ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, 40); ctx.stroke();
+    ctx.globalAlpha = 0.15;
+    for (let i = 0; i < tileSize; i += Math.max(4, Math.round(8 * patternScale))) {
+      ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(tileSize, i); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, tileSize); ctx.stroke();
     }
   }
-  return c.toDataURL('image/png');
+  ctx.restore();
+  if (callback) callback(c.toDataURL('image/png'));
+}
+
+// Helper de Forma Konva con soporte para relleno sólido, degradados y texturas
+function ShapeElement({ el, isDrawingMode, setSelectedId, handleDragMove, handleDragEnd, updateSelected }) {
+  const [fillPatternImg, setFillPatternImg] = useState(null);
+
+  useEffect(() => {
+    if (el.fillType === 'gradient') {
+      const canvas = document.createElement('canvas');
+      const w = Math.max(20, Math.round(el.width || (el.radius ? el.radius * 2 : 100)));
+      const h = Math.max(20, Math.round(el.height || (el.radius ? el.radius * 2 : 100)));
+      canvas.width = w;
+      canvas.height = h;
+      const ctx = canvas.getContext('2d');
+
+      const c1 = el.gradColor1 || '#111114';
+      const c2 = el.gradColor2 || '#BAFDC1';
+      const angle = el.gradAngle || 45;
+      const style = el.gradStyle || 'smooth';
+      const stop = el.gradStop || 50;
+
+      let grad;
+      if (style === 'radial') {
+        grad = ctx.createRadialGradient(w/2, h/2, 0, w/2, h/2, Math.max(w, h)/2);
+        grad.addColorStop(0, c1);
+        grad.addColorStop(1, c2);
+      } else if (style === 'sharp') {
+        const rad = (angle * Math.PI) / 180;
+        const x2 = w/2 + Math.cos(rad) * w/2;
+        const y2 = h/2 + Math.sin(rad) * h/2;
+        grad = ctx.createLinearGradient(0, 0, x2, y2);
+        grad.addColorStop(0, c1);
+        grad.addColorStop(stop / 100, c1);
+        grad.addColorStop(stop / 100, c2);
+        grad.addColorStop(1, c2);
+      } else {
+        const rad = (angle * Math.PI) / 180;
+        const x2 = w/2 + Math.cos(rad) * w/2;
+        const y2 = h/2 + Math.sin(rad) * h/2;
+        grad = ctx.createLinearGradient(0, 0, x2, y2);
+        grad.addColorStop(0, c1);
+        grad.addColorStop(1, c2);
+      }
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, w, h);
+      setFillPatternImg(canvas);
+    } else if (el.fillType === 'texture') {
+      createTexturePatternUrl({
+        patternType: el.patternType || 'grid',
+        bgColor: el.fill || '#111114',
+        patternColor: el.patternColor || '#BAFDC1',
+        patternAngle: el.patternAngle || 0,
+        patternScale: el.patternScale || 1,
+        patternSpacing: el.patternSpacing || 35,
+        customImgSrc: el.customImgSrc || null
+      }, (dataUrl) => {
+        const img = new window.Image();
+        img.crossOrigin = 'anonymous';
+        img.onload = () => setFillPatternImg(img);
+        img.src = dataUrl;
+      });
+    } else {
+      setFillPatternImg(null);
+    }
+  }, [
+    el.fillType, el.fill, el.gradColor1, el.gradColor2, el.gradAngle, el.gradStyle, el.gradStop,
+    el.patternType, el.patternColor, el.patternAngle, el.patternScale, el.patternSpacing, el.customImgSrc,
+    el.width, el.height, el.radius
+  ]);
+
+  const { fillType, gradColor1, gradColor2, gradAngle, gradStyle, gradStop, patternType, patternColor, patternAngle, patternScale, patternSpacing, customImgSrc, ...cleanProps } = el;
+
+  const commonProps = {
+    key: el.id,
+    id: el.id,
+    ...cleanProps,
+    fill: fillType && fillType !== 'color' ? undefined : el.fill,
+    fillPriority: fillPatternImg ? 'pattern' : 'color',
+    fillPatternImage: fillPatternImg || undefined,
+    draggable: !isDrawingMode,
+    onClick: () => !isDrawingMode && setSelectedId(el.id),
+    onTap: () => !isDrawingMode && setSelectedId(el.id),
+    onDragMove: (e) => handleDragMove(e, el.id),
+    onDragEnd: (e) => { handleDragEnd(); updateSelected('x', e.target.x()); updateSelected('y', e.target.y()); }
+  };
+
+  if (el.type === 'rect') return <Rect {...commonProps} />;
+  if (el.type === 'circle') return <Circle {...commonProps} />;
+  if (el.type === 'star') return <Star {...commonProps} />;
+  return null;
 }
 
 // Helper de Imagen Konva con filtros no-destructivos y recorte por forma
@@ -1007,327 +1153,6 @@ export default function DesignEditorSection() {
           </p>
         </div>
       )}
-
-      {activeTab === 'canvas' && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-          <h4 style={{ fontSize: '0.85rem', color: 'var(--accent)', fontWeight: 700, margin: 0, textTransform: 'uppercase' }}>
-            Fondo del Lienzo, Degradados & Texturas
-          </h4>
-
-          {/* Selector Modo Fondo: Color Sólido | Texturas | Degradados */}
-          <div style={{ display: 'flex', gap: '0.3rem', backgroundColor: 'var(--bg-surface-2)', padding: '3px', borderRadius: 'var(--radius-sm)' }}>
-            <button
-              type="button"
-              onClick={() => setCanvasBgMode('color')}
-              style={{
-                flex: 1, padding: '0.35rem 0.2rem', fontSize: '0.7rem', fontWeight: 700, borderRadius: 'var(--radius-sm)',
-                backgroundColor: canvasBgMode === 'color' ? 'var(--accent)' : 'transparent',
-                color: canvasBgMode === 'color' ? '#000' : 'var(--text-secondary)',
-                border: 'none', cursor: 'pointer'
-              }}
-            >
-              🎨 Sólido
-            </button>
-            <button
-              type="button"
-              onClick={() => setCanvasBgMode('texture')}
-              style={{
-                flex: 1, padding: '0.35rem 0.2rem', fontSize: '0.7rem', fontWeight: 700, borderRadius: 'var(--radius-sm)',
-                backgroundColor: canvasBgMode === 'texture' ? 'var(--accent)' : 'transparent',
-                color: canvasBgMode === 'texture' ? '#000' : 'var(--text-secondary)',
-                border: 'none', cursor: 'pointer'
-              }}
-            >
-              🏁 Textura
-            </button>
-            <button
-              type="button"
-              onClick={() => setCanvasBgMode('gradient')}
-              style={{
-                flex: 1, padding: '0.35rem 0.2rem', fontSize: '0.7rem', fontWeight: 700, borderRadius: 'var(--radius-sm)',
-                backgroundColor: canvasBgMode === 'gradient' ? 'var(--accent)' : 'transparent',
-                color: canvasBgMode === 'gradient' ? '#000' : 'var(--text-secondary)',
-                border: 'none', cursor: 'pointer'
-              }}
-            >
-              🌈 Degradado
-            </button>
-          </div>
-
-          {canvasBgMode === 'color' && (
-            <div>
-              <label style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '0.4rem', fontWeight: 600 }}>
-                Color Sólido de Fondo:
-              </label>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem' }}>
-                <input
-                  type="color"
-                  value={typeof bgColor === 'string' && bgColor.startsWith('#') ? bgColor : '#111114'}
-                  onChange={(e) => setBgColor(e.target.value)}
-                  style={{ width: '45px', height: '36px', border: 'none', borderRadius: '4px', cursor: 'pointer', backgroundColor: 'transparent' }}
-                />
-                <span style={{ fontSize: '0.85rem', color: 'var(--text-primary)' }} className="font-mono">{typeof bgColor === 'string' && bgColor.startsWith('#') ? bgColor : 'Textura/Degradado'}</span>
-              </div>
-            </div>
-          )}
-
-          {canvasBgMode === 'texture' && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
-              <label style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', fontWeight: 600 }}>
-                Selecciona una Textura o Patrón:
-              </label>
-              
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.4rem' }}>
-                {[
-                  { id: 'grid', label: 'Cuadrícula', icon: '📐' },
-                  { id: 'dots', label: 'Puntos', icon: '⚪' },
-                  { id: 'stripes', label: 'Franjas', icon: '📊' },
-                  { id: 'noise', label: 'Ruido HD', icon: '📺' },
-                  { id: 'paper', label: 'Lino/Papel', icon: '📜' }
-                ].map((pat) => (
-                  <button
-                    key={pat.id}
-                    type="button"
-                    onClick={() => {
-                      setPatternType(pat.id);
-                      const texUrl = createTexturePatternUrl(pat.id, typeof bgColor === 'string' && bgColor.startsWith('#') ? bgColor : '#111114', patternColor);
-                      setBgColor(texUrl);
-                    }}
-                    style={{
-                      padding: '0.5rem 0.3rem', borderRadius: 'var(--radius-sm)',
-                      border: `1.5px solid ${patternType === pat.id ? 'var(--accent)' : 'var(--border-subtle)'}`,
-                      backgroundColor: patternType === pat.id ? 'var(--accent-muted)' : 'var(--bg-surface-2)',
-                      color: patternType === pat.id ? 'var(--accent)' : 'var(--text-primary)',
-                      cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.2rem'
-                    }}
-                  >
-                    <span style={{ fontSize: '1.1rem' }}>{pat.icon}</span>
-                    <span style={{ fontSize: '0.68rem', fontWeight: 600 }}>{pat.label}</span>
-                  </button>
-                ))}
-              </div>
-
-              <div style={{ display: 'flex', gap: '0.8rem', alignItems: 'center' }}>
-                <div style={{ flex: 1 }}>
-                  <label style={{ fontSize: '0.72rem', color: 'var(--text-secondary)' }}>Color de Trama:</label>
-                  <input
-                    type="color"
-                    value={patternColor}
-                    onChange={(e) => {
-                      setPatternColor(e.target.value);
-                      const texUrl = createTexturePatternUrl(patternType, typeof bgColor === 'string' && bgColor.startsWith('#') ? bgColor : '#111114', e.target.value);
-                      setBgColor(texUrl);
-                    }}
-                    style={{ width: '100%', height: '32px', border: 'none', borderRadius: '4px', cursor: 'pointer', backgroundColor: 'transparent' }}
-                  />
-                </div>
-              </div>
-            </div>
-          )}
-
-          {canvasBgMode === 'gradient' && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.9rem' }}>
-              <span style={{ fontSize: '0.78rem', color: 'var(--accent)', fontWeight: 700 }}>
-                Generador Personalizado (Mitad / 2 Colores / Ángulo):
-              </span>
-
-              {/* Modo de Mezcla / Transición */}
-              <div style={{ display: 'flex', gap: '0.3rem', backgroundColor: 'var(--bg-surface-2)', padding: '3px', borderRadius: 'var(--radius-sm)' }}>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setGradStyle('smooth');
-                    const css = `linear-gradient(${gradAngle}deg, ${gradColor1} 0%, ${gradColor2} 100%)`;
-                    setBgColor(css);
-                  }}
-                  style={{
-                    flex: 1, padding: '0.3rem 0.1rem', fontSize: '0.68rem', fontWeight: 600, borderRadius: 'var(--radius-sm)',
-                    backgroundColor: gradStyle === 'smooth' ? 'var(--accent)' : 'transparent',
-                    color: gradStyle === 'smooth' ? '#000' : 'var(--text-secondary)', border: 'none', cursor: 'pointer'
-                  }}
-                >
-                  🌊 Suave
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setGradStyle('sharp');
-                    const css = `linear-gradient(${gradAngle}deg, ${gradColor1} 0% ${gradStop}%, ${gradColor2} ${gradStop}% 100%)`;
-                    setBgColor(css);
-                  }}
-                  style={{
-                    flex: 1, padding: '0.3rem 0.1rem', fontSize: '0.68rem', fontWeight: 600, borderRadius: 'var(--radius-sm)',
-                    backgroundColor: gradStyle === 'sharp' ? 'var(--accent)' : 'transparent',
-                    color: gradStyle === 'sharp' ? '#000' : 'var(--text-secondary)', border: 'none', cursor: 'pointer'
-                  }}
-                >
-                  ✂️ Mitad 50/50
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setGradStyle('radial');
-                    const css = `radial-gradient(circle at center, ${gradColor1} 0%, ${gradColor2} 100%)`;
-                    setBgColor(css);
-                  }}
-                  style={{
-                    flex: 1, padding: '0.3rem 0.1rem', fontSize: '0.68rem', fontWeight: 600, borderRadius: 'var(--radius-sm)',
-                    backgroundColor: gradStyle === 'radial' ? 'var(--accent)' : 'transparent',
-                    color: gradStyle === 'radial' ? '#000' : 'var(--text-secondary)', border: 'none', cursor: 'pointer'
-                  }}
-                >
-                  🎯 Radial
-                </button>
-              </div>
-
-              {/* Selector de los 2 Colores */}
-              <div style={{ display: 'flex', gap: '0.6rem' }}>
-                <div style={{ flex: 1 }}>
-                  <label style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '0.2rem' }}>Color 1 (Mitad 1):</label>
-                  <input
-                    type="color"
-                    value={gradColor1}
-                    onChange={(e) => {
-                      setGradColor1(e.target.value);
-                      const c1 = e.target.value;
-                      const css = gradStyle === 'sharp'
-                        ? `linear-gradient(${gradAngle}deg, ${c1} 0% ${gradStop}%, ${gradColor2} ${gradStop}% 100%)`
-                        : gradStyle === 'radial'
-                        ? `radial-gradient(circle at center, ${c1} 0%, ${gradColor2} 100%)`
-                        : `linear-gradient(${gradAngle}deg, ${c1} 0%, ${gradColor2} 100%)`;
-                      setBgColor(css);
-                    }}
-                    style={{ width: '100%', height: '34px', border: 'none', borderRadius: '4px', cursor: 'pointer', backgroundColor: 'transparent' }}
-                  />
-                </div>
-
-                <div style={{ flex: 1 }}>
-                  <label style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '0.2rem' }}>Color 2 (Mitad 2):</label>
-                  <input
-                    type="color"
-                    value={gradColor2}
-                    onChange={(e) => {
-                      setGradColor2(e.target.value);
-                      const c2 = e.target.value;
-                      const css = gradStyle === 'sharp'
-                        ? `linear-gradient(${gradAngle}deg, ${gradColor1} 0% ${gradStop}%, ${c2} ${gradStop}% 100%)`
-                        : gradStyle === 'radial'
-                        ? `radial-gradient(circle at center, ${gradColor1} 0%, ${c2} 100%)`
-                        : `linear-gradient(${gradAngle}deg, ${gradColor1} 0%, ${c2} 100%)`;
-                      setBgColor(css);
-                    }}
-                    style={{ width: '100%', height: '34px', border: 'none', borderRadius: '4px', cursor: 'pointer', backgroundColor: 'transparent' }}
-                  />
-                </div>
-              </div>
-
-              {/* Slider de Ángulo */}
-              {gradStyle !== 'radial' && (
-                <div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: 'var(--text-secondary)' }}>
-                    <span>Ángulo de Inclinación:</span>
-                    <span className="font-mono" style={{ color: 'var(--accent)', fontWeight: 700 }}>{gradAngle}°</span>
-                  </div>
-                  <input
-                    type="range" min={0} max={360} step={5}
-                    value={gradAngle}
-                    onChange={(e) => {
-                      const a = Number(e.target.value);
-                      setGradAngle(a);
-                      const css = gradStyle === 'sharp'
-                        ? `linear-gradient(${a}deg, ${gradColor1} 0% ${gradStop}%, ${gradColor2} ${gradStop}% 100%)`
-                        : `linear-gradient(${a}deg, ${gradColor1} 0%, ${gradColor2} 100%)`;
-                      setBgColor(css);
-                    }}
-                    style={{ width: '100%', accentColor: 'var(--accent)' }}
-                  />
-                  {/* Botones de Ángulos Rápidos */}
-                  <div style={{ display: 'flex', gap: '0.3rem', marginTop: '0.3rem' }}>
-                    {[
-                      { label: '↔️ Horiz (0°)', angle: 0 },
-                      { label: '↕️ Vert (90°)', angle: 90 },
-                      { label: '↘️ Diag (135°)', angle: 135 }
-                    ].map((ang) => (
-                      <button
-                        key={ang.angle}
-                        type="button"
-                        onClick={() => {
-                          setGradAngle(ang.angle);
-                          const css = gradStyle === 'sharp'
-                            ? `linear-gradient(${ang.angle}deg, ${gradColor1} 0% ${gradStop}%, ${gradColor2} ${gradStop}% 100%)`
-                            : `linear-gradient(${ang.angle}deg, ${gradColor1} 0%, ${gradColor2} 100%)`;
-                          setBgColor(css);
-                        }}
-                        style={{
-                          flex: 1, padding: '0.25rem', fontSize: '0.62rem', borderRadius: 'var(--radius-sm)',
-                          backgroundColor: gradAngle === ang.angle ? 'var(--accent-muted)' : 'var(--bg-surface-2)',
-                          color: gradAngle === ang.angle ? 'var(--accent)' : 'var(--text-secondary)',
-                          border: '1px solid var(--border-subtle)', cursor: 'pointer'
-                        }}
-                      >
-                        {ang.label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Slider de Posición de Mitad */}
-              {gradStyle === 'sharp' && (
-                <div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: 'var(--text-secondary)' }}>
-                    <span>Punto de Corte de la Mitad:</span>
-                    <span className="font-mono" style={{ color: 'var(--accent)', fontWeight: 700 }}>{gradStop}%</span>
-                  </div>
-                  <input
-                    type="range" min={10} max={90} step={1}
-                    value={gradStop}
-                    onChange={(e) => {
-                      const st = Number(e.target.value);
-                      setGradStop(st);
-                      const css = `linear-gradient(${gradAngle}deg, ${gradColor1} 0% ${st}%, ${gradColor2} ${st}% 100%)`;
-                      setBgColor(css);
-                    }}
-                    style={{ width: '100%', accentColor: 'var(--accent)' }}
-                  />
-                </div>
-              )}
-
-              <div style={{ paddingTop: '0.6rem', borderTop: '1px dashed var(--border-subtle)' }}>
-                <label style={{ fontSize: '0.74rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '0.4rem', fontWeight: 600 }}>
-                  Presets de Degradados Predefinidos:
-                </label>
-
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '0.4rem' }}>
-                  {GRADIENT_PRESETS.map((grad) => (
-                    <button
-                      key={grad.name}
-                      type="button"
-                      onClick={() => {
-                        const cssGrad = `linear-gradient(${grad.angle}deg, ${grad.colors.join(', ')})`;
-                        setBgColor(cssGrad);
-                      }}
-                      style={{
-                        padding: '0.5rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-subtle)',
-                        background: `linear-gradient(${grad.angle}deg, ${grad.colors.join(', ')})`,
-                        color: '#fff', fontSize: '0.7rem', fontWeight: 700, textShadow: '0 1px 3px rgba(0,0,0,0.8)',
-                        cursor: 'pointer', textAlign: 'center'
-                      }}
-                    >
-                      {grad.name}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </div>
-          )}
-
-          <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', backgroundColor: 'var(--bg-surface-2)', padding: '0.8rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-subtle)' }}>
-            <div><strong>Resolución:</strong> {preset.width} x {preset.height} px</div>
-            <div><strong>Equivalencia:</strong> {preset.unit} (300 DPI)</div>
-          </div>
-        </div>
-      )}
     </>
   );
 
@@ -1403,19 +1228,136 @@ export default function DesignEditorSection() {
         )}
 
         {(selectedElement.type === 'rect' || selectedElement.type === 'circle' || selectedElement.type === 'star') && (
-          <>
-            <div>
-              <label style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '0.3rem' }}>
-                Color de Relleno
-              </label>
-              <input
-                type="color"
-                value={selectedElement.fill}
-                onChange={(e) => updateSelected('fill', e.target.value)}
-                style={{ width: '100%', height: '34px', border: 'none', borderRadius: '4px', cursor: 'pointer', backgroundColor: 'transparent' }}
-              />
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
+            <label style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', fontWeight: 600 }}>
+              Tipo de Relleno de la Forma:
+            </label>
+
+            <div style={{ display: 'flex', gap: '0.3rem', backgroundColor: 'var(--bg-surface-2)', padding: '3px', borderRadius: 'var(--radius-sm)' }}>
+              <button
+                type="button"
+                onClick={() => updateSelected('fillType', 'color')}
+                style={{
+                  flex: 1, padding: '0.3rem 0.2rem', fontSize: '0.68rem', fontWeight: 700, borderRadius: 'var(--radius-sm)',
+                  backgroundColor: (!selectedElement.fillType || selectedElement.fillType === 'color') ? 'var(--accent)' : 'transparent',
+                  color: (!selectedElement.fillType || selectedElement.fillType === 'color') ? '#000' : 'var(--text-secondary)',
+                  border: 'none', cursor: 'pointer'
+                }}
+              >
+                🎨 Sólido
+              </button>
+              <button
+                type="button"
+                onClick={() => updateSelected('fillType', 'gradient')}
+                style={{
+                  flex: 1, padding: '0.3rem 0.2rem', fontSize: '0.68rem', fontWeight: 700, borderRadius: 'var(--radius-sm)',
+                  backgroundColor: selectedElement.fillType === 'gradient' ? 'var(--accent)' : 'transparent',
+                  color: selectedElement.fillType === 'gradient' ? '#000' : 'var(--text-secondary)',
+                  border: 'none', cursor: 'pointer'
+                }}
+              >
+                🌈 Degradado
+              </button>
+              <button
+                type="button"
+                onClick={() => updateSelected('fillType', 'texture')}
+                style={{
+                  flex: 1, padding: '0.3rem 0.2rem', fontSize: '0.68rem', fontWeight: 700, borderRadius: 'var(--radius-sm)',
+                  backgroundColor: selectedElement.fillType === 'texture' ? 'var(--accent)' : 'transparent',
+                  color: selectedElement.fillType === 'texture' ? '#000' : 'var(--text-secondary)',
+                  border: 'none', cursor: 'pointer'
+                }}
+              >
+                🏁 Textura
+              </button>
             </div>
-          </>
+
+            {(!selectedElement.fillType || selectedElement.fillType === 'color') && (
+              <div>
+                <label style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '0.2rem' }}>Color Sólido:</label>
+                <input
+                  type="color"
+                  value={selectedElement.fill || '#BAFDC1'}
+                  onChange={(e) => updateSelected('fill', e.target.value)}
+                  style={{ width: '100%', height: '34px', border: 'none', borderRadius: '4px', cursor: 'pointer', backgroundColor: 'transparent' }}
+                />
+              </div>
+            )}
+
+            {selectedElement.fillType === 'gradient' && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
+                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                  <div style={{ flex: 1 }}>
+                    <label style={{ fontSize: '0.68rem', color: 'var(--text-secondary)' }}>Color 1:</label>
+                    <input
+                      type="color"
+                      value={selectedElement.gradColor1 || '#111114'}
+                      onChange={(e) => updateSelected('gradColor1', e.target.value)}
+                      style={{ width: '100%', height: '30px', border: 'none', borderRadius: '4px', cursor: 'pointer', backgroundColor: 'transparent' }}
+                    />
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <label style={{ fontSize: '0.68rem', color: 'var(--text-secondary)' }}>Color 2:</label>
+                    <input
+                      type="color"
+                      value={selectedElement.gradColor2 || '#BAFDC1'}
+                      onChange={(e) => updateSelected('gradColor2', e.target.value)}
+                      style={{ width: '100%', height: '30px', border: 'none', borderRadius: '4px', cursor: 'pointer', backgroundColor: 'transparent' }}
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.68rem', color: 'var(--text-secondary)' }}>
+                    <span>Ángulo:</span>
+                    <span className="font-mono" style={{ color: 'var(--accent)', fontWeight: 700 }}>{selectedElement.gradAngle || 45}°</span>
+                  </div>
+                  <input
+                    type="range" min={0} max={360} step={5}
+                    value={selectedElement.gradAngle || 45}
+                    onChange={(e) => updateSelected('gradAngle', Number(e.target.value))}
+                    style={{ width: '100%', accentColor: 'var(--accent)' }}
+                  />
+                </div>
+              </div>
+            )}
+
+            {selectedElement.fillType === 'texture' && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.3rem' }}>
+                  {['grid', 'dots', 'stripes', 'noise', 'paper'].map(pat => (
+                    <button
+                      key={pat}
+                      type="button"
+                      onClick={() => updateSelected('patternType', pat)}
+                      style={{
+                        padding: '0.3rem', fontSize: '0.65rem', borderRadius: 'var(--radius-sm)',
+                        border: `1px solid ${(selectedElement.patternType || 'grid') === pat ? 'var(--accent)' : 'var(--border-subtle)'}`,
+                        backgroundColor: (selectedElement.patternType || 'grid') === pat ? 'var(--accent-muted)' : 'var(--bg-surface-2)',
+                        color: (selectedElement.patternType || 'grid') === pat ? 'var(--accent)' : 'var(--text-primary)',
+                        cursor: 'pointer', textTransform: 'capitalize'
+                      }}
+                    >
+                      {pat}
+                    </button>
+                  ))}
+                </div>
+
+                <div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.68rem', color: 'var(--text-secondary)' }}>
+                    <span>Inclinación Trama:</span>
+                    <span className="font-mono" style={{ color: 'var(--accent)', fontWeight: 700 }}>{selectedElement.patternAngle || 0}°</span>
+                  </div>
+                  <input
+                    type="range" min={0} max={360} step={5}
+                    value={selectedElement.patternAngle || 0}
+                    onChange={(e) => updateSelected('patternAngle', Number(e.target.value))}
+                    style={{ width: '100%', accentColor: 'var(--accent)' }}
+                  />
+                </div>
+              </div>
+            )}
+          </div>
         )}
 
         {selectedElement.type === 'image' && (
@@ -1692,39 +1634,16 @@ export default function DesignEditorSection() {
                   />
                 );
               }
-              if (el.type === 'rect') {
+              if (el.type === 'rect' || el.type === 'circle' || el.type === 'star') {
                 return (
-                  <Rect
-                    key={el.id} id={el.id} {...el}
-                    draggable={!isDrawingMode}
-                    onClick={() => !isDrawingMode && setSelectedId(el.id)}
-                    onTap={() => !isDrawingMode && setSelectedId(el.id)}
-                    onDragMove={(e) => handleDragMove(e, el.id)}
-                    onDragEnd={(e) => { handleDragEnd(); updateSelected('x', e.target.x()); updateSelected('y', e.target.y()); }}
-                  />
-                );
-              }
-              if (el.type === 'circle') {
-                return (
-                  <Circle
-                    key={el.id} id={el.id} {...el}
-                    draggable={!isDrawingMode}
-                    onClick={() => !isDrawingMode && setSelectedId(el.id)}
-                    onTap={() => !isDrawingMode && setSelectedId(el.id)}
-                    onDragMove={(e) => handleDragMove(e, el.id)}
-                    onDragEnd={(e) => { handleDragEnd(); updateSelected('x', e.target.x()); updateSelected('y', e.target.y()); }}
-                  />
-                );
-              }
-              if (el.type === 'star') {
-                return (
-                  <Star
-                    key={el.id} id={el.id} {...el}
-                    draggable={!isDrawingMode}
-                    onClick={() => !isDrawingMode && setSelectedId(el.id)}
-                    onTap={() => !isDrawingMode && setSelectedId(el.id)}
-                    onDragMove={(e) => handleDragMove(e, el.id)}
-                    onDragEnd={(e) => { handleDragEnd(); updateSelected('x', e.target.x()); updateSelected('y', e.target.y()); }}
+                  <ShapeElement
+                    key={el.id}
+                    el={el}
+                    isDrawingMode={isDrawingMode}
+                    setSelectedId={setSelectedId}
+                    handleDragMove={handleDragMove}
+                    handleDragEnd={handleDragEnd}
+                    updateSelected={updateSelected}
                   />
                 );
               }
@@ -1781,31 +1700,12 @@ export default function DesignEditorSection() {
         </p>
       </div>
 
-      {/* Top Toolbar de la Suite (Historial, Presets y Exportación) */}
+      {/* Top Toolbar de la Suite (Historial y Exportación) */}
       <div style={{
         backgroundColor: 'var(--bg-surface)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-lg)',
         padding: '0.8rem 1.2rem', maxWidth: '1280px', margin: '0 auto 1.5rem', display: 'flex',
         alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.8rem', boxShadow: 'var(--shadow-subtle)'
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap' }}>
-          <span style={{ fontSize: '0.78rem', color: 'var(--text-disabled)', fontWeight: 600, marginRight: '0.4rem' }}>Formato:</span>
-          {PRESETS.map((p) => (
-            <button
-              key={p.id}
-              onClick={() => { setPreset(p); setSelectedId(null); }}
-              className="btn btn-sm"
-              style={{
-                backgroundColor: preset.id === p.id ? 'var(--accent)' : 'var(--bg-surface-2)',
-                color: preset.id === p.id ? '#08080A' : 'var(--text-secondary)',
-                border: preset.id === p.id ? '1px solid var(--accent)' : '1px solid var(--border-subtle)',
-                fontWeight: preset.id === p.id ? 700 : 500, fontSize: '0.78rem', padding: '0.35rem 0.75rem'
-              }}
-            >
-              <span>{p.name}</span>
-            </button>
-          ))}
-        </div>
-
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
           <button onClick={undo} disabled={undoStack.current.length === 0} className="btn btn-secondary btn-sm" title="Deshacer (Undo)" style={{ padding: '0.4rem 0.7rem', opacity: undoStack.current.length === 0 ? 0.5 : 1 }}>
             <Undo2 size={16} /><span style={{ fontSize: '0.78rem' }}>Deshacer</span>
