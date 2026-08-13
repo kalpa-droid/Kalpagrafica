@@ -478,15 +478,35 @@ export async function pdfToLibro(file, mode, options = {}, onProgress) {
   if (onProgress) onProgress('Iniciando motor PDF.js...', 5);
   await inyectarPDFjs();
 
-  const pagesDoc = await procesarComoImagenes(file, mode, options, onProgress);
+  const { 
+    hasCover = false,
+    hasBackCover = false, 
+    customBackCover = null, 
+    paperSize = 'A4',
+    blankBehindCover = true,
+    blankInFrontBackCover = true
+  } = options;
 
-  const { hasBackCover = false, customBackCover = null, paperSize = 'A4' } = options;
+  const pagesDoc = await procesarComoImagenes(file, mode, options, onProgress);
   const coverCanvasSize = getCoverCanvasSize(paperSize);
+
+  // Si se solicitó la vuelta de tapa en blanco (Retiro de Tapa) y no se había insertado previamente
+  if (blankBehindCover && pagesDoc.getPageCount() > 0) {
+    // Insertamos la página en blanco justo después de la portada (Página 1)
+    const blankBehind = pagesDoc.insertPage(1, [coverCanvasSize.width, coverCanvasSize.height]);
+    blankBehind.drawRectangle({ x: 0, y: 0, width: 0, height: 0 });
+  }
 
   // Si hay una Contratapa Custom para agregar
   let backCoverCanvas = null;
   if (!hasBackCover && customBackCover && (customBackCover.type === 'upload' || customBackCover.type === 'template')) {
     backCoverCanvas = await crearCanvasContratapaCustom(customBackCover, coverCanvasSize);
+  }
+
+  // Si se solicitó la vuelta de contratapa en blanco (Retiro de Contratapa)
+  if (blankInFrontBackCover) {
+    const blankInFront = pagesDoc.addPage([coverCanvasSize.width, coverCanvasSize.height]);
+    blankInFront.drawRectangle({ x: 0, y: 0, width: 0, height: 0 });
   }
 
   const currentCount = pagesDoc.getPageCount();
@@ -498,8 +518,7 @@ export async function pdfToLibro(file, mode, options = {}, onProgress) {
   const targetCount = backCoverCanvas ? currentCount + 1 : currentCount;
   const remainder = (4 - (targetCount % 4)) % 4;
 
-  // Insertar páginas en blanco ANTES de la contratapa para que actúen como hojas de cortesía
-  // (mismo tamaño que las páginas del libro, según el papel elegido, para que la imposición quede proporcional)
+  // Insertar páginas en blanco de cortesía para completar el pliego de 4 páginas
   for (let i = 0; i < remainder; i++) {
     const blank = pagesDoc.addPage([coverCanvasSize.width, coverCanvasSize.height]);
     blank.drawRectangle({ x: 0, y: 0, width: 0, height: 0 });

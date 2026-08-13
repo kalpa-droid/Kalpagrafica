@@ -655,10 +655,12 @@ function ThumbnailCard({
         )}
       </div>
 
-      <div style={{ marginTop: '0.3rem', width: '100%', textAlign: 'center' }}>
-        <span style={{ fontSize: '0.7rem', color: isDeleted ? '#F87171' : 'var(--text-secondary)', fontWeight: 600 }}>
-          {titleLabel} {isDeleted ? '(Eliminada)' : ''}
-        </span>
+      <div style={{ marginTop: '0.2rem', width: '100%', textAlign: 'center' }}>
+        {isDeleted && (
+          <span style={{ fontSize: '0.68rem', color: '#F87171', fontWeight: 700 }}>
+            (Eliminada)
+          </span>
+        )}
 
         {/* Botón único Corregir Giro (180°) y Ajuste Fino de corte solo en Etapa 2 de Fotocopia */}
         {mode === 'fotocopia' && !isFoliadoStep && !isDeleted && (

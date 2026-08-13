@@ -128,15 +128,9 @@ function BookletDiagram({ mode, hasCover, coverSide, hasRefPage, refPdfPage, ref
           </div>
 
           {hasValidRef && (
-            needAdjustment ? (
-              <div style={{ backgroundColor: 'rgba(251,191,36,0.15)', color: '#FBBF24', padding: '0.5rem', borderRadius: '4px', border: '1px solid #FBBF24', fontSize: '0.72rem', fontWeight: 600 }}>
-                ⚠ Imposición requiere ajuste: el N° {refBookPage} ({isBookPageOdd ? 'impar' : 'par'}) debería quedar del lado {expectedSide}, pero en tu original está del lado {refPageSide}. Se insertará 1 hoja en blanco justo detrás de la tapa para corregirlo.
-              </div>
-            ) : (
-              <div style={{ backgroundColor: 'var(--accent-muted)', color: 'var(--accent)', padding: '0.5rem', borderRadius: '4px', border: '1px solid var(--accent)', fontSize: '0.72rem', fontWeight: 600 }}>
-                ✓ Imposición correcta: el N° {refBookPage} ({isBookPageOdd ? 'impar' : 'par'}) ya queda del lado {expectedSide} tal cual está en tu original. No hace falta insertar hojas.
-              </div>
-            )
+            <div style={{ backgroundColor: 'var(--accent-muted)', color: 'var(--accent)', padding: '0.5rem 0.8rem', borderRadius: '4px', border: '1px solid var(--accent)', fontSize: '0.76rem', fontWeight: 700, textAlign: 'center' }}>
+              ✓ Ya hemos tomado las medidas necesarias para que tu Libro / Folleto esté listo para imprimir.
+            </div>
           )}
         </div>
 
@@ -199,6 +193,10 @@ export default function PdfToLibroTool() {
   const [templateBgImageUri, setTemplateBgImageUri] = useState(null);
   const [coverPreviewUrl, setCoverPreviewUrl] = useState(null);
 
+  // Opciones de Retiro de Tapa / Contratapa en blanco
+  const [blankBehindCover, setBlankBehindCover] = useState(true);
+  const [blankInFrontBackCover, setBlankInFrontBackCover] = useState(true);
+
   const autoRefPageSide = Number(refPdfPage) % 2 !== 0 ? 'derecha' : 'izquierda';
   const effectiveRefPageSide = mode === 'fotocopia' ? refPageSide : autoRefPageSide;
 
@@ -207,6 +205,18 @@ export default function PdfToLibroTool() {
   const [progressPct, setProgressPct] = useState(0);
   const [success, setSuccess] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
+
+  const changeStep = (stepNum) => {
+    setActiveStep(stepNum);
+    setTimeout(() => {
+      const container = document.getElementById('pdf-libro-tool-container');
+      if (container) {
+        const yOffset = -80;
+        const y = container.getBoundingClientRect().top + window.pageYOffset + yOffset;
+        window.scrollTo({ top: Math.max(0, y), behavior: 'smooth' });
+      }
+    }, 50);
+  };
 
   const handleToggleDeletePage = (pageNum) => {
     setDeletedPages(prev =>
@@ -314,7 +324,7 @@ export default function PdfToLibroTool() {
     setPageSplitOffsets({});
     setDeletedPages([]);
     setPageOrder([]);
-    setActiveStep(2);
+    changeStep(2);
   };
 
   const handleImageSelectForCropping = (e, targetKey, titleText) => {
@@ -408,7 +418,9 @@ export default function PdfToLibroTool() {
         customBackCover: customBackCoverConfig,
         paperSize,
         deletedPages,
-        pageOrder
+        pageOrder,
+        blankBehindCover,
+        blankInFrontBackCover
       };
 
       const result = await pdfToLibro(file, mode, options, (msg, pct) => {
@@ -450,7 +462,7 @@ export default function PdfToLibroTool() {
   };
 
   return (
-    <div style={{ backgroundColor: 'var(--bg-surface)', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border-subtle)', padding: '1.8rem', boxShadow: 'var(--shadow-card)' }}>
+    <div id="pdf-libro-tool-container" style={{ backgroundColor: 'var(--bg-surface)', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border-subtle)', padding: '1.8rem', boxShadow: 'var(--shadow-card)' }}>
       <h3 style={{ fontSize: '1.2rem', color: 'var(--text-primary)', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
         <BookOpen size={20} color="var(--accent)" />
         <span>PDF a Libro (Imposición de Folleto A4 / A3)</span>
@@ -470,7 +482,7 @@ export default function PdfToLibroTool() {
         ].map((s) => (
           <div
             key={s.num}
-            onClick={() => file && setActiveStep(s.num)}
+            onClick={() => file && changeStep(s.num)}
             style={{
               flex: 1, minWidth: '90px', padding: '0.55rem 0.6rem', textAlign: 'center',
               borderRadius: 'var(--radius-sm)', fontSize: '0.78rem', fontWeight: 700,
@@ -519,11 +531,11 @@ export default function PdfToLibroTool() {
 
           <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', marginBottom: '1rem' }}>
             <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem', color: 'var(--text-primary)', cursor: 'pointer' }}>
-              <input type="radio" name="mode" value="normal" checked={mode === 'normal'} onChange={() => { setMode('normal'); if (file) setActiveStep(2); }} style={{ accentColor: 'var(--accent)' }} />
+              <input type="radio" name="mode" value="normal" checked={mode === 'normal'} onChange={() => { setMode('normal'); if (file) changeStep(2); }} style={{ accentColor: 'var(--accent)' }} />
               <span>PDF Normal (Páginas individuales)</span>
             </label>
             <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem', color: 'var(--text-primary)', cursor: 'pointer' }}>
-              <input type="radio" name="mode" value="fotocopia" checked={mode === 'fotocopia'} onChange={() => { setMode('fotocopia'); if (file) setActiveStep(2); }} style={{ accentColor: 'var(--accent)' }} />
+              <input type="radio" name="mode" value="fotocopia" checked={mode === 'fotocopia'} onChange={() => { setMode('fotocopia'); if (file) changeStep(2); }} style={{ accentColor: 'var(--accent)' }} />
               <span>Fotocopia de Libro Abierto (Doble página por hoja A4)</span>
             </label>
           </div>
@@ -547,7 +559,7 @@ export default function PdfToLibroTool() {
           {file && (
             <button
               className="btn btn-primary"
-              onClick={() => setActiveStep(2)}
+              onClick={() => changeStep(2)}
               style={{ width: '100%', justifyContent: 'center' }}
             >
               <Check size={16} />
@@ -583,7 +595,7 @@ export default function PdfToLibroTool() {
             <span style={{ color: 'var(--text-primary)', fontWeight: 600 }}>{paperSize} ({paperSize === 'A3' ? 'Libro A4' : 'Libro A5'})</span>
           </div>
           <button
-            onClick={() => setActiveStep(1)}
+            onClick={() => changeStep(1)}
             style={{
               backgroundColor: 'var(--bg-surface)',
               border: '1px solid var(--border-subtle)',
@@ -643,7 +655,7 @@ export default function PdfToLibroTool() {
           <div style={{ display: 'flex', gap: '0.8rem', marginTop: '1rem', flexWrap: 'wrap' }}>
             <button
               className="btn btn-secondary"
-              onClick={() => setActiveStep(1)}
+              onClick={() => changeStep(1)}
               style={{ flex: 1, minWidth: '160px', justifyContent: 'center' }}
             >
               <ArrowLeft size={16} />
@@ -651,7 +663,7 @@ export default function PdfToLibroTool() {
             </button>
             <button
               className="btn btn-primary"
-              onClick={() => setActiveStep(3)}
+              onClick={() => changeStep(3)}
               style={{ flex: 2, minWidth: '220px', justifyContent: 'center' }}
             >
               <Check size={16} />
@@ -719,7 +731,7 @@ export default function PdfToLibroTool() {
           <div style={{ display: 'flex', gap: '0.8rem', marginTop: '1rem', flexWrap: 'wrap' }}>
             <button
               className="btn btn-secondary"
-              onClick={() => setActiveStep(2)}
+              onClick={() => changeStep(2)}
               style={{ flex: 1, minWidth: '160px', justifyContent: 'center' }}
             >
               <ArrowLeft size={16} />
@@ -727,7 +739,7 @@ export default function PdfToLibroTool() {
             </button>
             <button
               className="btn btn-primary"
-              onClick={() => setActiveStep(4)}
+              onClick={() => changeStep(4)}
               disabled={!refPdfPage || !refBookPage}
               style={{ flex: 2, minWidth: '220px', justifyContent: 'center' }}
             >
@@ -924,6 +936,21 @@ export default function PdfToLibroTool() {
                 )}
               </div>
             )}
+            {/* Opciones de Retiro de Tapa */}
+            <div style={{ marginTop: '0.8rem', paddingTop: '0.6rem', borderTop: '1px dashed var(--border-subtle)' }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.78rem', color: 'var(--text-primary)', cursor: 'pointer' }}>
+                <input
+                  type="checkbox"
+                  checked={blankBehindCover}
+                  onChange={(e) => setBlankBehindCover(e.target.checked)}
+                  style={{ accentColor: 'var(--accent)', width: '15px', height: '15px', cursor: 'pointer' }}
+                />
+                <span style={{ fontWeight: 600 }}>✓ Mantener el dorso / la vuelta de la Tapa en blanco (Retiro de Tapa)</span>
+              </label>
+              <div style={{ fontSize: '0.71rem', color: 'var(--text-disabled)', marginLeft: '1.4rem', marginTop: '0.2rem' }}>
+                💡 Agrega automáticamente una hoja vacía tras la portada para que la vuelta quede limpia sin imprimir.
+              </div>
+            </div>
           </div>
 
           {/* SECCIÓN B: PORTADA POSTERIOR (CONTRATAPA) */}
@@ -1048,12 +1075,28 @@ export default function PdfToLibroTool() {
                 )}
               </div>
             )}
+
+            {/* Opciones de Retiro de Contratapa */}
+            <div style={{ marginTop: '0.8rem', paddingTop: '0.6rem', borderTop: '1px dashed var(--border-subtle)' }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.78rem', color: 'var(--text-primary)', cursor: 'pointer' }}>
+                <input
+                  type="checkbox"
+                  checked={blankInFrontBackCover}
+                  onChange={(e) => setBlankInFrontBackCover(e.target.checked)}
+                  style={{ accentColor: 'var(--accent)', width: '15px', height: '15px', cursor: 'pointer' }}
+                />
+                <span style={{ fontWeight: 600 }}>✓ Mantener el frente / el interior de la Contratapa en blanco (Retiro de Contratapa)</span>
+              </label>
+              <div style={{ fontSize: '0.71rem', color: 'var(--text-disabled)', marginLeft: '1.4rem', marginTop: '0.2rem' }}>
+                💡 Agrega automáticamente una hoja vacía previa a la contratapa posterior.
+              </div>
+            </div>
           </div>
 
           <div style={{ display: 'flex', gap: '0.8rem', marginTop: '1rem', flexWrap: 'wrap' }}>
             <button
               className="btn btn-secondary"
-              onClick={() => setActiveStep(3)}
+              onClick={() => changeStep(3)}
               style={{ flex: 1, minWidth: '160px', justifyContent: 'center' }}
             >
               <ArrowLeft size={16} />
@@ -1061,7 +1104,7 @@ export default function PdfToLibroTool() {
             </button>
             <button
               className="btn btn-primary"
-              onClick={() => setActiveStep(5)}
+              onClick={() => changeStep(5)}
               style={{ flex: 2, minWidth: '220px', justifyContent: 'center' }}
             >
               <Check size={16} />
@@ -1080,7 +1123,7 @@ export default function PdfToLibroTool() {
             </div>
             <button
               className="btn btn-secondary btn-sm"
-              onClick={() => setActiveStep(4)}
+              onClick={() => changeStep(4)}
               style={{ gap: '0.3rem', fontSize: '0.78rem' }}
             >
               <ArrowLeft size={14} /> ◄ Volver a Paso 4 (Carátula)
@@ -1128,7 +1171,7 @@ export default function PdfToLibroTool() {
           <div style={{ display: 'flex', gap: '0.8rem', marginTop: '1rem', flexWrap: 'wrap' }}>
             <button
               className="btn btn-secondary"
-              onClick={() => setActiveStep(4)}
+              onClick={() => changeStep(4)}
               style={{ flex: 1, minWidth: '160px', justifyContent: 'center' }}
             >
               <ArrowLeft size={16} />
