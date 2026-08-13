@@ -3,7 +3,7 @@ import {
   Palette, Type, Square, Circle as CircleIcon, Image as ImageIcon, Download, 
   Printer, FileText, Trash2, ArrowUp, ArrowDown, Sparkles, Wand2, Undo2, Redo2, 
   Sun, Contrast as ContrastIcon, Droplet, Focus, Brush, Smile, Sliders, Layers, 
-  RotateCw, Copy, AlignCenter
+  RotateCw, Copy, AlignCenter, Maximize2, X
 } from 'lucide-react';
 import { Stage, Layer, Text, Rect, Circle, Line, Star, Image as KonvaImage, Transformer } from 'react-konva';
 import Konva from 'konva';
@@ -72,6 +72,16 @@ const PRESETS = [
   { id: 'social', name: 'Post de Redes Social', width: 500, height: 500, unit: '1080x1080 px' }
 ];
 
+// Definición de las 6 herramientas de creación (barra de pestañas desktop / barra de íconos mobile)
+const TAB_DEFS = [
+  { id: 'text', label: 'Texto', icon: Type },
+  { id: 'emojis', label: 'Emojis', icon: Smile },
+  { id: 'draw', label: 'Pincel', icon: Brush },
+  { id: 'shapes', label: 'Formas', icon: Square },
+  { id: 'image', label: 'Imagen', icon: ImageIcon },
+  { id: 'canvas', label: 'Lienzo', icon: Sliders }
+];
+
 // Helper de Imagen Konva con filtros no-destructivos
 function URLImage({ image, ...props }) {
   const [imgObj, setImgObj] = useState(null);
@@ -124,6 +134,39 @@ export default function DesignEditorSection() {
 
   // Guías de Alineación / Snapping
   const [alignGuides, setAlignGuides] = useState({ showX: false, showY: false });
+
+  // --- Layout Responsive Mobile (pantalla completa + barra de íconos + bandeja inferior) ---
+  const [isMobile, setIsMobile] = useState(false);
+  const [mobileFullscreen, setMobileFullscreen] = useState(false);
+  const [mobileToolOpen, setMobileToolOpen] = useState(false);
+  const [mobilePropsOpen, setMobilePropsOpen] = useState(false);
+  const [mobileStageScale, setMobileStageScale] = useState(1);
+
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth <= 860);
+    check();
+    window.addEventListener('resize', check);
+    return () => window.removeEventListener('resize', check);
+  }, []);
+
+  // Calcula el factor de escala del lienzo en modo mobile pantalla completa,
+  // para que el Stage de Konva (que mantiene sus coordenadas originales) entre
+  // en la pantalla del celular sin distorsionar el resultado exportado.
+  useEffect(() => {
+    if (!isMobile || !mobileFullscreen) { setMobileStageScale(1); return; }
+    const compute = () => {
+      const availW = window.innerWidth - 24;
+      const reservedH = 46 + 58 + (mobileToolOpen ? window.innerHeight * 0.42 : 0) + 24;
+      const availH = Math.max(140, window.innerHeight - reservedH);
+      const scale = Math.min(1, availW / preset.width, availH / preset.height);
+      setMobileStageScale(scale > 0 ? scale : 0.3);
+    };
+    compute();
+    window.addEventListener('resize', compute);
+    return () => window.removeEventListener('resize', compute);
+  }, [isMobile, mobileFullscreen, mobileToolOpen, preset]);
+
+  const displayScale = (isMobile && mobileFullscreen) ? mobileStageScale : 1;
 
   // Refs de Konva e Historial Undo/Redo
   const stageRef = useRef(null);
@@ -183,6 +226,7 @@ export default function DesignEditorSection() {
     };
     setElements((prev) => [...prev, newEl]);
     setSelectedId(newEl.id);
+    if (isMobile) { setMobileToolOpen(false); setMobilePropsOpen(true); }
   };
 
   // Añadir Emoji como Sticker
@@ -207,6 +251,7 @@ export default function DesignEditorSection() {
     };
     setElements((prev) => [...prev, newEl]);
     setSelectedId(newEl.id);
+    if (isMobile) { setMobileToolOpen(false); setMobilePropsOpen(true); }
   };
 
   // Añadir Círculo
@@ -224,6 +269,7 @@ export default function DesignEditorSection() {
     };
     setElements((prev) => [...prev, newEl]);
     setSelectedId(newEl.id);
+    if (isMobile) { setMobileToolOpen(false); setMobilePropsOpen(true); }
   };
 
   // Añadir Estrella
@@ -243,6 +289,7 @@ export default function DesignEditorSection() {
     };
     setElements((prev) => [...prev, newEl]);
     setSelectedId(newEl.id);
+    if (isMobile) { setMobileToolOpen(false); setMobilePropsOpen(true); }
   };
 
   // Carga de Imagen
@@ -268,6 +315,7 @@ export default function DesignEditorSection() {
     };
     setElements((prev) => [...prev, newEl]);
     setSelectedId(newEl.id);
+    if (isMobile) { setMobileToolOpen(false); setMobilePropsOpen(true); }
   };
 
   // Modificar Propiedades del Elemento Seleccionado
@@ -288,6 +336,7 @@ export default function DesignEditorSection() {
     saveStateToHistory();
     setElements((prev) => prev.filter((el) => el.id !== selectedId));
     setSelectedId(null);
+    setMobilePropsOpen(false);
   };
 
   // Duplicar elemento
@@ -329,7 +378,7 @@ export default function DesignEditorSection() {
     if (!isDrawingMode) return;
     setIsDrawing(true);
     saveStateToHistory();
-    const pos = e.target.getStage().getPointerPosition();
+    const pos = e.target.getStage().getRelativePointerPosition();
     const newLine = {
       id: 'line-' + Date.now(),
       type: 'line',
@@ -345,7 +394,7 @@ export default function DesignEditorSection() {
   const handleMouseMoveDraw = (e) => {
     if (!isDrawingMode || !isDrawing) return;
     const stage = e.target.getStage();
-    const point = stage.getPointerPosition();
+    const point = stage.getRelativePointerPosition();
     setElements((prev) => {
       const lastLine = { ...prev[prev.length - 1] };
       if (!lastLine || lastLine.type !== 'line') return prev;
@@ -381,12 +430,25 @@ export default function DesignEditorSection() {
     setAlignGuides({ showX: false, showY: false });
   };
 
-  // Exportar a Imagen PNG HD (300 DPI)
+  // Exportar a Imagen PNG HD (300 DPI) — siempre a resolución completa,
+  // independientemente de la escala visual usada en mobile.
   const exportPNG = () => {
     if (!stageRef.current) return;
     setSelectedId(null);
     setTimeout(() => {
-      const dataURL = stageRef.current.toDataURL({ pixelRatio: 3 });
+      const stage = stageRef.current;
+      const prevW = stage.width(), prevH = stage.height();
+      const prevScale = stage.scale();
+      stage.width(preset.width);
+      stage.height(preset.height);
+      stage.scale({ x: 1, y: 1 });
+      stage.batchDraw();
+      const dataURL = stage.toDataURL({ pixelRatio: 3 });
+      stage.width(prevW);
+      stage.height(prevH);
+      stage.scale(prevScale);
+      stage.batchDraw();
+
       const a = document.createElement('a');
       a.href = dataURL;
       a.download = `Diseno_${preset.id}_HD.png`;
@@ -399,7 +461,19 @@ export default function DesignEditorSection() {
     if (!stageRef.current) return;
     setSelectedId(null);
     setTimeout(() => {
-      const dataURL = stageRef.current.toDataURL({ pixelRatio: 3 });
+      const stage = stageRef.current;
+      const prevW = stage.width(), prevH = stage.height();
+      const prevScale = stage.scale();
+      stage.width(preset.width);
+      stage.height(preset.height);
+      stage.scale({ x: 1, y: 1 });
+      stage.batchDraw();
+      const dataURL = stage.toDataURL({ pixelRatio: 3 });
+      stage.width(prevW);
+      stage.height(prevH);
+      stage.scale(prevScale);
+      stage.batchDraw();
+
       const isLandscape = preset.width > preset.height;
       const pdf = new jsPDF({
         orientation: isLandscape ? 'landscape' : 'portrait',
@@ -412,6 +486,524 @@ export default function DesignEditorSection() {
   };
 
   const selectedElement = elements.find((el) => el.id === selectedId);
+
+  // ---------------------------------------------------------------------
+  // Contenido de la pestaña de herramientas activa — se reutiliza tal cual
+  // en el panel fijo de desktop y en el panel desplegable de mobile.
+  // ---------------------------------------------------------------------
+  const renderActiveTabContent = () => (
+    <>
+      {activeTab === 'text' && (
+        <div>
+          <h4 style={{ fontSize: '0.85rem', color: 'var(--accent)', fontWeight: 700, marginBottom: '0.8rem', textTransform: 'uppercase' }}>
+            Añadir Texto & 30 Fuentes Web
+          </h4>
+
+          <button
+            className="btn btn-primary btn-sm"
+            onClick={() => addText('Nuevo Texto', 'Space Grotesk', 24)}
+            style={{ width: '100%', marginBottom: '1.2rem', justifyContent: 'center', gap: '0.5rem' }}
+          >
+            <Type size={16} />
+            <span>Añadir Bloque de Texto</span>
+          </button>
+
+          <label style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '0.5rem', fontWeight: 600 }}>
+            Catálogo de 30 Fuentes Gratuitas:
+          </label>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+            {WEB_FONTS.map((font) => (
+              <button
+                key={font.name}
+                onClick={() => addText(font.name, font.name, 22)}
+                style={{
+                  backgroundColor: 'var(--bg-surface-2)',
+                  border: '1px solid var(--border-subtle)',
+                  borderRadius: 'var(--radius-md)',
+                  padding: '0.6rem 0.8rem',
+                  textAlign: 'left',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  transition: 'all 0.2s'
+                }}
+                className="font-item-btn"
+              >
+                <span style={{ fontFamily: font.name, fontSize: '0.95rem', color: 'var(--text-primary)' }}>
+                  {font.name}
+                </span>
+                <span className="font-mono" style={{ fontSize: '0.65rem', color: 'var(--luxury)', backgroundColor: 'rgba(201,169,77,0.12)', padding: '0.1rem 0.4rem', borderRadius: '4px' }}>
+                  {font.category}
+                </span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {activeTab === 'emojis' && (
+        <div>
+          <h4 style={{ fontSize: '0.85rem', color: 'var(--accent)', fontWeight: 700, marginBottom: '0.8rem', textTransform: 'uppercase' }}>
+            Emojis & Stickers (WhatsApp Style)
+          </h4>
+          <p style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', marginBottom: '1rem', lineHeight: 1.35 }}>
+            Toca cualquier emoji para insertarlo en el lienzo como sticker escalable.
+          </p>
+
+          {EMOJI_CATEGORIES.map((cat) => (
+            <div key={cat.name} style={{ marginBottom: '1.2rem' }}>
+              <div style={{ fontSize: '0.74rem', color: 'var(--luxury)', fontWeight: 700, marginBottom: '0.4rem', textTransform: 'uppercase' }}>
+                {cat.name}
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: '0.35rem' }}>
+                {cat.emojis.map((emojiChar, idx) => (
+                  <button
+                    key={idx}
+                    onClick={() => addEmoji(emojiChar)}
+                    style={{
+                      fontSize: '1.4rem',
+                      backgroundColor: 'var(--bg-surface-2)',
+                      border: '1px solid var(--border-subtle)',
+                      borderRadius: 'var(--radius-sm)',
+                      padding: '0.3rem',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      transition: 'all 0.2s'
+                    }}
+                    title={`Insertar ${emojiChar}`}
+                    className="emoji-btn"
+                  >
+                    {emojiChar}
+                  </button>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {activeTab === 'draw' && (
+        <div>
+          <h4 style={{ fontSize: '0.85rem', color: 'var(--accent)', fontWeight: 700, marginBottom: '0.8rem', textTransform: 'uppercase' }}>
+            Pincel de Dibujo Libre
+          </h4>
+
+          <div style={{
+            padding: '1rem',
+            backgroundColor: 'var(--bg-surface-2)',
+            borderRadius: 'var(--radius-md)',
+            border: isDrawingMode ? '1px solid var(--accent)' : '1px solid var(--border-subtle)',
+            marginBottom: '1.2rem'
+          }}>
+            <button
+              onClick={() => {
+                setIsDrawingMode(!isDrawingMode);
+                setSelectedId(null);
+                if (isMobile) setMobileToolOpen(false);
+              }}
+              className={`btn ${isDrawingMode ? 'btn-primary' : 'btn-secondary'} btn-sm`}
+              style={{ width: '100%', justifyContent: 'center', gap: '0.5rem', marginBottom: '0.8rem' }}
+            >
+              <Brush size={16} />
+              <span>{isDrawingMode ? 'Modo Pincel ACTIVO' : 'Activar Pincel de Dibujo'}</span>
+            </button>
+            <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', lineHeight: 1.35, textAlign: 'center' }}>
+              {isDrawingMode ? 'Arrastra sobre el lienzo para dibujar libremente.' : 'Haz clic para comenzar a trazar sobre el lienzo.'}
+            </p>
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
+            <div>
+              <label style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '0.3rem' }}>
+                Color del Pincel
+              </label>
+              <input
+                type="color"
+                value={brushColor}
+                onChange={(e) => setBrushColor(e.target.value)}
+                style={{ width: '100%', height: '36px', border: 'none', borderRadius: '4px', cursor: 'pointer', backgroundColor: 'transparent' }}
+              />
+            </div>
+
+            <div>
+              <label style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '0.3rem' }}>
+                Grosor del Trazo ({brushSize}px)
+              </label>
+              <input
+                type="range"
+                min={1}
+                max={30}
+                value={brushSize}
+                onChange={(e) => setBrushSize(Number(e.target.value))}
+                style={{ width: '100%', accentColor: 'var(--accent)' }}
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {activeTab === 'shapes' && (
+        <div>
+          <h4 style={{ fontSize: '0.85rem', color: 'var(--accent)', fontWeight: 700, marginBottom: '0.8rem', textTransform: 'uppercase' }}>
+            Añadir Formas & Figuras
+          </h4>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
+            <button className="btn btn-secondary btn-sm" onClick={addRect} style={{ justifyContent: 'flex-start', gap: '0.6rem' }}>
+              <Square size={16} />
+              <span>Rectángulo / Tarjeta</span>
+            </button>
+            <button className="btn btn-secondary btn-sm" onClick={addCircle} style={{ justifyContent: 'flex-start', gap: '0.6rem' }}>
+              <CircleIcon size={16} />
+              <span>Círculo / Sello</span>
+            </button>
+            <button className="btn btn-secondary btn-sm" onClick={addStar} style={{ justifyContent: 'flex-start', gap: '0.6rem' }}>
+              <Sparkles size={16} />
+              <span>Estrella de 5 Puntas</span>
+            </button>
+          </div>
+        </div>
+      )}
+
+      {activeTab === 'image' && (
+        <div>
+          <h4 style={{ fontSize: '0.85rem', color: 'var(--accent)', fontWeight: 700, marginBottom: '0.8rem', textTransform: 'uppercase' }}>
+            Añadir Imagen & Filtros
+          </h4>
+          <label className="btn btn-primary btn-sm" style={{ width: '100%', justifyContent: 'center', gap: '0.6rem', cursor: 'pointer', marginBottom: '1.2rem' }}>
+            <ImageIcon size={16} />
+            <span>Subir Imagen o Logo</span>
+            <input type="file" accept="image/*" onChange={handleImageUpload} style={{ display: 'none' }} />
+          </label>
+          <p style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', lineHeight: 1.4 }}>
+            Admite PNG transparente, JPG y SVG. Una vez subida, selecciónala para aplicar brillo, contraste, saturación o retocar con IA.
+          </p>
+        </div>
+      )}
+
+      {activeTab === 'canvas' && (
+        <div>
+          <h4 style={{ fontSize: '0.85rem', color: 'var(--accent)', fontWeight: 700, marginBottom: '0.8rem', textTransform: 'uppercase' }}>
+            Fondo & Dimensiones del Lienzo
+          </h4>
+
+          <div style={{ marginBottom: '1.2rem' }}>
+            <label style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '0.4rem', fontWeight: 600 }}>
+              Color de Fondo:
+            </label>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem' }}>
+              <input
+                type="color"
+                value={bgColor}
+                onChange={(e) => setBgColor(e.target.value)}
+                style={{ width: '45px', height: '36px', border: 'none', borderRadius: '4px', cursor: 'pointer', backgroundColor: 'transparent' }}
+              />
+              <span style={{ fontSize: '0.85rem', color: 'var(--text-primary)' }} className="font-mono">{bgColor}</span>
+            </div>
+          </div>
+
+          <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', backgroundColor: 'var(--bg-surface-2)', padding: '0.8rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-subtle)' }}>
+            <div><strong>Resolución:</strong> {preset.width} x {preset.height} px</div>
+            <div><strong>Equivalencia:</strong> {preset.unit} (300 DPI)</div>
+          </div>
+        </div>
+      )}
+    </>
+  );
+
+  // ---------------------------------------------------------------------
+  // Contenido del panel de Propiedades — se reutiliza en la columna fija
+  // de desktop y en la bandeja inferior (bottom sheet) de mobile.
+  // ---------------------------------------------------------------------
+  const renderPropertiesContent = () => (
+    !selectedElement ? (
+      <div style={{ fontSize: '0.82rem', color: 'var(--text-disabled)', textAlign: 'center', padding: '2.5rem 0' }}>
+        Toca cualquier elemento del lienzo para editar sus propiedades.
+      </div>
+    ) : (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.9rem' }}>
+        {selectedElement.type === 'text' && (
+          <>
+            <div>
+              <label style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '0.3rem' }}>
+                Contenido de Texto
+              </label>
+              <input
+                type="text"
+                value={selectedElement.text}
+                onChange={(e) => updateSelected('text', e.target.value)}
+                className="input"
+                style={{ width: '100%', fontSize: '0.85rem' }}
+              />
+            </div>
+
+            <div>
+              <label style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '0.3rem' }}>
+                Fuente Tipográfica
+              </label>
+              <select
+                value={selectedElement.fontFamily || 'Space Grotesk'}
+                onChange={(e) => updateSelectedWithHistory('fontFamily', e.target.value)}
+                style={{ width: '100%', fontSize: '0.85rem', fontFamily: selectedElement.fontFamily }}
+              >
+                {WEB_FONTS.map((f) => (
+                  <option key={f.name} value={f.name} style={{ fontFamily: f.name }}>
+                    {f.name} ({f.category})
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '0.3rem' }}>
+                Tamaño ({selectedElement.fontSize}px)
+              </label>
+              <input
+                type="range"
+                min={8}
+                max={120}
+                value={selectedElement.fontSize}
+                onChange={(e) => updateSelected('fontSize', Number(e.target.value))}
+                style={{ width: '100%', accentColor: 'var(--accent)' }}
+              />
+            </div>
+
+            <div>
+              <label style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '0.3rem' }}>
+                Color de Texto
+              </label>
+              <input
+                type="color"
+                value={selectedElement.fill}
+                onChange={(e) => updateSelected('fill', e.target.value)}
+                style={{ width: '100%', height: '34px', border: 'none', borderRadius: '4px', cursor: 'pointer', backgroundColor: 'transparent' }}
+              />
+            </div>
+          </>
+        )}
+
+        {(selectedElement.type === 'rect' || selectedElement.type === 'circle' || selectedElement.type === 'star') && (
+          <>
+            <div>
+              <label style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '0.3rem' }}>
+                Color de Relleno
+              </label>
+              <input
+                type="color"
+                value={selectedElement.fill}
+                onChange={(e) => updateSelected('fill', e.target.value)}
+                style={{ width: '100%', height: '34px', border: 'none', borderRadius: '4px', cursor: 'pointer', backgroundColor: 'transparent' }}
+              />
+            </div>
+          </>
+        )}
+
+        {selectedElement.type === 'image' && (
+          <>
+            <button
+              className="btn btn-secondary btn-sm"
+              onClick={() => setRetouchModalOpen(true)}
+              style={{ justifyContent: 'center', gap: '0.5rem', width: '100%' }}
+            >
+              <Wand2 size={15} />
+              <span>Retocar Imagen con IA</span>
+            </button>
+
+            <div style={{ paddingTop: '0.6rem', borderTop: '1px solid var(--border-subtle)' }}>
+              <label style={{ fontSize: '0.76rem', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '0.3rem', marginBottom: '0.2rem' }}>
+                <Sun size={13} /> Brillo ({selectedElement.brightness ?? 0})
+              </label>
+              <input
+                type="range" min={-1} max={1} step={0.05}
+                value={selectedElement.brightness ?? 0}
+                onChange={(e) => updateSelected('brightness', Number(e.target.value))}
+                style={{ width: '100%', accentColor: 'var(--accent)' }}
+              />
+            </div>
+
+            <div>
+              <label style={{ fontSize: '0.76rem', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '0.3rem', marginBottom: '0.2rem' }}>
+                <ContrastIcon size={13} /> Contraste ({selectedElement.contrast ?? 0})
+              </label>
+              <input
+                type="range" min={-100} max={100} step={1}
+                value={selectedElement.contrast ?? 0}
+                onChange={(e) => updateSelected('contrast', Number(e.target.value))}
+                style={{ width: '100%', accentColor: 'var(--accent)' }}
+              />
+            </div>
+
+            <div>
+              <label style={{ fontSize: '0.76rem', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '0.3rem', marginBottom: '0.2rem' }}>
+                <Droplet size={13} /> Saturación ({selectedElement.saturation ?? 0})
+              </label>
+              <input
+                type="range" min={-2} max={5} step={0.1}
+                value={selectedElement.saturation ?? 0}
+                onChange={(e) => updateSelected('saturation', Number(e.target.value))}
+                style={{ width: '100%', accentColor: 'var(--accent)' }}
+              />
+            </div>
+
+            <div>
+              <label style={{ fontSize: '0.76rem', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '0.3rem', marginBottom: '0.2rem' }}>
+                <Focus size={13} /> Desenfoque ({selectedElement.blurRadius ?? 0})
+              </label>
+              <input
+                type="range" min={0} max={20} step={1}
+                value={selectedElement.blurRadius ?? 0}
+                onChange={(e) => updateSelected('blurRadius', Number(e.target.value))}
+                style={{ width: '100%', accentColor: 'var(--accent)' }}
+              />
+            </div>
+          </>
+        )}
+
+        <div style={{ paddingTop: '0.8rem', borderTop: '1px solid var(--border-subtle)', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+          <button className="btn btn-secondary btn-sm" onClick={duplicateSelected} style={{ gap: '0.4rem', justifyContent: 'center' }}>
+            <Copy size={14} /> Duplicar Elemento
+          </button>
+
+          <div style={{ display: 'flex', gap: '0.4rem' }}>
+            <button className="btn btn-sm" onClick={() => moveLayer('up')} style={{ flex: 1, gap: '0.3rem', fontSize: '0.75rem' }}>
+              <ArrowUp size={13} /> Subir Capa
+            </button>
+            <button className="btn btn-sm" onClick={() => moveLayer('down')} style={{ flex: 1, gap: '0.3rem', fontSize: '0.75rem' }}>
+              <ArrowDown size={13} /> Bajar Capa
+            </button>
+          </div>
+
+          <button className="btn btn-sm" onClick={deleteSelected} style={{ backgroundColor: 'rgba(248,113,113,0.15)', color: '#F87171', border: '1px solid #F87171', justifyContent: 'center', gap: '0.4rem', marginTop: '0.3rem' }}>
+            <Trash2 size={14} /> Eliminar Elemento
+          </button>
+        </div>
+      </div>
+    )
+  );
+
+  // ---------------------------------------------------------------------
+  // Bloque del lienzo Konva — una única instancia de <Stage>, reutilizada
+  // tanto en la columna central de desktop como en pantalla completa mobile.
+  // Se escala visualmente vía scaleX/scaleY de Konva (no CSS transform),
+  // así el puntero/drag y la exportación HD quedan siempre exactos.
+  // ---------------------------------------------------------------------
+  const stageInner = (
+    <>
+      <div style={{
+        position: 'absolute', top: '0.8rem', left: '1rem', fontSize: '0.72rem',
+        color: 'var(--text-disabled)', display: 'flex', alignItems: 'center', gap: '0.4rem', zIndex: 2
+      }}>
+        <span className="font-mono" style={{ color: 'var(--accent)' }}>{preset.width}x{preset.height}px</span>
+        <span>({preset.unit})</span>
+      </div>
+
+      <div style={{
+        boxShadow: '0 12px 35px rgba(0,0,0,0.6), 0 0 15px rgba(186, 253, 193, 0.08)',
+        border: '1px solid var(--border-strong)',
+        borderRadius: '4px',
+        position: 'relative'
+      }}>
+        <Stage
+          width={preset.width * displayScale}
+          height={preset.height * displayScale}
+          scaleX={displayScale}
+          scaleY={displayScale}
+          ref={stageRef}
+          onMouseDown={(e) => {
+            handleMouseDownDraw(e);
+            if (e.target === e.target.getStage()) setSelectedId(null);
+          }}
+          onMouseMove={handleMouseMoveDraw}
+          onMouseUp={handleMouseUpDraw}
+          onTouchStart={(e) => {
+            handleMouseDownDraw(e);
+            if (e.target === e.target.getStage()) setSelectedId(null);
+          }}
+          onTouchMove={handleMouseMoveDraw}
+          onTouchEnd={handleMouseUpDraw}
+        >
+          <Layer>
+            <Rect width={preset.width} height={preset.height} fill={bgColor} />
+
+            {elements.map((el) => {
+              if (el.type === 'text') {
+                return (
+                  <Text
+                    key={el.id} id={el.id} {...el}
+                    draggable={!isDrawingMode}
+                    onClick={() => !isDrawingMode && setSelectedId(el.id)}
+                    onTap={() => !isDrawingMode && setSelectedId(el.id)}
+                    onDragMove={(e) => handleDragMove(e, el.id)}
+                    onDragEnd={(e) => { handleDragEnd(); updateSelected('x', e.target.x()); updateSelected('y', e.target.y()); }}
+                  />
+                );
+              }
+              if (el.type === 'rect') {
+                return (
+                  <Rect
+                    key={el.id} id={el.id} {...el}
+                    draggable={!isDrawingMode}
+                    onClick={() => !isDrawingMode && setSelectedId(el.id)}
+                    onTap={() => !isDrawingMode && setSelectedId(el.id)}
+                    onDragMove={(e) => handleDragMove(e, el.id)}
+                    onDragEnd={(e) => { handleDragEnd(); updateSelected('x', e.target.x()); updateSelected('y', e.target.y()); }}
+                  />
+                );
+              }
+              if (el.type === 'circle') {
+                return (
+                  <Circle
+                    key={el.id} id={el.id} {...el}
+                    draggable={!isDrawingMode}
+                    onClick={() => !isDrawingMode && setSelectedId(el.id)}
+                    onTap={() => !isDrawingMode && setSelectedId(el.id)}
+                    onDragMove={(e) => handleDragMove(e, el.id)}
+                    onDragEnd={(e) => { handleDragEnd(); updateSelected('x', e.target.x()); updateSelected('y', e.target.y()); }}
+                  />
+                );
+              }
+              if (el.type === 'star') {
+                return (
+                  <Star
+                    key={el.id} id={el.id} {...el}
+                    draggable={!isDrawingMode}
+                    onClick={() => !isDrawingMode && setSelectedId(el.id)}
+                    onTap={() => !isDrawingMode && setSelectedId(el.id)}
+                    onDragMove={(e) => handleDragMove(e, el.id)}
+                    onDragEnd={(e) => { handleDragEnd(); updateSelected('x', e.target.x()); updateSelected('y', e.target.y()); }}
+                  />
+                );
+              }
+              if (el.type === 'line') {
+                return <Line key={el.id} id={el.id} {...el} draggable={!isDrawingMode} onClick={() => !isDrawingMode && setSelectedId(el.id)} onTap={() => !isDrawingMode && setSelectedId(el.id)} />;
+              }
+              if (el.type === 'image') {
+                return (
+                  <URLImage
+                    key={el.id} id={el.id} image={{ src: el.src }} {...el}
+                    draggable={!isDrawingMode}
+                    onClick={() => !isDrawingMode && setSelectedId(el.id)}
+                    onTap={() => !isDrawingMode && setSelectedId(el.id)}
+                    onDragMove={(e) => handleDragMove(e, el.id)}
+                    onDragEnd={(e) => { handleDragEnd(); updateSelected('x', e.target.x()); updateSelected('y', e.target.y()); }}
+                  />
+                );
+              }
+              return null;
+            })}
+
+            {alignGuides.showX && <Line points={[preset.width / 2, 0, preset.width / 2, preset.height]} stroke="#18f668" strokeWidth={1} dash={[4, 4]} />}
+            {alignGuides.showY && <Line points={[0, preset.height / 2, preset.width, preset.height / 2]} stroke="#18f668" strokeWidth={1} dash={[4, 4]} />}
+
+            {!isDrawingMode && <Transformer ref={trRef} />}
+          </Layer>
+        </Stage>
+      </div>
+    </>
+  );
 
   return (
     <section className="section-container" style={{ paddingTop: '2.5rem', paddingBottom: '5rem' }}>
@@ -440,24 +1032,12 @@ export default function DesignEditorSection() {
 
       {/* Top Toolbar de la Suite (Historial, Presets y Exportación) */}
       <div style={{
-        backgroundColor: 'var(--bg-surface)',
-        border: '1px solid var(--border-subtle)',
-        borderRadius: 'var(--radius-lg)',
-        padding: '0.8rem 1.2rem',
-        maxWidth: '1280px',
-        margin: '0 auto 1.5rem',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        flexWrap: 'wrap',
-        gap: '0.8rem',
-        boxShadow: 'var(--shadow-subtle)'
+        backgroundColor: 'var(--bg-surface)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-lg)',
+        padding: '0.8rem 1.2rem', maxWidth: '1280px', margin: '0 auto 1.5rem', display: 'flex',
+        alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.8rem', boxShadow: 'var(--shadow-subtle)'
       }}>
-        {/* Presets de Plantillas */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap' }}>
-          <span style={{ fontSize: '0.78rem', color: 'var(--text-disabled)', fontWeight: 600, marginRight: '0.4rem' }}>
-            Formato:
-          </span>
+          <span style={{ fontSize: '0.78rem', color: 'var(--text-disabled)', fontWeight: 600, marginRight: '0.4rem' }}>Formato:</span>
           {PRESETS.map((p) => (
             <button
               key={p.id}
@@ -467,9 +1047,7 @@ export default function DesignEditorSection() {
                 backgroundColor: preset.id === p.id ? 'var(--accent)' : 'var(--bg-surface-2)',
                 color: preset.id === p.id ? '#08080A' : 'var(--text-secondary)',
                 border: preset.id === p.id ? '1px solid var(--accent)' : '1px solid var(--border-subtle)',
-                fontWeight: preset.id === p.id ? 700 : 500,
-                fontSize: '0.78rem',
-                padding: '0.35rem 0.75rem'
+                fontWeight: preset.id === p.id ? 700 : 500, fontSize: '0.78rem', padding: '0.35rem 0.75rem'
               }}
             >
               <span>{p.name}</span>
@@ -477,747 +1055,202 @@ export default function DesignEditorSection() {
           ))}
         </div>
 
-        {/* Acciones de Historial (Undo / Redo / Clear) */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-          <button
-            onClick={undo}
-            disabled={undoStack.current.length === 0}
-            className="btn btn-secondary btn-sm"
-            title="Deshacer (Undo)"
-            style={{ padding: '0.4rem 0.7rem', opacity: undoStack.current.length === 0 ? 0.5 : 1 }}
-          >
-            <Undo2 size={16} />
-            <span style={{ fontSize: '0.78rem' }}>Deshacer</span>
+          <button onClick={undo} disabled={undoStack.current.length === 0} className="btn btn-secondary btn-sm" title="Deshacer (Undo)" style={{ padding: '0.4rem 0.7rem', opacity: undoStack.current.length === 0 ? 0.5 : 1 }}>
+            <Undo2 size={16} /><span style={{ fontSize: '0.78rem' }}>Deshacer</span>
+          </button>
+          <button onClick={redo} disabled={redoStack.current.length === 0} className="btn btn-secondary btn-sm" title="Rehacer (Redo)" style={{ padding: '0.4rem 0.7rem', opacity: redoStack.current.length === 0 ? 0.5 : 1 }}>
+            <Redo2 size={16} /><span style={{ fontSize: '0.78rem' }}>Rehacer</span>
           </button>
           <button
-            onClick={redo}
-            disabled={redoStack.current.length === 0}
-            className="btn btn-secondary btn-sm"
-            title="Rehacer (Redo)"
-            style={{ padding: '0.4rem 0.7rem', opacity: redoStack.current.length === 0 ? 0.5 : 1 }}
+            onClick={() => { if (window.confirm('¿Deseas limpiar todos los elementos del lienzo?')) { saveStateToHistory(); setElements([]); setSelectedId(null); } }}
+            className="btn btn-ghost btn-sm" title="Limpiar Lienzo" style={{ color: '#F87171', padding: '0.4rem 0.7rem', fontSize: '0.78rem' }}
           >
-            <Redo2 size={16} />
-            <span style={{ fontSize: '0.78rem' }}>Rehacer</span>
-          </button>
-          <button
-            onClick={() => {
-              if (window.confirm('¿Deseas limpiar todos los elementos del lienzo?')) {
-                saveStateToHistory();
-                setElements([]);
-                setSelectedId(null);
-              }
-            }}
-            className="btn btn-ghost btn-sm"
-            title="Limpiar Lienzo"
-            style={{ color: '#F87171', padding: '0.4rem 0.7rem', fontSize: '0.78rem' }}
-          >
-            <Trash2 size={15} />
-            <span>Limpiar</span>
+            <Trash2 size={15} /><span>Limpiar</span>
           </button>
         </div>
 
-        {/* Botones de Exportación HD */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
           <button className="btn btn-primary btn-sm" onClick={exportPNG} style={{ gap: '0.4rem', fontSize: '0.78rem' }}>
-            <Download size={15} />
-            <span>Exportar PNG (300 DPI)</span>
+            <Download size={15} /><span>Exportar PNG (300 DPI)</span>
           </button>
           <button className="btn btn-secondary btn-sm" onClick={exportPDF} style={{ gap: '0.4rem', fontSize: '0.78rem' }}>
-            <FileText size={15} />
-            <span>PDF Imprimible</span>
+            <FileText size={15} /><span>PDF Imprimible</span>
           </button>
         </div>
       </div>
 
-      {/* Editor Principal Layout 3 Columnas (Barra de Pestañas Izquierda + Canvas + Propiedades) */}
-      <div style={{
-        display: 'grid',
-        gridTemplateColumns: '320px 1fr 290px',
-        gap: '1.2rem',
-        maxWidth: '1380px',
-        margin: '0 auto',
-        alignItems: 'start'
-      }}>
-        {/* Columna Izquierda: Panel Tabulado de Herramientas de Creación */}
-        <div style={{
-          backgroundColor: 'var(--bg-surface)',
-          borderRadius: 'var(--radius-lg)',
-          border: '1px solid var(--border-subtle)',
-          overflow: 'hidden',
-          display: 'flex',
-          flexDirection: 'column',
-          boxShadow: 'var(--shadow-card)'
-        }}>
-          {/* Selector de Pestaña de Herramientas */}
+      {/* ---------------- LAYOUT DESKTOP (3 columnas) ---------------- */}
+      {!isMobile && (
+        <div style={{ display: 'grid', gridTemplateColumns: '320px 1fr 290px', gap: '1.2rem', maxWidth: '1380px', margin: '0 auto', alignItems: 'start' }}>
+          {/* Columna Izquierda: Panel Tabulado de Herramientas de Creación */}
+          <div style={{ backgroundColor: 'var(--bg-surface)', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border-subtle)', overflow: 'hidden', display: 'flex', flexDirection: 'column', boxShadow: 'var(--shadow-card)' }}>
+            <div style={{ display: 'flex', borderBottom: '1px solid var(--border-subtle)', backgroundColor: 'var(--bg-surface-2)', overflowX: 'auto' }}>
+              {TAB_DEFS.map((t) => {
+                const Icon = t.icon;
+                const isActive = activeTab === t.id;
+                return (
+                  <button
+                    key={t.id}
+                    onClick={() => setActiveTab(t.id)}
+                    style={{
+                      flex: 1, minWidth: '50px', padding: '0.6rem 0.4rem',
+                      background: isActive ? 'var(--bg-surface)' : 'transparent', border: 'none',
+                      borderBottom: isActive ? '2px solid var(--accent)' : '2px solid transparent',
+                      color: isActive ? 'var(--accent)' : 'var(--text-secondary)', cursor: 'pointer',
+                      display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.2rem',
+                      fontSize: '0.68rem', fontWeight: isActive ? 700 : 500, transition: 'all 0.2s'
+                    }}
+                  >
+                    <Icon size={16} />
+                    <span>{t.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+            <div style={{ padding: '1.2rem', maxHeight: '520px', overflowY: 'auto' }}>
+              {renderActiveTabContent()}
+            </div>
+          </div>
+
+          {/* Columna Central: Konva Interactive Canvas Stage */}
           <div style={{
-            display: 'flex',
-            borderBottom: '1px solid var(--border-subtle)',
-            backgroundColor: 'var(--bg-surface-2)',
-            overflowX: 'auto'
+            backgroundColor: 'var(--bg-surface-2)', padding: '1.5rem', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border-subtle)',
+            display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', overflow: 'auto', minHeight: '480px', position: 'relative'
           }}>
-            {[
-              { id: 'text', label: 'Texto', icon: Type },
-              { id: 'emojis', label: 'Emojis', icon: Smile },
-              { id: 'draw', label: 'Pincel', icon: Brush },
-              { id: 'shapes', label: 'Formas', icon: Square },
-              { id: 'image', label: 'Imagen', icon: ImageIcon },
-              { id: 'canvas', label: 'Lienzo', icon: Sliders }
-            ].map((t) => {
+            {stageInner}
+          </div>
+
+          {/* Columna Derecha: Inspector de Propiedades del Elemento Seleccionado */}
+          <div style={{ backgroundColor: 'var(--bg-surface)', padding: '1.2rem', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border-subtle)', boxShadow: 'var(--shadow-card)' }}>
+            <h4 style={{ fontSize: '0.85rem', color: 'var(--accent)', fontWeight: 700, marginBottom: '0.8rem', textTransform: 'uppercase' }}>Propiedades</h4>
+            {renderPropertiesContent()}
+          </div>
+        </div>
+      )}
+
+      {/* ---------------- LAYOUT MOBILE: tarjeta de entrada a pantalla completa ---------------- */}
+      {isMobile && !mobileFullscreen && (
+        <div style={{
+          maxWidth: '480px', margin: '0 auto', backgroundColor: 'var(--bg-surface)', border: '1px solid var(--border-subtle)',
+          borderRadius: 'var(--radius-lg)', padding: '2.5rem 1.5rem', textAlign: 'center', boxShadow: 'var(--shadow-card)'
+        }}>
+          <Maximize2 size={36} color="var(--accent)" style={{ marginBottom: '1rem' }} />
+          <h3 style={{ fontSize: '1.05rem', color: 'var(--text-primary)', marginBottom: '0.6rem' }}>Editá esta pieza a pantalla completa</h3>
+          <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', lineHeight: 1.5, marginBottom: '1.4rem' }}>
+            En celular, el editor completo (herramientas, lienzo y propiedades) funciona mejor ocupando toda la pantalla.
+          </p>
+          <button className="btn btn-primary" onClick={() => setMobileFullscreen(true)} style={{ gap: '0.5rem', margin: '0 auto' }}>
+            <Maximize2 size={16} /><span>Editar a Pantalla Completa</span>
+          </button>
+        </div>
+      )}
+
+      {/* ---------------- LAYOUT MOBILE: editor a pantalla completa ---------------- */}
+      {isMobile && mobileFullscreen && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 2000, backgroundColor: 'var(--bg-base, #0A0A0C)', display: 'flex', flexDirection: 'column' }}>
+          {/* Barra superior: cerrar, deshacer/rehacer, exportar */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.6rem 0.7rem', borderBottom: '1px solid var(--border-subtle)', backgroundColor: 'var(--bg-surface)', flexShrink: 0 }}>
+            <button onClick={() => { setMobileFullscreen(false); setMobileToolOpen(false); setMobilePropsOpen(false); }} className="btn btn-ghost btn-sm" style={{ padding: '0.4rem' }} title="Cerrar pantalla completa">
+              <X size={20} />
+            </button>
+            <div style={{ display: 'flex', gap: '0.3rem' }}>
+              <button onClick={undo} disabled={undoStack.current.length === 0} className="btn btn-ghost btn-sm" style={{ padding: '0.4rem' }}><Undo2 size={18} /></button>
+              <button onClick={redo} disabled={redoStack.current.length === 0} className="btn btn-ghost btn-sm" style={{ padding: '0.4rem' }}><Redo2 size={18} /></button>
+            </div>
+            <button onClick={exportPNG} className="btn btn-primary btn-sm" style={{ padding: '0.4rem 0.7rem', gap: '0.3rem' }}>
+              <Download size={15} /><span style={{ fontSize: '0.7rem' }}>PNG</span>
+            </button>
+          </div>
+
+          {/* Barra de íconos de herramientas */}
+          <div style={{ display: 'flex', borderBottom: '1px solid var(--border-subtle)', backgroundColor: 'var(--bg-surface-2)', overflowX: 'auto', flexShrink: 0 }}>
+            {TAB_DEFS.map((t) => {
               const Icon = t.icon;
-              const isActive = activeTab === t.id;
+              const isOpenActive = mobileToolOpen && activeTab === t.id;
               return (
                 <button
                   key={t.id}
-                  onClick={() => setActiveTab(t.id)}
+                  onClick={() => {
+                    if (activeTab === t.id && mobileToolOpen) { setMobileToolOpen(false); }
+                    else { setActiveTab(t.id); setMobileToolOpen(true); setMobilePropsOpen(false); }
+                  }}
                   style={{
-                    flex: 1,
-                    minWidth: '50px',
-                    padding: '0.6rem 0.4rem',
-                    background: isActive ? 'var(--bg-surface)' : 'transparent',
-                    border: 'none',
-                    borderBottom: isActive ? '2px solid var(--accent)' : '2px solid transparent',
-                    color: isActive ? 'var(--accent)' : 'var(--text-secondary)',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    gap: '0.2rem',
-                    fontSize: '0.68rem',
-                    fontWeight: isActive ? 700 : 500,
-                    transition: 'all 0.2s'
+                    flex: 1, minWidth: '54px', padding: '0.55rem 0.3rem',
+                    background: isOpenActive ? 'var(--bg-surface)' : 'transparent', border: 'none',
+                    borderBottom: isOpenActive ? '2px solid var(--accent)' : '2px solid transparent',
+                    color: isOpenActive ? 'var(--accent)' : 'var(--text-secondary)',
+                    display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.15rem', fontSize: '0.6rem'
                   }}
                 >
-                  <Icon size={16} />
+                  <Icon size={17} />
                   <span>{t.label}</span>
                 </button>
               );
             })}
           </div>
 
-          {/* Contenido de la Pestaña Activa */}
-          <div style={{ padding: '1.2rem', maxHeight: '520px', overflowY: 'auto' }}>
-            {/* Pestaña: Texto & 30 Tipografías Web */}
-            {activeTab === 'text' && (
-              <div>
-                <h4 style={{ fontSize: '0.85rem', color: 'var(--accent)', fontWeight: 700, marginBottom: '0.8rem', textTransform: 'uppercase' }}>
-                  Añadir Texto & 30 Fuentes Web
-                </h4>
-                
-                <button
-                  className="btn btn-primary btn-sm"
-                  onClick={() => addText('Nuevo Texto', 'Space Grotesk', 24)}
-                  style={{ width: '100%', marginBottom: '1.2rem', justifyContent: 'center', gap: '0.5rem' }}
-                >
-                  <Type size={16} />
-                  <span>Añadir Bloque de Texto</span>
-                </button>
-
-                <label style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '0.5rem', fontWeight: 600 }}>
-                  Catálogo de 30 Fuentes Gratuitas:
-                </label>
-
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-                  {WEB_FONTS.map((font) => (
-                    <button
-                      key={font.name}
-                      onClick={() => addText(font.name, font.name, 22)}
-                      style={{
-                        backgroundColor: 'var(--bg-surface-2)',
-                        border: '1px solid var(--border-subtle)',
-                        borderRadius: 'var(--radius-md)',
-                        padding: '0.6rem 0.8rem',
-                        textAlign: 'left',
-                        cursor: 'pointer',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                        transition: 'all 0.2s'
-                      }}
-                      className="font-item-btn"
-                    >
-                      <span style={{ fontFamily: font.name, fontSize: '0.95rem', color: 'var(--text-primary)' }}>
-                        {font.name}
-                      </span>
-                      <span className="font-mono" style={{ fontSize: '0.65rem', color: 'var(--luxury)', backgroundColor: 'rgba(201,169,77,0.12)', padding: '0.1rem 0.4rem', borderRadius: '4px' }}>
-                        {font.category}
-                      </span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Pestaña: Emojis Estilo WhatsApp */}
-            {activeTab === 'emojis' && (
-              <div>
-                <h4 style={{ fontSize: '0.85rem', color: 'var(--accent)', fontWeight: 700, marginBottom: '0.8rem', textTransform: 'uppercase' }}>
-                  Emojis & Stickers (WhatsApp Style)
-                </h4>
-                <p style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', marginBottom: '1rem', lineHeight: 1.35 }}>
-                  Toca cualquier emoji para insertarlo en el lienzo como sticker escalable.
-                </p>
-
-                {EMOJI_CATEGORIES.map((cat) => (
-                  <div key={cat.name} style={{ marginBottom: '1.2rem' }}>
-                    <div style={{ fontSize: '0.74rem', color: 'var(--luxury)', fontWeight: 700, marginBottom: '0.4rem', textTransform: 'uppercase' }}>
-                      {cat.name}
-                    </div>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: '0.35rem' }}>
-                      {cat.emojis.map((emojiChar, idx) => (
-                        <button
-                          key={idx}
-                          onClick={() => addEmoji(emojiChar)}
-                          style={{
-                            fontSize: '1.4rem',
-                            backgroundColor: 'var(--bg-surface-2)',
-                            border: '1px solid var(--border-subtle)',
-                            borderRadius: 'var(--radius-sm)',
-                            padding: '0.3rem',
-                            cursor: 'pointer',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            transition: 'all 0.2s'
-                          }}
-                          title={`Insertar ${emojiChar}`}
-                          className="emoji-btn"
-                        >
-                          {emojiChar}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {/* Pestaña: Pincel & Dibujo Libre */}
-            {activeTab === 'draw' && (
-              <div>
-                <h4 style={{ fontSize: '0.85rem', color: 'var(--accent)', fontWeight: 700, marginBottom: '0.8rem', textTransform: 'uppercase' }}>
-                  Pincel de Dibujo Libre
-                </h4>
-
-                <div style={{
-                  padding: '1rem',
-                  backgroundColor: 'var(--bg-surface-2)',
-                  borderRadius: 'var(--radius-md)',
-                  border: isDrawingMode ? '1px solid var(--accent)' : '1px solid var(--border-subtle)',
-                  marginBottom: '1.2rem'
-                }}>
-                  <button
-                    onClick={() => {
-                      setIsDrawingMode(!isDrawingMode);
-                      setSelectedId(null);
-                    }}
-                    className={`btn ${isDrawingMode ? 'btn-primary' : 'btn-secondary'} btn-sm`}
-                    style={{ width: '100%', justifyContent: 'center', gap: '0.5rem', marginBottom: '0.8rem' }}
-                  >
-                    <Brush size={16} />
-                    <span>{isDrawingMode ? 'Modo Pincel ACTIVO' : 'Activar Pincel de Dibujo'}</span>
-                  </button>
-                  <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', lineHeight: 1.35, textAlign: 'center' }}>
-                    {isDrawingMode ? 'Arrastra sobre el lienzo para dibujar libremente.' : 'Haz clic para comenzar a trazar sobre el lienzo.'}
-                  </p>
-                </div>
-
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
-                  <div>
-                    <label style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '0.3rem' }}>
-                      Color del Pincel
-                    </label>
-                    <input
-                      type="color"
-                      value={brushColor}
-                      onChange={(e) => setBrushColor(e.target.value)}
-                      style={{ width: '100%', height: '36px', border: 'none', borderRadius: '4px', cursor: 'pointer', backgroundColor: 'transparent' }}
-                    />
-                  </div>
-
-                  <div>
-                    <label style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '0.3rem' }}>
-                      Grosor del Trazo ({brushSize}px)
-                    </label>
-                    <input
-                      type="range"
-                      min={1}
-                      max={30}
-                      value={brushSize}
-                      onChange={(e) => setBrushSize(Number(e.target.value))}
-                      style={{ width: '100%', accentColor: 'var(--accent)' }}
-                    />
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Pestaña: Formas */}
-            {activeTab === 'shapes' && (
-              <div>
-                <h4 style={{ fontSize: '0.85rem', color: 'var(--accent)', fontWeight: 700, marginBottom: '0.8rem', textTransform: 'uppercase' }}>
-                  Añadir Formas & Figuras
-                </h4>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
-                  <button className="btn btn-secondary btn-sm" onClick={addRect} style={{ justifyContent: 'flex-start', gap: '0.6rem' }}>
-                    <Square size={16} />
-                    <span>Rectángulo / Tarjeta</span>
-                  </button>
-                  <button className="btn btn-secondary btn-sm" onClick={addCircle} style={{ justifyContent: 'flex-start', gap: '0.6rem' }}>
-                    <CircleIcon size={16} />
-                    <span>Círculo / Sello</span>
-                  </button>
-                  <button className="btn btn-secondary btn-sm" onClick={addStar} style={{ justifyContent: 'flex-start', gap: '0.6rem' }}>
-                    <Sparkles size={16} />
-                    <span>Estrella de 5 Puntas</span>
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {/* Pestaña: Imagen */}
-            {activeTab === 'image' && (
-              <div>
-                <h4 style={{ fontSize: '0.85rem', color: 'var(--accent)', fontWeight: 700, marginBottom: '0.8rem', textTransform: 'uppercase' }}>
-                  Añadir Imagen & Filtros
-                </h4>
-                <label className="btn btn-primary btn-sm" style={{ width: '100%', justifyContent: 'center', gap: '0.6rem', cursor: 'pointer', marginBottom: '1.2rem' }}>
-                  <ImageIcon size={16} />
-                  <span>Subir Imagen o Logo</span>
-                  <input type="file" accept="image/*" onChange={handleImageUpload} style={{ display: 'none' }} />
-                </label>
-                <p style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', lineHeight: 1.4 }}>
-                  Admite PNG transparente, JPG y SVG. Una vez subida, selecciónala para aplicar brillo, contraste, saturación o retocar con IA.
-                </p>
-              </div>
-            )}
-
-            {/* Pestaña: Lienzo */}
-            {activeTab === 'canvas' && (
-              <div>
-                <h4 style={{ fontSize: '0.85rem', color: 'var(--accent)', fontWeight: 700, marginBottom: '0.8rem', textTransform: 'uppercase' }}>
-                  Fondo & Dimensiones del Lienzo
-                </h4>
-
-                <div style={{ marginBottom: '1.2rem' }}>
-                  <label style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '0.4rem', fontWeight: 600 }}>
-                    Color de Fondo:
-                  </label>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem' }}>
-                    <input
-                      type="color"
-                      value={bgColor}
-                      onChange={(e) => setBgColor(e.target.value)}
-                      style={{ width: '45px', height: '36px', border: 'none', borderRadius: '4px', cursor: 'pointer', backgroundColor: 'transparent' }}
-                    />
-                    <span style={{ fontSize: '0.85rem', color: 'var(--text-primary)' }} className="font-mono">{bgColor}</span>
-                  </div>
-                </div>
-
-                <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', backgroundColor: 'var(--bg-surface-2)', padding: '0.8rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-subtle)' }}>
-                  <div><strong>Resolución:</strong> {preset.width} x {preset.height} px</div>
-                  <div><strong>Equivalencia:</strong> {preset.unit} (300 DPI)</div>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Columna Central: Konva Interactive Canvas Stage */}
-        <div style={{
-          backgroundColor: 'var(--bg-surface-2)',
-          padding: '1.5rem',
-          borderRadius: 'var(--radius-lg)',
-          border: '1px solid var(--border-subtle)',
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          overflow: 'auto',
-          minHeight: '480px',
-          position: 'relative'
-        }}>
-          {/* Tag Indicador de Dimensiones */}
-          <div style={{
-            position: 'absolute',
-            top: '0.8rem',
-            left: '1rem',
-            fontSize: '0.72rem',
-            color: 'var(--text-disabled)',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.4rem'
-          }}>
-            <span className="font-mono" style={{ color: 'var(--accent)' }}>{preset.width}x{preset.height}px</span>
-            <span>({preset.unit})</span>
-          </div>
-
-          <div style={{
-            boxShadow: '0 12px 35px rgba(0,0,0,0.6), 0 0 15px rgba(186, 253, 193, 0.08)',
-            border: '1px solid var(--border-strong)',
-            borderRadius: '4px',
-            position: 'relative'
-          }}>
-            <Stage
-              width={preset.width}
-              height={preset.height}
-              ref={stageRef}
-              onMouseDown={(e) => {
-                handleMouseDownDraw(e);
-                if (e.target === e.target.getStage()) {
-                  setSelectedId(null);
-                }
-              }}
-              onMouseMove={handleMouseMoveDraw}
-              onMouseUp={handleMouseUpDraw}
-              onTouchStart={(e) => {
-                handleMouseDownDraw(e);
-                if (e.target === e.target.getStage()) {
-                  setSelectedId(null);
-                }
-              }}
-              onTouchMove={handleMouseMoveDraw}
-              onTouchEnd={handleMouseUpDraw}
-            >
-              <Layer>
-                {/* Rectángulo de Fondo */}
-                <Rect width={preset.width} height={preset.height} fill={bgColor} />
-
-                {/* Renderizado Dinámico de Elementos */}
-                {elements.map((el) => {
-                  if (el.type === 'text') {
-                    return (
-                      <Text
-                        key={el.id}
-                        id={el.id}
-                        {...el}
-                        draggable={!isDrawingMode}
-                        onClick={() => !isDrawingMode && setSelectedId(el.id)}
-                        onTap={() => !isDrawingMode && setSelectedId(el.id)}
-                        onDragMove={(e) => handleDragMove(e, el.id)}
-                        onDragEnd={(e) => {
-                          handleDragEnd();
-                          updateSelected('x', e.target.x());
-                          updateSelected('y', e.target.y());
-                        }}
-                      />
-                    );
-                  }
-                  if (el.type === 'rect') {
-                    return (
-                      <Rect
-                        key={el.id}
-                        id={el.id}
-                        {...el}
-                        draggable={!isDrawingMode}
-                        onClick={() => !isDrawingMode && setSelectedId(el.id)}
-                        onTap={() => !isDrawingMode && setSelectedId(el.id)}
-                        onDragMove={(e) => handleDragMove(e, el.id)}
-                        onDragEnd={(e) => {
-                          handleDragEnd();
-                          updateSelected('x', e.target.x());
-                          updateSelected('y', e.target.y());
-                        }}
-                      />
-                    );
-                  }
-                  if (el.type === 'circle') {
-                    return (
-                      <Circle
-                        key={el.id}
-                        id={el.id}
-                        {...el}
-                        draggable={!isDrawingMode}
-                        onClick={() => !isDrawingMode && setSelectedId(el.id)}
-                        onTap={() => !isDrawingMode && setSelectedId(el.id)}
-                        onDragMove={(e) => handleDragMove(e, el.id)}
-                        onDragEnd={(e) => {
-                          handleDragEnd();
-                          updateSelected('x', e.target.x());
-                          updateSelected('y', e.target.y());
-                        }}
-                      />
-                    );
-                  }
-                  if (el.type === 'star') {
-                    return (
-                      <Star
-                        key={el.id}
-                        id={el.id}
-                        {...el}
-                        draggable={!isDrawingMode}
-                        onClick={() => !isDrawingMode && setSelectedId(el.id)}
-                        onTap={() => !isDrawingMode && setSelectedId(el.id)}
-                        onDragMove={(e) => handleDragMove(e, el.id)}
-                        onDragEnd={(e) => {
-                          handleDragEnd();
-                          updateSelected('x', e.target.x());
-                          updateSelected('y', e.target.y());
-                        }}
-                      />
-                    );
-                  }
-                  if (el.type === 'line') {
-                    return (
-                      <Line
-                        key={el.id}
-                        id={el.id}
-                        {...el}
-                        draggable={!isDrawingMode}
-                        onClick={() => !isDrawingMode && setSelectedId(el.id)}
-                        onTap={() => !isDrawingMode && setSelectedId(el.id)}
-                      />
-                    );
-                  }
-                  if (el.type === 'image') {
-                    return (
-                      <URLImage
-                        key={el.id}
-                        id={el.id}
-                        image={{ src: el.src }}
-                        {...el}
-                        draggable={!isDrawingMode}
-                        onClick={() => !isDrawingMode && setSelectedId(el.id)}
-                        onTap={() => !isDrawingMode && setSelectedId(el.id)}
-                        onDragMove={(e) => handleDragMove(e, el.id)}
-                        onDragEnd={(e) => {
-                          handleDragEnd();
-                          updateSelected('x', e.target.x());
-                          updateSelected('y', e.target.y());
-                        }}
-                      />
-                    );
-                  }
-                  return null;
-                })}
-
-                {/* Guías de Alineación al Centro */}
-                {alignGuides.showX && (
-                  <Line
-                    points={[preset.width / 2, 0, preset.width / 2, preset.height]}
-                    stroke="#18f668"
-                    strokeWidth={1}
-                    dash={[4, 4]}
-                  />
-                )}
-                {alignGuides.showY && (
-                  <Line
-                    points={[0, preset.height / 2, preset.width, preset.height / 2]}
-                    stroke="#18f668"
-                    strokeWidth={1}
-                    dash={[4, 4]}
-                  />
-                )}
-
-                {/* Transformer para Escalar / Rotar */}
-                {!isDrawingMode && <Transformer ref={trRef} />}
-              </Layer>
-            </Stage>
-          </div>
-        </div>
-
-        {/* Columna Derecha: Inspector de Propiedades del Elemento Seleccionado */}
-        <div style={{
-          backgroundColor: 'var(--bg-surface)',
-          padding: '1.2rem',
-          borderRadius: 'var(--radius-lg)',
-          border: '1px solid var(--border-subtle)',
-          boxShadow: 'var(--shadow-card)'
-        }}>
-          <h4 style={{ fontSize: '0.85rem', color: 'var(--accent)', fontWeight: 700, marginBottom: '0.8rem', textTransform: 'uppercase' }}>
-            Propiedades
-          </h4>
-
-          {!selectedElement ? (
-            <div style={{ fontSize: '0.82rem', color: 'var(--text-disabled)', textAlign: 'center', padding: '2.5rem 0' }}>
-              Toca cualquier elemento del lienzo para editar sus propiedades.
+          {/* Panel desplegable de la herramienta activa */}
+          {mobileToolOpen && (
+            <div style={{ maxHeight: '42vh', overflowY: 'auto', padding: '1rem', backgroundColor: 'var(--bg-surface)', borderBottom: '1px solid var(--border-subtle)', flexShrink: 0 }}>
+              {renderActiveTabContent()}
             </div>
-          ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.9rem' }}>
-              {/* Si es Texto */}
-              {selectedElement.type === 'text' && (
-                <>
-                  <div>
-                    <label style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '0.3rem' }}>
-                      Contenido de Texto
-                    </label>
-                    <input
-                      type="text"
-                      value={selectedElement.text}
-                      onChange={(e) => updateSelected('text', e.target.value)}
-                      className="input"
-                      style={{ width: '100%', fontSize: '0.85rem' }}
-                    />
-                  </div>
+          )}
 
-                  <div>
-                    <label style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '0.3rem' }}>
-                      Fuente Tipográfica
-                    </label>
-                    <select
-                      value={selectedElement.fontFamily || 'Space Grotesk'}
-                      onChange={(e) => updateSelectedWithHistory('fontFamily', e.target.value)}
-                      style={{ width: '100%', fontSize: '0.85rem', fontFamily: selectedElement.fontFamily }}
-                    >
-                      {WEB_FONTS.map((f) => (
-                        <option key={f.name} value={f.name} style={{ fontFamily: f.name }}>
-                          {f.name} ({f.category})
-                        </option>
-                      ))}
-                    </select>
-                  </div>
+          {/* Área del lienzo */}
+          <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', position: 'relative', padding: '0.5rem' }}>
+            {stageInner}
+          </div>
 
-                  <div>
-                    <label style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '0.3rem' }}>
-                      Tamaño ({selectedElement.fontSize}px)
-                    </label>
-                    <input
-                      type="range"
-                      min={8}
-                      max={120}
-                      value={selectedElement.fontSize}
-                      onChange={(e) => updateSelected('fontSize', Number(e.target.value))}
-                      style={{ width: '100%', accentColor: 'var(--accent)' }}
-                    />
-                  </div>
+          {/* Botón flotante "Propiedades" */}
+          {selectedElement && !mobilePropsOpen && (
+            <button
+              onClick={() => { setMobilePropsOpen(true); setMobileToolOpen(false); }}
+              className="btn btn-primary"
+              style={{
+                position: 'fixed', bottom: '1.1rem', left: '50%', transform: 'translateX(-50%)',
+                borderRadius: 'var(--radius-full)', padding: '0.7rem 1.4rem', gap: '0.5rem',
+                boxShadow: '0 8px 20px rgba(0,0,0,0.45)', zIndex: 2001
+              }}
+            >
+              <Sliders size={16} /><span>Propiedades</span>
+            </button>
+          )}
 
-                  <div>
-                    <label style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '0.3rem' }}>
-                      Color de Texto
-                    </label>
-                    <input
-                      type="color"
-                      value={selectedElement.fill}
-                      onChange={(e) => updateSelected('fill', e.target.value)}
-                      style={{ width: '100%', height: '34px', border: 'none', borderRadius: '4px', cursor: 'pointer', backgroundColor: 'transparent' }}
-                    />
-                  </div>
-                </>
-              )}
-
-              {/* Si es Formas (Rectángulo, Círculo, Estrella) */}
-              {(selectedElement.type === 'rect' || selectedElement.type === 'circle' || selectedElement.type === 'star') && (
-                <>
-                  <div>
-                    <label style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '0.3rem' }}>
-                      Color de Relleno
-                    </label>
-                    <input
-                      type="color"
-                      value={selectedElement.fill}
-                      onChange={(e) => updateSelected('fill', e.target.value)}
-                      style={{ width: '100%', height: '34px', border: 'none', borderRadius: '4px', cursor: 'pointer', backgroundColor: 'transparent' }}
-                    />
-                  </div>
-                </>
-              )}
-
-              {/* Si es Imagen: Filtros no-destructivos + Retoque IA */}
-              {selectedElement.type === 'image' && (
-                <>
-                  <button
-                    className="btn btn-secondary btn-sm"
-                    onClick={() => setRetouchModalOpen(true)}
-                    style={{ justifyContent: 'center', gap: '0.5rem', width: '100%' }}
-                  >
-                    <Wand2 size={15} />
-                    <span>Retocar Imagen con IA</span>
-                  </button>
-
-                  <div style={{ paddingTop: '0.6rem', borderTop: '1px solid var(--border-subtle)' }}>
-                    <label style={{ fontSize: '0.76rem', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '0.3rem', marginBottom: '0.2rem' }}>
-                      <Sun size={13} /> Brillo ({selectedElement.brightness ?? 0})
-                    </label>
-                    <input
-                      type="range" min={-1} max={1} step={0.05}
-                      value={selectedElement.brightness ?? 0}
-                      onChange={(e) => updateSelected('brightness', Number(e.target.value))}
-                      style={{ width: '100%', accentColor: 'var(--accent)' }}
-                    />
-                  </div>
-
-                  <div>
-                    <label style={{ fontSize: '0.76rem', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '0.3rem', marginBottom: '0.2rem' }}>
-                      <ContrastIcon size={13} /> Contraste ({selectedElement.contrast ?? 0})
-                    </label>
-                    <input
-                      type="range" min={-100} max={100} step={1}
-                      value={selectedElement.contrast ?? 0}
-                      onChange={(e) => updateSelected('contrast', Number(e.target.value))}
-                      style={{ width: '100%', accentColor: 'var(--accent)' }}
-                    />
-                  </div>
-
-                  <div>
-                    <label style={{ fontSize: '0.76rem', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '0.3rem', marginBottom: '0.2rem' }}>
-                      <Droplet size={13} /> Saturación ({selectedElement.saturation ?? 0})
-                    </label>
-                    <input
-                      type="range" min={-2} max={5} step={0.1}
-                      value={selectedElement.saturation ?? 0}
-                      onChange={(e) => updateSelected('saturation', Number(e.target.value))}
-                      style={{ width: '100%', accentColor: 'var(--accent)' }}
-                    />
-                  </div>
-
-                  <div>
-                    <label style={{ fontSize: '0.76rem', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '0.3rem', marginBottom: '0.2rem' }}>
-                      <Focus size={13} /> Desenfoque ({selectedElement.blurRadius ?? 0})
-                    </label>
-                    <input
-                      type="range" min={0} max={20} step={1}
-                      value={selectedElement.blurRadius ?? 0}
-                      onChange={(e) => updateSelected('blurRadius', Number(e.target.value))}
-                      style={{ width: '100%', accentColor: 'var(--accent)' }}
-                    />
-                  </div>
-                </>
-              )}
-
-              {/* Acciones Generales (Duplicar, Capas, Eliminar) */}
-              <div style={{ paddingTop: '0.8rem', borderTop: '1px solid var(--border-subtle)', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                <button className="btn btn-secondary btn-sm" onClick={duplicateSelected} style={{ gap: '0.4rem', justifyContent: 'center' }}>
-                  <Copy size={14} /> Duplicar Elemento
-                </button>
-
-                <div style={{ display: 'flex', gap: '0.4rem' }}>
-                  <button className="btn btn-sm" onClick={() => moveLayer('up')} style={{ flex: 1, gap: '0.3rem', fontSize: '0.75rem' }}>
-                    <ArrowUp size={13} /> Subir Capa
-                  </button>
-                  <button className="btn btn-sm" onClick={() => moveLayer('down')} style={{ flex: 1, gap: '0.3rem', fontSize: '0.75rem' }}>
-                    <ArrowDown size={13} /> Bajar Capa
-                  </button>
-                </div>
-
-                <button className="btn btn-sm" onClick={deleteSelected} style={{ backgroundColor: 'rgba(248,113,113,0.15)', color: '#F87171', border: '1px solid #F87171', justifyContent: 'center', gap: '0.4rem', marginTop: '0.3rem' }}>
-                  <Trash2 size={14} /> Eliminar Elemento
-                </button>
+          {/* Bandeja inferior (bottom sheet) de Propiedades */}
+          {mobilePropsOpen && selectedElement && (
+            <div style={{
+              position: 'fixed', left: 0, right: 0, bottom: 0, maxHeight: '65vh', backgroundColor: 'var(--bg-surface)',
+              borderTopLeftRadius: 'var(--radius-lg)', borderTopRightRadius: 'var(--radius-lg)',
+              boxShadow: '0 -8px 30px rgba(0,0,0,0.5)', zIndex: 2002, display: 'flex', flexDirection: 'column'
+            }}>
+              <div onClick={() => setMobilePropsOpen(false)} style={{ display: 'flex', justifyContent: 'center', padding: '0.55rem', cursor: 'pointer' }}>
+                <div style={{ width: '38px', height: '4px', borderRadius: '2px', backgroundColor: 'var(--border-subtle)' }} />
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0 1.2rem 0.6rem' }}>
+                <h4 style={{ fontSize: '0.85rem', color: 'var(--accent)', fontWeight: 700, textTransform: 'uppercase' }}>Propiedades</h4>
+                <button onClick={() => setMobilePropsOpen(false)} className="btn btn-ghost btn-sm" style={{ padding: '0.3rem' }}><X size={16} /></button>
+              </div>
+              <div style={{ padding: '0 1.2rem 1.4rem', overflowY: 'auto' }}>
+                {renderPropertiesContent()}
               </div>
             </div>
           )}
         </div>
-      </div>
+      )}
 
       {/* Modal de Retoque de Imagen IA */}
       {retouchModalOpen && selectedElement?.type === 'image' && (
         <ImageRetouchModal
           src={selectedElement.src}
-          onApply={(newSrc) => {
-            updateSelectedWithHistory('src', newSrc);
-            setRetouchModalOpen(false);
-          }}
+          onApply={(newSrc) => { updateSelectedWithHistory('src', newSrc); setRetouchModalOpen(false); }}
           onClose={() => setRetouchModalOpen(false)}
         />
       )}
 
       <style>{`
-        .font-item-btn:hover {
-          border-color: var(--accent) !important;
-          background-color: var(--accent-muted) !important;
-        }
-        .emoji-btn:hover {
-          transform: scale(1.2);
-          border-color: var(--accent) !important;
-        }
+        .font-item-btn:hover { border-color: var(--accent) !important; background-color: var(--accent-muted) !important; }
+        .emoji-btn:hover { transform: scale(1.2); border-color: var(--accent) !important; }
       `}</style>
     </section>
   );
