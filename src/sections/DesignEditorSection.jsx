@@ -648,13 +648,23 @@ export default function DesignEditorSection() {
 
   // Vincular Transformer de Konva al elemento seleccionado
   useEffect(() => {
-    if (!selectedId || !trRef.current || !stageRef.current) return;
-    const node = stageRef.current.findOne('#' + selectedId);
-    if (node) {
-      trRef.current.nodes([node]);
-      trRef.current.getLayer().batchDraw();
-    } else {
-      trRef.current.nodes([]);
+    if (!trRef.current || !stageRef.current) return;
+    try {
+      if (selectedId) {
+        const node = stageRef.current.findOne('#' + selectedId);
+        if (node) {
+          trRef.current.nodes([node]);
+          trRef.current.getLayer()?.batchDraw();
+        } else {
+          trRef.current.nodes([]);
+          trRef.current.getLayer()?.batchDraw();
+        }
+      } else {
+        trRef.current.nodes([]);
+        trRef.current.getLayer()?.batchDraw();
+      }
+    } catch (e) {
+      console.warn('Konva transformer sync safely skipped:', e);
     }
   }, [selectedId, elements]);
 
@@ -743,7 +753,7 @@ export default function DesignEditorSection() {
 
   // Carga de Imagen HD sin distorsión y auto-conversión a PNG
   const handleImageUpload = (e) => {
-    const file = e.target.files[0];
+    const file = e.target.files?.[0];
     if (!file) return;
     saveStateToHistory();
 
@@ -852,10 +862,13 @@ export default function DesignEditorSection() {
 
   // Handlers para Dibujo Libre Pincel
   const handleMouseDownDraw = (e) => {
-    if (!isDrawingMode) return;
+    if (!isDrawingMode || !e.target) return;
+    const stage = e.target.getStage ? e.target.getStage() : null;
+    if (!stage) return;
     setIsDrawing(true);
     saveStateToHistory();
-    const pos = e.target.getStage().getRelativePointerPosition();
+    const pos = stage.getRelativePointerPosition();
+    if (!pos) return;
     const newLine = {
       id: 'line-' + Date.now(),
       type: 'line',
@@ -869,10 +882,13 @@ export default function DesignEditorSection() {
   };
 
   const handleMouseMoveDraw = (e) => {
-    if (!isDrawingMode || !isDrawing) return;
-    const stage = e.target.getStage();
+    if (!isDrawingMode || !isDrawing || !e.target) return;
+    const stage = e.target.getStage ? e.target.getStage() : null;
+    if (!stage) return;
     const point = stage.getRelativePointerPosition();
+    if (!point) return;
     setElements((prev) => {
+      if (prev.length === 0) return prev;
       const lastLine = { ...prev[prev.length - 1] };
       if (!lastLine || lastLine.type !== 'line') return prev;
       lastLine.points = lastLine.points.concat([point.x, point.y]);
