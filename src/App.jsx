@@ -5,13 +5,77 @@ import BriefForm from './components/BriefForm';
 import ProductModal from './components/ProductModal';
 import ToolDrawer from './components/ToolDrawer';
 
-// Code-Splitting: Carga diferida por secciones para un primer render ultra rápido
-const LogoBookSection = lazy(() => import('./sections/LogoBookSection'));
-const ToolsSection = lazy(() => import('./sections/ToolsSection'));
-const ImpresionSection = lazy(() => import('./sections/ImpresionSection'));
-const DesignEditorSection = lazy(() => import('./sections/DesignEditorSection'));
-const EducationSection = lazy(() => import('./sections/EducationSection'));
-const CommunitySection = lazy(() => import('./sections/CommunitySection'));
+// Helper de Carga Diferida con Auto-Reintento ante Despliegues de Vercel / Hash Mismatch
+function lazyWithRetry(componentImport) {
+  return lazy(async () => {
+    const pageHasAlreadyBeenRefreshed = JSON.parse(
+      window.sessionStorage.getItem('page-has-been-refreshed') || 'false'
+    );
+    try {
+      return await componentImport();
+    } catch (error) {
+      if (!pageHasAlreadyBeenRefreshed) {
+        window.sessionStorage.setItem('page-has-been-refreshed', 'true');
+        window.location.reload();
+        return new Promise(() => {});
+      }
+      throw error;
+    }
+  });
+}
+
+// Error Boundary para capturar fallos de renderizado y evitar pantalla en blanco
+class ErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+
+  static getDerivedStateFromError(error) {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error, errorInfo) {
+    console.error('Error capturado por ErrorBoundary:', error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div style={{
+          padding: '4rem 2rem', textAlign: 'center', backgroundColor: 'var(--bg-surface)',
+          borderRadius: 'var(--radius-lg)', margin: '2rem auto', maxWidth: '600px',
+          border: '1px solid var(--border-subtle)', boxShadow: 'var(--shadow-card)'
+        }}>
+          <h3 style={{ fontSize: '1.2rem', color: 'var(--accent)', marginBottom: '0.8rem' }}>
+            ⚠️ Ocurrió una actualización o un inconveniente de renderizado
+          </h3>
+          <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '1.5rem', lineHeight: 1.5 }}>
+            La aplicación ha sido actualizada o se produjo un cambio de versión en el servidor. Haz clic abajo para recargar la vista limpiamente.
+          </p>
+          <button
+            className="btn btn-primary"
+            onClick={() => {
+              window.sessionStorage.removeItem('page-has-been-refreshed');
+              window.location.reload();
+            }}
+          >
+            🔄 Recargar Aplicación
+          </button>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
+// Code-Splitting con tolerancia a fallos de red y actualización
+const LogoBookSection = lazyWithRetry(() => import('./sections/LogoBookSection'));
+const ToolsSection = lazyWithRetry(() => import('./sections/ToolsSection'));
+const ImpresionSection = lazyWithRetry(() => import('./sections/ImpresionSection'));
+const DesignEditorSection = lazyWithRetry(() => import('./sections/DesignEditorSection'));
+const EducationSection = lazyWithRetry(() => import('./sections/EducationSection'));
+const CommunitySection = lazyWithRetry(() => import('./sections/CommunitySection'));
 
 function SectionLoader() {
   return (
@@ -82,33 +146,35 @@ export default function App() {
         onOpenToolDrawer={() => setIsToolDrawerOpen(true)}
       />
 
-      {/* Main Content Area con Suspense Fallback */}
+      {/* Main Content Area con Suspense Fallback y ErrorBoundary de Proteccion */}
       <main style={{ flex: 1 }}>
-        <Suspense fallback={<SectionLoader />}>
-          <div id="logobook">
-            <LogoBookSection />
-          </div>
+        <ErrorBoundary>
+          <Suspense fallback={<SectionLoader />}>
+            <div id="logobook">
+              <LogoBookSection />
+            </div>
 
-          <div id="impresion">
-            <ImpresionSection activeTab={selectedImpresionTab} onTabChange={setSelectedImpresionTab} />
-          </div>
+            <div id="impresion">
+              <ImpresionSection activeTab={selectedImpresionTab} onTabChange={setSelectedImpresionTab} />
+            </div>
 
-          <div id="editor-tarjetas">
-            <DesignEditorSection />
-          </div>
+            <div id="editor-tarjetas">
+              <DesignEditorSection />
+            </div>
 
-          <div id="herramientas">
-            <ToolsSection activeTab={selectedToolTab} onTabChange={setSelectedToolTab} />
-          </div>
+            <div id="herramientas">
+              <ToolsSection activeTab={selectedToolTab} onTabChange={setSelectedToolTab} />
+            </div>
 
-          <div id="educacion">
-            <EducationSection />
-          </div>
+            <div id="educacion">
+              <EducationSection />
+            </div>
 
-          <div id="comunidad">
-            <CommunitySection />
-          </div>
-        </Suspense>
+            <div id="comunidad">
+              <CommunitySection />
+            </div>
+          </Suspense>
+        </ErrorBoundary>
       </main>
 
       {/* Global Footer */}

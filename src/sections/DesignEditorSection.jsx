@@ -504,12 +504,19 @@ export default function DesignEditorSection() {
   ]);
   
   const [selectedId, setSelectedId] = useState(null);
-  const [activeTab, setActiveTab] = useState('text'); // 'text' | 'emojis' | 'draw' | 'shapes' | 'image' | 'canvas'
+  const [activeTab, setActiveTab] = useState('canvas'); // Default tab: 'canvas' | 'text' | 'emojis' | 'draw' | 'shapes' | 'image'
   const [retouchModalOpen, setRetouchModalOpen] = useState(false);
   const [imagePropSubTab, setImagePropSubTab] = useState('filters'); // 'filters' | 'crop' | 'ai'
   const [canvasBgMode, setCanvasBgMode] = useState('color'); // 'color' | 'gradient' | 'texture'
   const [patternType, setPatternType] = useState('grid');
   const [patternColor, setPatternColor] = useState('#BAFDC1');
+  const [patternAngle, setPatternAngle] = useState(0);
+  const [patternScale, setPatternScale] = useState(1);
+  const [patternSpacing, setPatternSpacing] = useState(35);
+  const [customImgSrc, setCustomImgSrc] = useState(null);
+  const [presetCategory, setPresetCategory] = useState('Redes Sociales');
+  const [impSheetFormat, setImpSheetFormat] = useState('a4');
+  const [impOrientation, setImpOrientation] = useState('portrait');
   const [gradColor1, setGradColor1] = useState('#111114');
   const [gradColor2, setGradColor2] = useState('#302b63');
   const [gradAngle, setGradAngle] = useState(135);
@@ -953,6 +960,130 @@ export default function DesignEditorSection() {
       pdf.addImage(dataURL, 'PNG', 0, 0, preset.width / 4, preset.height / 4);
       pdf.save(`Diseno_${preset.id}_Impresion.pdf`);
     }, 100);
+  };
+
+  // Generador de PDF Mosaico Dúplex A4/A3 con Sangrado y marcas de corte
+  const exportImpositionPDF = async () => {
+    try {
+      if (!stageRef.current) return;
+      setSelectedId(null);
+
+      await new Promise((res) => setTimeout(res, 100));
+
+      const stage = stageRef.current;
+      const prevW = stage.width(), prevH = stage.height();
+      const prevScale = stage.scale();
+
+      stage.width(preset.width);
+      stage.height(preset.height);
+      stage.scale({ x: 1, y: 1 });
+      stage.batchDraw();
+
+      const dataURL = stage.toDataURL({ pixelRatio: 3 });
+
+      stage.width(prevW);
+      stage.height(prevH);
+      stage.scale(prevScale);
+      stage.batchDraw();
+
+      let sheetW = impSheetFormat === 'a3' ? 297 : 210;
+      let sheetH = impSheetFormat === 'a3' ? 420 : 297;
+
+      if (impOrientation === 'landscape') {
+        const tmp = sheetW;
+        sheetW = sheetH;
+        sheetH = tmp;
+      }
+
+      let cardW = preset.width / 4;
+      let cardH = preset.height / 4;
+      if (preset.unit && preset.unit.includes('mm')) {
+        const parts = preset.unit.replace(' mm', '').split('x');
+        if (parts.length === 2) {
+          cardW = parseFloat(parts[0]);
+          cardH = parseFloat(parts[1]);
+        }
+      }
+
+      const bleed = 3.5; // 3.5mm bleed
+      const cellW = cardW + bleed * 2;
+      const cellH = cardH + bleed * 2;
+
+      const colsNormal = Math.max(1, Math.floor((sheetW - 10) / cellW));
+      const rowsNormal = Math.max(1, Math.floor((sheetH - 10) / cellH));
+
+      const colsRotated = Math.max(1, Math.floor((sheetW - 10) / cellH));
+      const rowsRotated = Math.max(1, Math.floor((sheetH - 10) / cellW));
+
+      const yieldNormal = colsNormal * rowsNormal;
+      const yieldRotated = colsRotated * rowsRotated;
+
+      const useRotated = yieldRotated > yieldNormal;
+      const cols = useRotated ? colsRotated : colsNormal;
+      const rows = useRotated ? rowsRotated : rowsNormal;
+
+      const gridWidth = cols * cellW;
+      const gridHeight = rows * cellH;
+      const offsetX = (sheetW - gridWidth) / 2;
+      const offsetY = (sheetH - gridHeight) / 2;
+
+      const pdf = new jsPDF({
+        orientation: sheetW > sheetH ? 'landscape' : 'portrait',
+        unit: 'mm',
+        format: [sheetW, sheetH]
+      });
+
+      // PÁGINA 1: ANVERSO + MARCAS DE CORTE
+      for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+          const x = offsetX + c * cellW;
+          const y = offsetY + r * cellH;
+
+          pdf.addImage(dataURL, 'PNG', x, y, cellW, cellH);
+
+          pdf.setDrawColor(0, 0, 0);
+          pdf.setLineWidth(0.15);
+
+          const trimX1 = x + bleed;
+          const trimX2 = x + cellW - bleed;
+          const trimY1 = y + bleed;
+          const trimY2 = y + cellH - bleed;
+
+          const k = 2;
+          const l = 4;
+
+          pdf.line(trimX1 - k - l, trimY1, trimX1 - k, trimY1);
+          pdf.line(trimX1, trimY1 - k - l, trimX1, trimY1 - k);
+
+          pdf.line(trimX2 + k, trimY1, trimX2 + k + l, trimY1);
+          pdf.line(trimX2, trimY1 - k - l, trimX2, trimY1 - k);
+
+          pdf.line(trimX1 - k - l, trimY2, trimX1 - k, trimY2);
+          pdf.line(trimX1, trimY2 + k, trimX1, trimY2 + k + l);
+
+          pdf.line(trimX2 + k, trimY2, trimX2 + k + l, trimY2);
+          pdf.line(trimX2, trimY2 + k, trimX2, trimY2 + k + l);
+        }
+      }
+
+      // PÁGINA 2: REVERSO (DORSO ESPEJADO LONG-EDGE FLIP)
+      pdf.addPage([sheetW, sheetH], sheetW > sheetH ? 'landscape' : 'portrait');
+
+      for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+          const frontX = offsetX + c * cellW;
+          const backX = sheetW - frontX - cellW;
+          const backY = offsetY + r * cellH;
+
+          pdf.addImage(dataURL, 'PNG', backX, backY, cellW, cellH);
+        }
+      }
+
+      pdf.save(`Mosaico_${impSheetFormat.toUpperCase()}_Duplex_${preset.name.replace(/\s+/g, '_')}.pdf`);
+    } catch (err) {
+      console.error('Error al generar PDF de Imposición:', err);
+      alert('Hubo un problema al generar el PDF impositado. Intenta nuevamente.');
+    }
   };
 
   const selectedElement = elements.find((el) => el.id === selectedId);
