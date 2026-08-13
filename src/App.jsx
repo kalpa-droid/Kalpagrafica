@@ -5,21 +5,15 @@ import BriefForm from './components/BriefForm';
 import ProductModal from './components/ProductModal';
 import ToolDrawer from './components/ToolDrawer';
 
-// Helper de Carga Diferida con Auto-Reintento ante Despliegues de Vercel / Hash Mismatch
+// Helper de Carga Diferida con Auto-Reintento ante Despliegues de Vercel
 function lazyWithRetry(componentImport) {
   return lazy(async () => {
-    const pageHasAlreadyBeenRefreshed = JSON.parse(
-      window.sessionStorage.getItem('page-has-been-refreshed') || 'false'
-    );
     try {
       return await componentImport();
     } catch (error) {
-      if (!pageHasAlreadyBeenRefreshed) {
-        window.sessionStorage.setItem('page-has-been-refreshed', 'true');
-        window.location.reload();
-        return new Promise(() => {});
-      }
-      throw error;
+      console.warn('Falló la carga diferida del módulo. Recargando versión de Vercel...', error);
+      window.location.reload();
+      return new Promise(() => {});
     }
   });
 }
@@ -37,16 +31,6 @@ class ErrorBoundary extends React.Component {
 
   componentDidCatch(error, errorInfo) {
     console.error('Error capturado por ErrorBoundary:', error, errorInfo);
-    if (
-      error?.name === 'ChunkLoadError' ||
-      error?.message?.includes('Loading chunk') ||
-      error?.message?.includes('Importing a module script failed') ||
-      error?.message?.includes('dynamically imported module') ||
-      error?.message?.includes('Failed to fetch dynamically imported module')
-    ) {
-      window.sessionStorage.removeItem('page-has-been-refreshed');
-      window.location.reload();
-    }
   }
 
   render() {
@@ -66,7 +50,7 @@ class ErrorBoundary extends React.Component {
           <button
             className="btn btn-primary"
             onClick={() => {
-              window.sessionStorage.removeItem('page-has-been-refreshed');
+              window.sessionStorage.clear();
               window.location.reload();
             }}
           >
