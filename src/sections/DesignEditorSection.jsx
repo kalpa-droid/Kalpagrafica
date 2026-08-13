@@ -365,6 +365,58 @@ export default function DesignEditorSection() {
   const [gradAngle, setGradAngle] = useState(135);
   const [gradStop, setGradStop] = useState(50);
   const [gradStyle, setGradStyle] = useState('smooth'); // 'smooth' | 'sharp' | 'radial'
+  const [bgImageObj, setBgImageObj] = useState(null);
+
+  // Renderizar fondo CSS (sólido, degradado a la mitad, radial o textura) a objeto canvas Konva
+  useEffect(() => {
+    let active = true;
+    const canvas = document.createElement('canvas');
+    canvas.width = preset.width;
+    canvas.height = preset.height;
+    const ctx = canvas.getContext('2d');
+
+    if (!bgColor) {
+      ctx.fillStyle = '#111114';
+      ctx.fillRect(0, 0, preset.width, preset.height);
+      setBgImageObj(canvas);
+      return;
+    }
+
+    if (bgColor.startsWith('#') || bgColor.startsWith('rgb')) {
+      ctx.fillStyle = bgColor;
+      ctx.fillRect(0, 0, preset.width, preset.height);
+      setBgImageObj(canvas);
+    } else if (bgColor.startsWith('data:image')) {
+      const img = new window.Image();
+      img.crossOrigin = 'anonymous';
+      img.onload = () => {
+        if (!active) return;
+        const pattern = ctx.createPattern(img, 'repeat');
+        ctx.fillStyle = pattern;
+        ctx.fillRect(0, 0, preset.width, preset.height);
+        setBgImageObj(canvas);
+      };
+      img.src = bgColor;
+    } else {
+      const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${preset.width}" height="${preset.height}"><foreignObject width="100%" height="100%"><div xmlns="http://www.w3.org/1999/xhtml" style="width:100%;height:100%;background:${bgColor.replace(/"/g, "'")};"></div></foreignObject></svg>`;
+      const svgUrl = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
+      const img = new window.Image();
+      img.crossOrigin = 'anonymous';
+      img.onload = () => {
+        if (!active) return;
+        ctx.drawImage(img, 0, 0);
+        setBgImageObj(canvas);
+      };
+      img.onerror = () => {
+        if (!active) return;
+        ctx.fillStyle = '#111114';
+        ctx.fillRect(0, 0, preset.width, preset.height);
+        setBgImageObj(canvas);
+      };
+      img.src = svgUrl;
+    }
+    return () => { active = false; };
+  }, [bgColor, preset.width, preset.height]);
 
   // Modo Dibujo Libre Pincel
   const [isDrawingMode, setIsDrawingMode] = useState(false);
@@ -1593,7 +1645,9 @@ export default function DesignEditorSection() {
         boxShadow: '0 12px 35px rgba(0,0,0,0.6), 0 0 15px rgba(186, 253, 193, 0.08)',
         border: '1px solid var(--border-strong)',
         borderRadius: '4px',
-        position: 'relative'
+        position: 'relative',
+        background: bgColor,
+        overflow: 'hidden'
       }}>
         <Stage
           width={preset.width * displayScale}
@@ -1615,7 +1669,11 @@ export default function DesignEditorSection() {
           onTouchEnd={handleMouseUpDraw}
         >
           <Layer>
-            <Rect width={preset.width} height={preset.height} fill={bgColor} />
+            {bgImageObj ? (
+              <KonvaImage image={bgImageObj} width={preset.width} height={preset.height} listening={false} />
+            ) : (
+              <Rect width={preset.width} height={preset.height} fill="#111114" />
+            )}
 
             {elements.map((el) => {
               if (el.type === 'text') {
