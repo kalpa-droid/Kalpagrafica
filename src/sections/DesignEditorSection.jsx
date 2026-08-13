@@ -63,28 +63,6 @@ export const EMOJI_CATEGORIES = [
   }
 ];
 
-// Clipart & Stickers Vectoriales Gratuitos
-export const CLIPART_PRESETS = [
-  {
-    category: 'Sellos & Ofertas',
-    items: [
-      { id: 'cl-1', name: 'Sello Oferta', text: '🔥 Oportunidad Única', bg: '#FF5555', fill: '#FFF' },
-      { id: 'cl-2', name: 'Sello Calidad', text: '⭐ 100% Calidad Garantizada', bg: '#C9A94D', fill: '#000' },
-      { id: 'cl-3', name: 'Sello Aprobado', text: '✅ APROBADO', bg: '#00B09B', fill: '#FFF' },
-      { id: 'cl-4', name: 'Sello Premium', text: '👑 EDICIÓN PREMIUM', bg: '#302B63', fill: '#BAFDC1' }
-    ]
-  },
-  {
-    category: 'Preimpresión & Imprenta',
-    items: [
-      { id: 'cl-5', name: 'CMYK Control', text: '🎯 Target CMYK Preimpresión', bg: '#111114', fill: '#BAFDC1' },
-      { id: 'cl-6', name: 'Marcas de Sangrado', text: '📐 Guía de Corte & Doblez', bg: '#1A1A1E', fill: '#FF7E5F' },
-      { id: 'cl-7', name: 'Eco Papel', text: '🌱 Impreso en Papel Reciclado', bg: '#2B580C', fill: '#F4F4F4' },
-      { id: 'cl-8', name: 'Auténtico', text: '🛡️ Certificado de Autenticidad', bg: '#141E30', fill: '#C9A94D' }
-    ]
-  }
-];
-
 // Catálogo de Formas Vectoriales Estilo Office & Affinity Studio
 export const VECTOR_SHAPES_CATALOG = [
   { id: 'rect', name: 'Rectángulo', icon: '⬜' },
@@ -105,46 +83,234 @@ export const VECTOR_SHAPES_CATALOG = [
 export const DESIGN_TEMPLATES = {
   'business': [
     {
-      id: 'tmpl-corp-tech',
-      name: 'Corporativa Tech',
+      id: 'biz-minimal-left',
+      name: 'Minimalista Tech',
+      preview: { bg: '#111114', accent: '#BAFDC1' },
       frontBg: '#111114',
       backBg: '#1A1A1E',
       frontElements: [
-        { id: 'tf-1', type: 'text', text: 'KALPAGRÁFICA', x: 40, y: 40, fontSize: 26, fill: '#BAFDC1', fontFamily: 'Space Grotesk', fontWeight: 'bold' },
-        { id: 'tf-2', type: 'text', text: 'Estudio de Diseño & Preimpresión', x: 40, y: 80, fontSize: 13, fill: '#E5E5E7', fontFamily: 'Inter' },
-        { id: 'tf-3', type: 'rect', x: 40, y: 110, width: 460, height: 2, fill: '#BAFDC1' },
-        { id: 'tf-4', type: 'text', text: 'Ramiro G. | Director Creativo', x: 40, y: 130, fontSize: 14, fill: '#FFFFFF', fontFamily: 'Inter', fontWeight: '600' },
-        { id: 'tf-5', type: 'text', text: 'hola@kalpagrafica.com | +54 9 11 0000-0000', x: 40, y: 160, fontSize: 11, fill: '#9EA0A6', fontFamily: 'JetBrains Mono' },
-        { id: 'tf-6', type: 'text', text: 'www.kalpagrafica.com', x: 40, y: 185, fontSize: 11, fill: '#BAFDC1', fontFamily: 'JetBrains Mono' }
+        { id: 'f1', type: 'rect', x: 0, y: 0, width: 6, height: 300, fill: '#BAFDC1' },
+        { id: 'f2', type: 'text', text: 'NOMBRE APELLIDO', x: 32, y: 55, fontSize: 22, fill: '#FFFFFF', fontFamily: 'Space Grotesk', fontWeight: 'bold' },
+        { id: 'f3', type: 'text', text: 'Director Creativo', x: 32, y: 88, fontSize: 12, fill: '#9EA0A6', fontFamily: 'Inter' },
+        { id: 'f4', type: 'rect', x: 32, y: 115, width: 50, height: 1.5, fill: '#BAFDC1' },
+        { id: 'f5', type: 'text', text: '+54 9 11 0000-0000', x: 32, y: 140, fontSize: 11, fill: '#E5E5E7', fontFamily: 'JetBrains Mono' },
+        { id: 'f6', type: 'text', text: 'email@tudominio.com', x: 32, y: 162, fontSize: 11, fill: '#E5E5E7', fontFamily: 'JetBrains Mono' },
+        { id: 'f7', type: 'text', text: 'www.tudominio.com', x: 32, y: 184, fontSize: 11, fill: '#BAFDC1', fontFamily: 'JetBrains Mono' },
+        { id: 'f8', type: 'text', text: 'TU MARCA', x: 32, y: 240, fontSize: 16, fill: '#BAFDC1', fontFamily: 'Space Grotesk', fontWeight: 'bold' }
       ],
       backElements: [
-        { id: 'tb-1', type: 'circle', x: 270, y: 120, radius: 70, fill: '#BAFDC1', opacity: 0.15 },
-        { id: 'tb-2', type: 'text', text: 'KALPAGRÁFICA', x: 160, y: 105, fontSize: 28, fill: '#BAFDC1', fontFamily: 'Space Grotesk', fontWeight: 'bold' },
-        { id: 'tb-3', type: 'text', text: 'SOLUCIONES DE IMPRESIÓN DE ALTA PRECISIÓN', x: 110, y: 145, fontSize: 11, fill: '#9EA0A6', fontFamily: 'Inter' }
+        { id: 'b1', type: 'rect', x: 0, y: 0, width: 6, height: 300, fill: '#BAFDC1' },
+        { id: 'b2', type: 'text', text: 'TU MARCA', x: 200, y: 130, fontSize: 28, fill: '#BAFDC1', fontFamily: 'Space Grotesk', fontWeight: 'bold' },
+        { id: 'b3', type: 'text', text: 'SLOGAN DE TU EMPRESA', x: 185, y: 170, fontSize: 10, fill: '#9EA0A6', fontFamily: 'Inter' }
       ]
     },
     {
-      id: 'tmpl-luxury-gold',
+      id: 'biz-centered-elegant',
       name: 'Luxury Dark & Gold',
+      preview: { bg: '#0A0A0C', accent: '#C9A94D' },
       frontBg: '#0A0A0C',
       backBg: '#141418',
       frontElements: [
-        { id: 'tf-1', type: 'rect', x: 20, y: 20, width: 500, height: 260, fill: 'transparent', stroke: '#C9A94D', strokeWidth: 1.5, dashStyle: 'solid' },
-        { id: 'tf-2', type: 'text', text: 'ESTUDIO PALACE', x: 150, y: 65, fontSize: 24, fill: '#C9A94D', fontFamily: 'Playfair Display', fontWeight: 'bold' },
-        { id: 'tf-3', type: 'text', text: 'ARQUITECTURA & INTERIORISMO', x: 140, y: 105, fontSize: 10, fill: '#E5E5E7', fontFamily: 'Cinzel' },
-        { id: 'tf-4', type: 'rect', x: 210, y: 130, width: 120, height: 1, fill: '#C9A94D' },
-        { id: 'tf-5', type: 'text', text: 'contacto@estudiopalace.com', x: 170, y: 155, fontSize: 11, fill: '#C9A94D', fontFamily: 'Inter' },
-        { id: 'tf-6', type: 'text', text: '+54 9 11 8888-9999 | Av. Alvear 1500', x: 140, y: 180, fontSize: 10, fill: '#9EA0A6', fontFamily: 'Inter' }
+        { id: 'f1', type: 'rect', x: 20, y: 20, width: 500, height: 260, fill: 'transparent', stroke: '#C9A94D', strokeWidth: 1 },
+        { id: 'f2', type: 'text', text: 'TU MARCA', x: 190, y: 60, fontSize: 24, fill: '#C9A94D', fontFamily: 'Playfair Display', fontWeight: 'bold' },
+        { id: 'f3', type: 'text', text: 'ESPECIALIDAD O RUBRO', x: 178, y: 98, fontSize: 10, fill: '#E5E5E7', fontFamily: 'Cinzel' },
+        { id: 'f4', type: 'rect', x: 230, y: 125, width: 80, height: 1, fill: '#C9A94D' },
+        { id: 'f5', type: 'text', text: 'Nombre Apellido', x: 200, y: 145, fontSize: 13, fill: '#FFFFFF', fontFamily: 'Inter', fontWeight: '600' },
+        { id: 'f6', type: 'text', text: 'email@tudominio.com', x: 195, y: 172, fontSize: 10, fill: '#C9A94D', fontFamily: 'Inter' },
+        { id: 'f7', type: 'text', text: '+54 9 11 0000-0000  |  Ciudad, País', x: 160, y: 195, fontSize: 10, fill: '#9EA0A6', fontFamily: 'Inter' }
       ],
       backElements: [
-        { id: 'tb-1', type: 'star', x: 270, y: 100, numPoints: 8, innerRadius: 25, outerRadius: 50, fill: '#C9A94D', opacity: 0.8 },
-        { id: 'tb-2', type: 'text', text: 'ESTUDIO PALACE', x: 155, y: 170, fontSize: 22, fill: '#C9A94D', fontFamily: 'Playfair Display', fontWeight: 'bold' },
-        { id: 'tb-3', type: 'text', text: 'BUENOS AIRES', x: 215, y: 205, fontSize: 10, fill: '#9EA0A6', fontFamily: 'Cinzel' }
+        { id: 'b1', type: 'rect', x: 20, y: 20, width: 500, height: 260, fill: 'transparent', stroke: '#C9A94D', strokeWidth: 1 },
+        { id: 'b2', type: 'text', text: 'TU MARCA', x: 185, y: 120, fontSize: 28, fill: '#C9A94D', fontFamily: 'Playfair Display', fontWeight: 'bold' },
+        { id: 'b3', type: 'text', text: 'CIUDAD', x: 245, y: 165, fontSize: 10, fill: '#9EA0A6', fontFamily: 'Cinzel' }
+      ]
+    }
+  ],
+  'business-eu': [
+    {
+      id: 'eu-swiss-grid',
+      name: 'Swiss Grid',
+      preview: { bg: '#FAFAFA', accent: '#111114' },
+      frontBg: '#FAFAFA',
+      backBg: '#111114',
+      frontElements: [
+        { id: 'f1', type: 'text', text: 'NOMBRE APELLIDO', x: 35, y: 50, fontSize: 20, fill: '#111114', fontFamily: 'Space Grotesk', fontWeight: 'bold' },
+        { id: 'f2', type: 'text', text: 'Cargo Profesional', x: 35, y: 80, fontSize: 11, fill: '#666666', fontFamily: 'Inter' },
+        { id: 'f3', type: 'rect', x: 35, y: 108, width: 440, height: 1, fill: '#111114' },
+        { id: 'f4', type: 'text', text: '+54 9 11 0000-0000', x: 35, y: 130, fontSize: 10, fill: '#333333', fontFamily: 'JetBrains Mono' },
+        { id: 'f5', type: 'text', text: 'email@tudominio.com', x: 35, y: 152, fontSize: 10, fill: '#333333', fontFamily: 'JetBrains Mono' },
+        { id: 'f6', type: 'text', text: 'TU MARCA', x: 35, y: 270, fontSize: 16, fill: '#111114', fontFamily: 'Space Grotesk', fontWeight: 'bold' }
+      ],
+      backElements: [
+        { id: 'b1', type: 'text', text: 'TU MARCA', x: 170, y: 140, fontSize: 28, fill: '#FAFAFA', fontFamily: 'Space Grotesk', fontWeight: 'bold' }
+      ]
+    }
+  ],
+  'invitation': [
+    {
+      id: 'inv-gala',
+      name: 'Gala Formal',
+      preview: { bg: '#0A0A0C', accent: '#C9A94D' },
+      frontBg: '#0A0A0C',
+      backBg: '#141418',
+      frontElements: [
+        { id: 'f1', type: 'rect', x: 25, y: 25, width: 350, height: 550, fill: 'transparent', stroke: '#C9A94D', strokeWidth: 1 },
+        { id: 'f2', type: 'text', text: 'ESTÁS INVITADO/A', x: 90, y: 80, fontSize: 14, fill: '#C9A94D', fontFamily: 'Cinzel' },
+        { id: 'f3', type: 'rect', x: 160, y: 110, width: 80, height: 1, fill: '#C9A94D' },
+        { id: 'f4', type: 'text', text: 'NOMBRE', x: 100, y: 150, fontSize: 36, fill: '#FFFFFF', fontFamily: 'Playfair Display', fontWeight: 'bold' },
+        { id: 'f5', type: 'text', text: 'DEL EVENTO', x: 118, y: 200, fontSize: 20, fill: '#C9A94D', fontFamily: 'Playfair Display' },
+        { id: 'f6', type: 'text', text: 'Sábado 15 de Noviembre, 2026', x: 75, y: 280, fontSize: 12, fill: '#E5E5E7', fontFamily: 'Inter' },
+        { id: 'f7', type: 'text', text: '20:00 hs', x: 170, y: 310, fontSize: 16, fill: '#C9A94D', fontFamily: 'JetBrains Mono', fontWeight: 'bold' },
+        { id: 'f8', type: 'text', text: 'Salón Grand Palace', x: 130, y: 355, fontSize: 13, fill: '#E5E5E7', fontFamily: 'Inter' },
+        { id: 'f9', type: 'text', text: 'Av. Corrientes 1234, CABA', x: 115, y: 380, fontSize: 10, fill: '#9EA0A6', fontFamily: 'Inter' }
+      ],
+      backElements: [
+        { id: 'b1', type: 'text', text: 'Dresscode:', x: 145, y: 250, fontSize: 12, fill: '#9EA0A6', fontFamily: 'Inter' },
+        { id: 'b2', type: 'text', text: 'FORMAL / COCKTAIL', x: 110, y: 280, fontSize: 16, fill: '#C9A94D', fontFamily: 'Cinzel', fontWeight: 'bold' }
+      ]
+    }
+  ],
+  'tag-sq': [
+    {
+      id: 'tag-product',
+      name: 'Etiqueta Producto Artesanal',
+      preview: { bg: '#FAFAFA', accent: '#111114' },
+      frontBg: '#FAFAFA',
+      backBg: '#111114',
+      frontElements: [
+        { id: 'f1', type: 'text', text: 'TU MARCA', x: 110, y: 40, fontSize: 22, fill: '#111114', fontFamily: 'Space Grotesk', fontWeight: 'bold' },
+        { id: 'f2', type: 'rect', x: 160, y: 75, width: 80, height: 1.5, fill: '#111114' },
+        { id: 'f3', type: 'text', text: 'NOMBRE DEL', x: 120, y: 140, fontSize: 22, fill: '#111114', fontFamily: 'Playfair Display', fontWeight: 'bold' },
+        { id: 'f4', type: 'text', text: 'PRODUCTO', x: 130, y: 175, fontSize: 22, fill: '#111114', fontFamily: 'Playfair Display', fontWeight: 'bold' },
+        { id: 'f5', type: 'text', text: '250 ml | Ingrediente Natural', x: 110, y: 230, fontSize: 10, fill: '#666666', fontFamily: 'Inter' },
+        { id: 'f6', type: 'text', text: 'Hecho en Argentina', x: 140, y: 330, fontSize: 10, fill: '#9EA0A6', fontFamily: 'Inter' }
+      ],
+      backElements: [
+        { id: 'b1', type: 'text', text: 'Ingredientes:', x: 40, y: 40, fontSize: 11, fill: '#FFFFFF', fontFamily: 'Inter', fontWeight: 'bold' },
+        { id: 'b2', type: 'text', text: 'Agua, Aceite de coco, Extracto natural.', x: 40, y: 65, fontSize: 9, fill: '#9EA0A6', fontFamily: 'Inter' }
+      ]
+    }
+  ],
+  'ig-square': [
+    {
+      id: 'ig-sq-promo',
+      name: 'Promo Impactante',
+      preview: { bg: '#111114', accent: '#FF5555' },
+      frontBg: '#111114',
+      backBg: '#111114',
+      frontElements: [
+        { id: 'f1', type: 'text', text: 'OFERTA', x: 40, y: 60, fontSize: 52, fill: '#FF5555', fontFamily: 'Outfit', fontWeight: 'bold' },
+        { id: 'f2', type: 'text', text: 'ESPECIAL', x: 40, y: 120, fontSize: 52, fill: '#FFFFFF', fontFamily: 'Outfit', fontWeight: 'bold' },
+        { id: 'f3', type: 'rect', x: 40, y: 190, width: 60, height: 3, fill: '#FF5555' },
+        { id: 'f4', type: 'text', text: 'Hasta 50% de descuento', x: 40, y: 220, fontSize: 18, fill: '#E5E5E7', fontFamily: 'Inter' },
+        { id: 'f5', type: 'rect', x: 40, y: 380, width: 200, height: 48, fill: '#FF5555' },
+        { id: 'f6', type: 'text', text: 'COMPRAR AHORA', x: 62, y: 393, fontSize: 16, fill: '#FFFFFF', fontFamily: 'Outfit', fontWeight: 'bold' }
+      ],
+      backElements: []
+    }
+  ],
+  'diptico-a4': [
+    {
+      id: 'diptico-corp-tech',
+      name: 'Díptico Corporativo Tech (2 Cuerpos)',
+      preview: { bg: '#111114', accent: '#BAFDC1' },
+      frontBg: '#111114',
+      backBg: '#141418',
+      frontElements: [
+        { id: 'fd-guia', type: 'line', points: [421, 0, 421, 595], stroke: '#BAFDC1', strokeWidth: 1, dash: [6, 4], opacity: 0.35 },
+        { id: 'fd-acc', type: 'rect', x: 450, y: 50, width: 8, height: 495, fill: '#BAFDC1' },
+        { id: 'fd-t1', type: 'text', text: 'SOLUCIONES\nCORPORATIVAS', x: 480, y: 110, fontSize: 30, fill: '#FFFFFF', fontFamily: 'Space Grotesk', fontWeight: 'bold' },
+        { id: 'fd-t2', type: 'text', text: 'Estudio de Innovación & Desarrollo', x: 480, y: 205, fontSize: 13, fill: '#BAFDC1', fontFamily: 'Inter' },
+        { id: 'fd-r1', type: 'rect', x: 480, y: 240, width: 60, height: 2, fill: '#BAFDC1' },
+        { id: 'fd-t3', type: 'text', text: 'Transformando la presencia gráfica\ne identidad visual de tu empresa.', x: 480, y: 265, fontSize: 12, fill: '#9EA0A6', fontFamily: 'Inter' },
+        { id: 'fd-t4', type: 'text', text: 'TU MARCA © 2026', x: 480, y: 480, fontSize: 11, fill: '#E5E5E7', fontFamily: 'JetBrains Mono' },
+        { id: 'fc-t1', type: 'text', text: 'CONTACTO & UBICACIÓN', x: 50, y: 110, fontSize: 18, fill: '#BAFDC1', fontFamily: 'Space Grotesk', fontWeight: 'bold' },
+        { id: 'fc-r1', type: 'rect', x: 50, y: 145, width: 320, height: 1, fill: '#333339' },
+        { id: 'fc-t2', type: 'text', text: '📍 Av. Corrientes 1234, CABA', x: 50, y: 175, fontSize: 12, fill: '#E5E5E7', fontFamily: 'Inter' },
+        { id: 'fc-t3', type: 'text', text: '📞 +54 9 11 0000-0000', x: 50, y: 205, fontSize: 12, fill: '#E5E5E7', fontFamily: 'Inter' },
+        { id: 'fc-t4', type: 'text', text: '✉️ contacto@tudominio.com', x: 50, y: 235, fontSize: 12, fill: '#E5E5E7', fontFamily: 'Inter' },
+        { id: 'fc-t5', type: 'text', text: '🌐 www.tudominio.com', x: 50, y: 265, fontSize: 12, fill: '#BAFDC1', fontFamily: 'JetBrains Mono' },
+        { id: 'fc-b1', type: 'rect', x: 50, y: 320, width: 320, height: 130, fill: '#1A1A1E' },
+        { id: 'fc-bt', type: 'text', text: '💬 Atendemos de Lunes a Viernes de 9 a 18 hs.\nConsultá por presupuestos a medida.', x: 70, y: 355, fontSize: 11, fill: '#9EA0A6', fontFamily: 'Inter' }
+      ],
+      backElements: [
+        { id: 'bd-guia', type: 'line', points: [421, 0, 421, 595], stroke: '#BAFDC1', strokeWidth: 1, dash: [6, 4], opacity: 0.35 },
+        { id: 'bi-t1', type: 'text', text: 'NUESTROS SERVICIOS', x: 50, y: 70, fontSize: 22, fill: '#BAFDC1', fontFamily: 'Space Grotesk', fontWeight: 'bold' },
+        { id: 'bi-r1', type: 'rect', x: 50, y: 105, width: 40, height: 3, fill: '#BAFDC1' },
+        { id: 'bi-s1', type: 'text', text: '01. Diseño Editorial & Impresión', x: 50, y: 135, fontSize: 14, fill: '#FFFFFF', fontFamily: 'Inter', fontWeight: 'bold' },
+        { id: 'bi-d1', type: 'text', text: 'Impresión offset y digital con sangrado impecable.', x: 50, y: 160, fontSize: 11, fill: '#9EA0A6', fontFamily: 'Inter' },
+        { id: 'bi-s2', type: 'text', text: '02. Identidad Visual Corporativa', x: 50, y: 205, fontSize: 14, fill: '#FFFFFF', fontFamily: 'Inter', fontWeight: 'bold' },
+        { id: 'bi-d2', type: 'text', text: 'Manuales de marca, logotipos y papelería.', x: 50, y: 230, fontSize: 11, fill: '#9EA0A6', fontFamily: 'Inter' },
+        { id: 'bi-s3', type: 'text', text: '03. Packaging & Etiquetas', x: 50, y: 275, fontSize: 14, fill: '#FFFFFF', fontFamily: 'Inter', fontWeight: 'bold' },
+        { id: 'bi-d3', type: 'text', text: 'Desarrollo de packaging para productos de alto nivel.', x: 50, y: 300, fontSize: 11, fill: '#9EA0A6', fontFamily: 'Inter' },
+        { id: 'bi-t2', type: 'text', text: '¿POR QUÉ ELEGIRNOS?', x: 470, y: 70, fontSize: 22, fill: '#FFFFFF', fontFamily: 'Space Grotesk', fontWeight: 'bold' },
+        { id: 'bi-r2', type: 'rect', x: 470, y: 105, width: 40, height: 3, fill: '#BAFDC1' },
+        { id: 'bi-b1', type: 'text', text: '• Alta precisión de registro preimpresión.\n\n• Entregas ágiles y calidad garantizada.\n\n• Asesoramiento técnico personalizado.', x: 470, y: 140, fontSize: 12, fill: '#E5E5E7', fontFamily: 'Inter' },
+        { id: 'bi-cta', type: 'rect', x: 470, y: 280, width: 320, height: 180, fill: '#BAFDC1' },
+        { id: 'bi-ctat1', type: 'text', text: '¡Impulsá tu marca hoy!', x: 500, y: 315, fontSize: 20, fill: '#000000', fontFamily: 'Space Grotesk', fontWeight: 'bold' },
+        { id: 'bi-ctat2', type: 'text', text: 'Contactanos para agendar una reunión\ny recibir muestras de materiales sin cargo.', x: 500, y: 360, fontSize: 11, fill: '#111114', fontFamily: 'Inter' }
+      ]
+    },
+    {
+      id: 'diptico-gastro-gold',
+      name: 'Díptico Menú / Gastro Luxury',
+      preview: { bg: '#0A0A0C', accent: '#C9A94D' },
+      frontBg: '#0A0A0C',
+      backBg: '#141418',
+      frontElements: [
+        { id: 'fg-guia', type: 'line', points: [421, 0, 421, 595], stroke: '#C9A94D', strokeWidth: 1, dash: [6, 4], opacity: 0.35 },
+        { id: 'fg-frame', type: 'rect', x: 450, y: 40, width: 340, height: 515, fill: 'transparent', stroke: '#C9A94D', strokeWidth: 1 },
+        { id: 'fg-t1', type: 'text', text: 'RESTAURANTE', x: 520, y: 120, fontSize: 14, fill: '#C9A94D', fontFamily: 'Cinzel' },
+        { id: 'fg-t2', type: 'text', text: 'BISTRO', x: 535, y: 160, fontSize: 36, fill: '#FFFFFF', fontFamily: 'Playfair Display', fontWeight: 'bold' },
+        { id: 'fg-r1', type: 'rect', x: 580, y: 220, width: 80, height: 1, fill: '#C9A94D' },
+        { id: 'fg-t3', type: 'text', text: 'MENÚ & CARTA DE VINOS', x: 510, y: 250, fontSize: 12, fill: '#E5E5E7', fontFamily: 'Cinzel' },
+        { id: 'fg-c1', type: 'text', text: 'RESERVAS & EVENTOS', x: 120, y: 140, fontSize: 16, fill: '#C9A94D', fontFamily: 'Cinzel', fontWeight: 'bold' },
+        { id: 'fg-c2', type: 'text', text: 'Abierto de Martes a Domingo\n20:00 a 01:00 hs', x: 110, y: 180, fontSize: 12, fill: '#E5E5E7', fontFamily: 'Inter' },
+        { id: 'fg-c3', type: 'text', text: '📍 Puerto Madero, CABA\n📞 +54 11 4444-5555', x: 120, y: 240, fontSize: 11, fill: '#9EA0A6', fontFamily: 'Inter' }
+      ],
+      backElements: [
+        { id: 'bg-guia', type: 'line', points: [421, 0, 421, 595], stroke: '#C9A94D', strokeWidth: 1, dash: [6, 4], opacity: 0.35 },
+        { id: 'bg-t1', type: 'text', text: 'ENTRADAS & PLATOS PRINCIPALES', x: 50, y: 60, fontSize: 18, fill: '#C9A94D', fontFamily: 'Cinzel', fontWeight: 'bold' },
+        { id: 'bg-p1', type: 'text', text: 'Ojo de Bife Acompañado de Papas Rústicas .............. $18.500\n\nSalmón Rosado a las Hierbas Finas ........................ $22.000\n\nRisotto de Hongos Silvestres & Trufa ....................... $16.000', x: 50, y: 110, fontSize: 11, fill: '#E5E5E7', fontFamily: 'Inter' },
+        { id: 'bg-t2', type: 'text', text: 'POSTRES & BEBIDAS', x: 470, y: 60, fontSize: 18, fill: '#C9A94D', fontFamily: 'Cinzel', fontWeight: 'bold' },
+        { id: 'bg-p2', type: 'text', text: 'Volcán de Chocolate con Helado de Crema .............. $7.500\n\nVolcán de Dulce de Leche ..................................... $7.000\n\nVino Reserva Malbec 750ml .................................... $14.000', x: 470, y: 110, fontSize: 11, fill: '#E5E5E7', fontFamily: 'Inter' }
+      ]
+    }
+  ],
+  'triptico-a4': [
+    {
+      id: 'triptico-corp-modern',
+      name: 'Tríptico Institucional (3 Cuerpos)',
+      preview: { bg: '#111114', accent: '#BAFDC1' },
+      frontBg: '#111114',
+      backBg: '#16161a',
+      frontElements: [
+        { id: 'ft-g1', type: 'line', points: [280, 0, 280, 595], stroke: '#BAFDC1', strokeWidth: 1, dash: [6, 4], opacity: 0.35 },
+        { id: 'ft-g2', type: 'line', points: [561, 0, 561, 595], stroke: '#BAFDC1', strokeWidth: 1, dash: [6, 4], opacity: 0.35 },
+        { id: 'ft-p1t', type: 'text', text: 'BIENVENIDO', x: 30, y: 80, fontSize: 20, fill: '#BAFDC1', fontFamily: 'Space Grotesk', fontWeight: 'bold' },
+        { id: 'ft-p1s', type: 'text', text: 'Descubrí lo que hacemos', x: 30, y: 115, fontSize: 11, fill: '#9EA0A6', fontFamily: 'Inter' },
+        { id: 'ft-p1r', type: 'text', text: 'Comprometidos con la excelencia gráfica y el diseño estratégico de vanguardia.', x: 30, y: 150, fontSize: 11, fill: '#E5E5E7', fontFamily: 'Inter' },
+        { id: 'ft-p2t', type: 'text', text: 'INFORMACIÓN & CONTACTO', x: 305, y: 80, fontSize: 16, fill: '#FFFFFF', fontFamily: 'Space Grotesk', fontWeight: 'bold' },
+        { id: 'ft-p2r', type: 'rect', x: 305, y: 110, width: 230, height: 1, fill: '#333339' },
+        { id: 'ft-p2b', type: 'text', text: '📍 Av. Corrientes 1234, CABA\n\n📞 +54 9 11 0000-0000\n\n✉️ info@tudominio.com\n\n🌐 www.tudominio.com', x: 305, y: 135, fontSize: 11, fill: '#9EA0A6', fontFamily: 'Inter' },
+        { id: 'ft-p3acc', type: 'rect', x: 585, y: 50, width: 6, height: 495, fill: '#BAFDC1' },
+        { id: 'ft-p3t1', type: 'text', text: 'TU MARCA', x: 610, y: 120, fontSize: 32, fill: '#BAFDC1', fontFamily: 'Space Grotesk', fontWeight: 'bold' },
+        { id: 'ft-p3t2', type: 'text', text: 'ESTUDIO CREATIVO', x: 610, y: 165, fontSize: 12, fill: '#FFFFFF', fontFamily: 'Inter', fontWeight: 'bold' },
+        { id: 'ft-p3t3', type: 'text', text: 'Soluciones Gráficas &\nPreimpresión de Precisión', x: 610, y: 220, fontSize: 11, fill: '#9EA0A6', fontFamily: 'Inter' }
+      ],
+      backElements: [
+        { id: 'bt-g1', type: 'line', points: [280, 0, 280, 595], stroke: '#BAFDC1', strokeWidth: 1, dash: [6, 4], opacity: 0.35 },
+        { id: 'bt-g2', type: 'line', points: [561, 0, 561, 595], stroke: '#BAFDC1', strokeWidth: 1, dash: [6, 4], opacity: 0.35 },
+        { id: 'bt-p1t', type: 'text', text: '01. IDENTIDAD', x: 30, y: 60, fontSize: 18, fill: '#BAFDC1', fontFamily: 'Space Grotesk', fontWeight: 'bold' },
+        { id: 'bt-p1b', type: 'text', text: 'Creamos marcas sólidas\ncon propósito visual.', x: 30, y: 95, fontSize: 11, fill: '#E5E5E7', fontFamily: 'Inter' },
+        { id: 'bt-p2t', type: 'text', text: '02. IMPRESIÓN', x: 305, y: 60, fontSize: 18, fill: '#BAFDC1', fontFamily: 'Space Grotesk', fontWeight: 'bold' },
+        { id: 'bt-p2b', type: 'text', text: 'Offset, digital, gran formato\ny acabados especiales.', x: 305, y: 95, fontSize: 11, fill: '#E5E5E7', fontFamily: 'Inter' },
+        { id: 'bt-p3t', type: 'text', text: '03. DIGITAL', x: 585, y: 60, fontSize: 18, fill: '#BAFDC1', fontFamily: 'Space Grotesk', fontWeight: 'bold' },
+        { id: 'bt-p3b', type: 'text', text: 'Sitios web, redes sociales\ny contenido interactivo.', x: 585, y: 95, fontSize: 11, fill: '#E5E5E7', fontFamily: 'Inter' }
       ]
     }
   ]
 };
-
 // Plantillas predefinidas de lienzo por categorías
 const PRESETS = [
   // --- REDES SOCIALES & DIGITAL ---
@@ -156,7 +322,6 @@ const PRESETS = [
   { id: 'yt-banner', category: 'Redes Sociales', name: 'Banner de YouTube', width: 640, height: 360, unit: '2560x1440 px' },
   { id: 'tw-banner', category: 'Redes Sociales', name: 'Banner Twitter / X', width: 600, height: 200, unit: '1500x500 px' },
   { id: 'pin-23', category: 'Redes Sociales', name: 'Pin de Pinterest 2:3', width: 440, height: 660, unit: '1000x1500 px' },
-  { id: 'totem-slim', category: 'Redes Sociales', name: 'Pantalla Tótems 80x1920', width: 180, height: 720, unit: '80x1920 px' },
 
   // --- TARJETAS & PAPELERÍA ---
   { id: 'business', category: 'Tarjetas & Papelería', name: 'Tarjeta de Presentación', width: 540, height: 300, unit: '90x50 mm' },
@@ -165,6 +330,10 @@ const PRESETS = [
   { id: 'tag-sq', category: 'Tarjetas & Papelería', name: 'Etiqueta Cuadrada 60x60', width: 400, height: 400, unit: '60x60 mm' },
   { id: 'tag-sm', category: 'Tarjetas & Papelería', name: 'Etiqueta Pequeña 50x50', width: 330, height: 330, unit: '50x50 mm' },
   { id: 'bookmark', category: 'Tarjetas & Papelería', name: 'Separador / Marcapáginas', width: 300, height: 1080, unit: '50x180 mm' },
+
+  // --- FOLLETERÍA & EDITORIAL ---
+  { id: 'diptico-a4', category: 'Folletería & Editorial', name: 'Díptico A4 (2 Cuerpos)', width: 842, height: 595, unit: '297x210 mm' },
+  { id: 'triptico-a4', category: 'Folletería & Editorial', name: 'Tríptico A4 (3 Cuerpos)', width: 842, height: 595, unit: '297x210 mm' },
 
   // --- IMPRESIÓN ESTÁNDAR ---
   { id: 'a3', category: 'Impresión Estándar', name: 'Hoja A3', width: 840, height: 1188, unit: '297x420 mm' },
@@ -179,7 +348,6 @@ const PRESETS = [
 const TAB_DEFS = [
   { id: 'canvas', label: 'Lienzo', icon: Sliders },
   { id: 'text', label: 'Texto', icon: Type },
-  { id: 'clipart', label: 'Clipart', icon: Sparkles },
   { id: 'emojis', label: 'Emojis', icon: Smile },
   { id: 'draw', label: 'Pincel', icon: Brush },
   { id: 'shapes', label: 'Formas', icon: Square },
@@ -1352,7 +1520,7 @@ export default function DesignEditorSection() {
 
             {/* Categorías de Presets */}
             <div style={{ display: 'flex', gap: '0.3rem', backgroundColor: 'var(--bg-surface)', padding: '2px', borderRadius: 'var(--radius-sm)' }}>
-              {['Redes Sociales', 'Tarjetas & Papelería', 'Impresión Estándar'].map(cat => (
+              {['Redes Sociales', 'Tarjetas & Papelería', 'Folletería & Editorial', 'Impresión Estándar'].map(cat => (
                 <button
                   key={cat}
                   type="button"
@@ -1363,7 +1531,7 @@ export default function DesignEditorSection() {
                     color: presetCategory === cat ? '#000' : 'var(--text-secondary)', border: 'none', cursor: 'pointer'
                   }}
                 >
-                  {cat === 'Redes Sociales' ? '📱 Redes' : cat === 'Tarjetas & Papelería' ? '🏷️ Tarjetas' : '📄 Hojas'}
+                  {cat === 'Redes Sociales' ? '📱 Redes' : cat === 'Tarjetas & Papelería' ? '🏷️ Tarjetas' : cat === 'Folletería & Editorial' ? '📜 Folletos' : '📄 Hojas'}
                 </button>
               ))}
             </div>
@@ -1647,37 +1815,7 @@ export default function DesignEditorSection() {
         </div>
       )}
 
-      {activeTab === 'clipart' && (
-        <div>
-          <h4 style={{ fontSize: '0.85rem', color: 'var(--accent)', fontWeight: 700, marginBottom: '0.8rem', textTransform: 'uppercase' }}>
-            Clipart & Stickers Vectoriales
-          </h4>
 
-          {CLIPART_PRESETS.map((cat) => (
-            <div key={cat.category} style={{ marginBottom: '1rem' }}>
-              <span style={{ fontSize: '0.74rem', color: 'var(--luxury)', fontWeight: 700, display: 'block', marginBottom: '0.4rem' }}>
-                {cat.category}
-              </span>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '0.4rem' }}>
-                {cat.items.map((item) => (
-                  <button
-                    key={item.id}
-                    type="button"
-                    onClick={() => addText(item.text, 'Space Grotesk', 16)}
-                    style={{
-                      padding: '0.5rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-subtle)',
-                      backgroundColor: item.bg, color: item.fill, fontWeight: 700, fontSize: '0.72rem',
-                      cursor: 'pointer', textAlign: 'center'
-                    }}
-                  >
-                    {item.name}
-                  </button>
-                ))}
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
 
       {activeTab === 'emojis' && (
         <div>
@@ -1851,8 +1989,60 @@ export default function DesignEditorSection() {
   // ---------------------------------------------------------------------
   const renderPropertiesContent = () => (
     !selectedElement ? (
-      <div style={{ fontSize: '0.82rem', color: 'var(--text-disabled)', textAlign: 'center', padding: '2.5rem 0' }}>
-        Toca cualquier elemento del lienzo para editar sus propiedades.
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
+        {/* Info del formato actual */}
+        <div style={{ padding: '0.6rem', backgroundColor: 'var(--bg-surface-2)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-subtle)' }}>
+          <div style={{ fontSize: '0.78rem', color: 'var(--accent)', fontWeight: 700, marginBottom: '0.3rem' }}>📐 {preset.name}</div>
+          <div style={{ fontSize: '0.68rem', color: 'var(--text-secondary)' }}>{preset.unit} • {preset.width}×{preset.height} px</div>
+        </div>
+
+        {/* Galería de Plantillas */}
+        {DESIGN_TEMPLATES[preset.id] && DESIGN_TEMPLATES[preset.id].length > 0 ? (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+            <span style={{ fontSize: '0.78rem', color: 'var(--accent)', fontWeight: 700, textTransform: 'uppercase' }}>
+              🎨 Plantillas para {preset.name}
+            </span>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+              {DESIGN_TEMPLATES[preset.id].map((tmpl) => (
+                <button
+                  key={tmpl.id}
+                  type="button"
+                  onClick={() => {
+                    if (window.confirm(`¿Cargar la plantilla "${tmpl.name}"?\nReemplazará los elementos actuales del frente y dorso.`)) {
+                      setBgColor(tmpl.frontBg);
+                      setElementsFront(JSON.parse(JSON.stringify(tmpl.frontElements)));
+                      setElementsBack(JSON.parse(JSON.stringify(tmpl.backElements)));
+                      setSelectedId(null);
+                    }
+                  }}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: '0.6rem', padding: '0.6rem',
+                    borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-subtle)',
+                    backgroundColor: 'var(--bg-surface)', cursor: 'pointer', textAlign: 'left'
+                  }}
+                >
+                  {/* Mini Preview SVG */}
+                  <div style={{
+                    width: '54px', height: '32px', borderRadius: '3px', flexShrink: 0,
+                    background: tmpl.preview?.bg || '#111114',
+                    border: `1.5px solid ${tmpl.preview?.accent || '#BAFDC1'}`,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center'
+                  }}>
+                    <div style={{ width: '20px', height: '1.5px', backgroundColor: tmpl.preview?.accent || '#BAFDC1' }} />
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: '0.76rem', fontWeight: 700, color: 'var(--text-primary)' }}>{tmpl.name}</div>
+                    <div style={{ fontSize: '0.65rem', color: 'var(--text-secondary)' }}>Frente + Dorso</div>
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+        ) : (
+          <div style={{ fontSize: '0.78rem', color: 'var(--text-disabled)', textAlign: 'center', padding: '1.5rem 0' }}>
+            Toca un elemento del lienzo para ver sus propiedades, o elegí un formato con plantillas disponibles.
+          </div>
+        )}
       </div>
     ) : (
       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.9rem' }}>
