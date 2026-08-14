@@ -5,7 +5,7 @@ import {
   Sun, Contrast as ContrastIcon, Droplet, Focus, Brush, Smile, Sliders, Layers, 
   RotateCw, Copy, AlignCenter, Maximize2, X
 } from 'lucide-react';
-import { Stage, Layer, Text, Rect, Circle, Line, Star, Shape, Image as KonvaImage, Transformer } from 'react-konva';
+import { Stage, Layer, Text, Rect, Circle, Line, Star, Shape, Image as KonvaImage, Transformer, Group } from 'react-konva';
 import Konva from 'konva';
 import jsPDF from 'jspdf';
 
@@ -840,6 +840,7 @@ function ShapeElement({ el, isDrawingMode, setSelectedId, handleDragMove, handle
 function URLImage({ image, ...props }) {
   const [imgObj, setImgObj] = useState(null);
   const shapeRef = useRef(null);
+  const groupRef = useRef(null);
 
   useEffect(() => {
     if (!image.src) return;
@@ -868,30 +869,67 @@ function URLImage({ image, ...props }) {
     props.brightness,
     props.contrast,
     props.saturation,
-    props.blurRadius,
-    props.clipShape,
-    props.clipRotation,
-    props.clipScaleX,
-    props.clipScaleY
+    props.blurRadius
   ]);
+
+  // El recorte por forma (clipFunc) necesita volver a dibujarse cada vez que cambia la
+  // forma, rotación o deformación, incluso sin filtros — se hace en un efecto aparte
+  // porque no depende del cacheo de filtros de arriba.
+  useEffect(() => {
+    groupRef.current?.getLayer()?.batchDraw();
+  }, [props.clipShape, props.clipRotation, props.clipScaleX, props.clipScaleY, props.width, props.height]);
 
   if (!imgObj) return null;
 
-  const { clipShape, clipRotation, clipScaleX, clipScaleY, ...restProps } = props;
+  const {
+    clipShape, clipRotation, clipScaleX, clipScaleY,
+    id, x, y, width, height, rotation, draggable,
+    onClick, onTap, onDragMove, onDragEnd,
+    ...restImageProps
+  } = props;
   const hasFilter = props.brightness || props.contrast || props.saturation || props.blurRadius;
 
+  // IMPORTANTE: Konva solo aplica `clipFunc` en nodos que son CONTENEDORES (Group, Layer,
+  // Stage) — `Konva.Image` extiende de `Shape`, no de `Container`, así que un `clipFunc`
+  // puesto directamente en la Image es simplemente ignorado por Konva (no tira error, no
+  // hace nada, ni siquiera silenciosamente rompe algo — el recorte nunca se llega a pintar).
+  // Antes el recorte estaba en la Image y por eso ninguna de las 12 formas se veía aplicada
+  // pese a que la función que dibuja cada forma es correcta. La solución es envolver la
+  // Image en un Group y poner el clipFunc en ese Group, que sí es un Container.
   return (
-    <KonvaImage
-      ref={shapeRef}
-      image={imgObj}
-      filters={hasFilter ? [Konva.Filters.Brighten, Konva.Filters.Contrast, Konva.Filters.HSL, Konva.Filters.Blur] : []}
+    <Group
+      ref={groupRef}
+      id={id}
+      x={x}
+      y={y}
+      width={width}
+      height={height}
+      rotation={rotation}
+      draggable={draggable}
+      onClick={onClick}
+      onTap={onTap}
+      onDragMove={onDragMove}
+      onDragEnd={onDragEnd}
       clipFunc={
         clipShape && clipShape !== 'none'
-          ? (ctx) => drawCustomClipShape(ctx, props.width, props.height, clipShape, clipRotation || 0, clipScaleX || 1, clipScaleY || 1)
+          ? (ctx) => drawCustomClipShape(ctx, width, height, clipShape, clipRotation || 0, clipScaleX || 1, clipScaleY || 1)
           : undefined
       }
-      {...restProps}
-    />
+    >
+      <KonvaImage
+        ref={shapeRef}
+        image={imgObj}
+        x={0}
+        y={0}
+        width={width}
+        height={height}
+        filters={hasFilter ? [Konva.Filters.Brighten, Konva.Filters.Contrast, Konva.Filters.HSL, Konva.Filters.Blur] : []}
+        brightness={restImageProps.brightness}
+        contrast={restImageProps.contrast}
+        saturation={restImageProps.saturation}
+        blurRadius={restImageProps.blurRadius}
+      />
+    </Group>
   );
 }
 
