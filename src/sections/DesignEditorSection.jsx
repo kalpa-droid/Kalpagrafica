@@ -523,23 +523,48 @@ function drawCustomClipShape(ctx, width, height, clipShape, clipRotation = 0, cl
   ctx.restore();
 }
 
-// Generador de texturas/patrones en canvas con soporte para inclinación, escala, espaciado e imagen propia
-function createTexturePatternUrl({
+// Helper para calcular un color de trama contrastante si no se especificó uno distinto al fondo
+function getContrastingPatternColor(bgColor, patternColor) {
+  const bg = (bgColor || '#111114').trim().toLowerCase();
+  const pat = (patternColor || '').trim().toLowerCase();
+
+  // Si el usuario eligió explícitamente un color de trama distinto al del fondo, respetarlo 100%
+  if (pat && pat !== bg) {
+    return patternColor;
+  }
+
+  // Si no hay color o coincide con el fondo, calcular contraste por luminancia
+  const hex = bg.replace('#', '');
+  if (hex.length === 6) {
+    const r = parseInt(hex.substring(0, 2), 16);
+    const g = parseInt(hex.substring(2, 4), 16);
+    const b = parseInt(hex.substring(4, 6), 16);
+    const brightness = (r * 299 + g * 587 + b * 114) / 1000;
+    return brightness > 140 ? '#111114' : '#BAFDC1';
+  }
+  return bg === '#bafdc1' ? '#111114' : '#BAFDC1';
+}
+
+// Generador sincrónico de canvas de textura/patrón nativo a escala 1:1 (sin difuminado ni borrosidad)
+function createTexturePatternCanvas({
   patternType = 'grid',
   bgColor = '#111114',
   patternColor = '#BAFDC1',
   patternAngle = 0,
   patternScale = 1,
-  patternSpacing = 35,
-  customImgSrc = null
-}, callback) {
-  const tileSize = Math.max(16, Math.round(patternSpacing * patternScale));
+  patternSpacing = 30
+}) {
+  const tileSize = Math.max(10, Math.round((patternSpacing || 30) * (patternScale || 1)));
   const c = document.createElement('canvas');
   c.width = tileSize;
   c.height = tileSize;
   const ctx = c.getContext('2d');
 
-  ctx.fillStyle = bgColor;
+  // Desactivar suavizado para máxima nitidez de píxeles vectoriales
+  ctx.imageSmoothingEnabled = false;
+
+  // 1. Color de Fondo Base de la Forma
+  ctx.fillStyle = bgColor || '#111114';
   ctx.fillRect(0, 0, tileSize, tileSize);
 
   const cx = tileSize / 2;
@@ -547,61 +572,76 @@ function createTexturePatternUrl({
 
   ctx.save();
   ctx.translate(cx, cy);
-  ctx.rotate((patternAngle * Math.PI) / 180);
+  ctx.rotate(((patternAngle || 0) * Math.PI) / 180);
   ctx.translate(-cx, -cy);
 
-  if (customImgSrc) {
-    const img = new window.Image();
-    if (!customImgSrc.startsWith('data:') && !customImgSrc.startsWith('blob:')) {
-      img.crossOrigin = 'anonymous';
-    }
-    img.onload = () => {
-      ctx.drawImage(img, cx - (tileSize * 0.35), cy - (tileSize * 0.35), tileSize * 0.7, tileSize * 0.7);
-      ctx.restore();
-      if (callback) callback(c.toDataURL('image/png'));
-    };
-    img.onerror = () => {
-      ctx.restore();
-      if (callback) callback(c.toDataURL('image/png'));
-    };
-    img.src = customImgSrc;
-    return;
-  }
-
-  ctx.fillStyle = patternColor;
-  ctx.strokeStyle = patternColor;
-  ctx.lineWidth = Math.max(1, 1.5 * patternScale);
+  // 2. Color Principal de la Trama (100% fiel al selector de color)
+  const strokeColor = patternColor || '#BAFDC1';
+  ctx.fillStyle = strokeColor;
+  ctx.strokeStyle = strokeColor;
+  const lineW = Math.max(1.5, Math.round(2 * (patternScale || 1)));
+  ctx.lineWidth = lineW;
 
   if (patternType === 'grid') {
-    ctx.globalAlpha = 0.3;
     ctx.strokeRect(0, 0, tileSize, tileSize);
   } else if (patternType === 'dots') {
-    ctx.globalAlpha = 0.45;
     ctx.beginPath();
-    ctx.arc(cx, cy, Math.max(1.5, 3 * patternScale), 0, Math.PI * 2);
+    ctx.arc(cx, cy, Math.max(1.5, Math.round(3.5 * (patternScale || 1))), 0, Math.PI * 2);
     ctx.fill();
   } else if (patternType === 'stripes') {
-    ctx.globalAlpha = 0.35;
+    ctx.lineWidth = Math.max(2, Math.round(3 * (patternScale || 1)));
     ctx.beginPath();
     ctx.moveTo(0, tileSize);
     ctx.lineTo(tileSize, 0);
     ctx.stroke();
+  } else if (patternType === 'checkerboard') {
+    ctx.fillRect(0, 0, cx, cy);
+    ctx.fillRect(cx, cy, cx, cy);
+  } else if (patternType === 'paper' || patternType === 'crosshatch') {
+    ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(tileSize, tileSize); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(tileSize, 0); ctx.lineTo(0, tileSize); ctx.stroke();
+  } else if (patternType === 'waves') {
+    ctx.beginPath();
+    ctx.moveTo(0, cy);
+    ctx.quadraticCurveTo(tileSize * 0.25, 0, cx, cy);
+    ctx.quadraticCurveTo(tileSize * 0.75, tileSize, tileSize, cy);
+    ctx.stroke();
   } else if (patternType === 'noise') {
-    ctx.globalAlpha = 0.2;
-    for (let i = 0; i < 80; i++) {
+    ctx.globalAlpha = 0.7;
+    const dotSize = Math.max(2, Math.round(2 * (patternScale || 1)));
+    for (let i = 0; i < 60; i++) {
       const rx = Math.random() * tileSize;
       const ry = Math.random() * tileSize;
-      ctx.fillRect(rx, ry, 1.5 * patternScale, 1.5 * patternScale);
-    }
-  } else if (patternType === 'paper') {
-    ctx.globalAlpha = 0.15;
-    for (let i = 0; i < tileSize; i += Math.max(4, Math.round(8 * patternScale))) {
-      ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(tileSize, i); ctx.stroke();
-      ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, tileSize); ctx.stroke();
+      ctx.fillRect(rx, ry, dotSize, dotSize);
     }
   }
   ctx.restore();
-  if (callback) callback(c.toDataURL('image/png'));
+  return c;
+}
+
+// Wrapper asíncrono para canvas de fondo que soporta customImgSrc o devuelve dataUrl/canvas
+function createTexturePatternUrl(options, callback) {
+  const canvas = createTexturePatternCanvas(options);
+  if (options.customImgSrc) {
+    const img = new window.Image();
+    if (!options.customImgSrc.startsWith('data:') && !options.customImgSrc.startsWith('blob:')) {
+      img.crossOrigin = 'anonymous';
+    }
+    img.onload = () => {
+      const tileSize = canvas.width;
+      const cx = tileSize / 2;
+      const cy = tileSize / 2;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, cx - (tileSize * 0.35), cy - (tileSize * 0.35), tileSize * 0.7, tileSize * 0.7);
+      if (callback) callback(canvas.toDataURL('image/png'), canvas);
+    };
+    img.onerror = () => {
+      if (callback) callback(canvas.toDataURL('image/png'), canvas);
+    };
+    img.src = options.customImgSrc;
+  } else {
+    if (callback) callback(canvas.toDataURL('image/png'), canvas);
+  }
 }
 
 // Componente de Vista Previa de Imposición 2D en Pliego A4/A3
@@ -698,12 +738,15 @@ function ImpositionPreview2D({ sheetFormat, orientation, impositionMode, manualS
 // Helper de Forma Konva con soporte para relleno sólido, degradados, texturas, trazos discontinuos y sombras
 function ShapeElement({ el, isDrawingMode, setSelectedId, handleDragMove, handleDragEnd, updateSelected }) {
   const [fillPatternImg, setFillPatternImg] = useState(null);
+  const patternResScale = 3;
 
   useEffect(() => {
     if (el.fillType === 'gradient') {
+      const baseW = Math.max(20, Math.round(el.width || (el.radius ? el.radius * 2 : 100)));
+      const baseH = Math.max(20, Math.round(el.height || (el.radius ? el.radius * 2 : 100)));
+      const w = baseW * patternResScale;
+      const h = baseH * patternResScale;
       const canvas = document.createElement('canvas');
-      const w = Math.max(20, Math.round(el.width || (el.radius ? el.radius * 2 : 100)));
-      const h = Math.max(20, Math.round(el.height || (el.radius ? el.radius * 2 : 100)));
       canvas.width = w;
       canvas.height = h;
       const ctx = canvas.getContext('2d');
@@ -740,26 +783,34 @@ function ShapeElement({ el, isDrawingMode, setSelectedId, handleDragMove, handle
       ctx.fillRect(0, 0, w, h);
       setFillPatternImg(canvas);
     } else if (el.fillType === 'texture') {
-      createTexturePatternUrl({
-        patternType: el.patternType || 'grid',
-        bgColor: el.fill || '#111114',
-        patternColor: el.patternColor || '#BAFDC1',
-        patternAngle: el.patternAngle || 0,
-        patternScale: el.patternScale || 1,
-        patternSpacing: el.patternSpacing || 35,
-        customImgSrc: el.customImgSrc || null
-      }, (dataUrl) => {
-        const img = new window.Image();
-        img.crossOrigin = 'anonymous';
-        img.onload = () => setFillPatternImg(img);
-        img.src = dataUrl;
-      });
+      if (el.customImgSrc) {
+        createTexturePatternUrl({
+          patternType: el.patternType || 'grid',
+          bgColor: el.fill || '#111114',
+          patternColor: el.patternColor || '#BAFDC1',
+          patternAngle: el.patternAngle || 0,
+          patternScale: el.patternScale || 1,
+          patternSpacing: el.patternSpacing || 30,
+          customImgSrc: el.customImgSrc
+        }, (dataUrl, canvasObj) => {
+          setFillPatternImg(canvasObj);
+        });
+      } else {
+        const canvasObj = createTexturePatternCanvas({
+          patternType: el.patternType || 'grid',
+          bgColor: el.fill || '#111114',
+          patternColor: el.patternColor || '#BAFDC1',
+          patternAngle: el.patternAngle || 0,
+          patternScale: el.patternScale || 1,
+          patternSpacing: el.patternSpacing || 30
+        });
+        setFillPatternImg(canvasObj);
+      }
     } else if (el.fillType === 'image' && el.customImgSrc) {
-      // Relleno de "Imagen de Fondo" para la forma: a diferencia de la
-      // Textura (que repite la imagen en mosaico), acá se recorta/ajusta la
-      // imagen a modo "cover" para que llene la forma una sola vez, entera.
-      const w = Math.max(20, Math.round(el.width || (el.radius ? el.radius * 2 : 100)));
-      const h = Math.max(20, Math.round(el.height || (el.radius ? el.radius * 2 : 100)));
+      const baseW = Math.max(20, Math.round(el.width || (el.radius ? el.radius * 2 : 100)));
+      const baseH = Math.max(20, Math.round(el.height || (el.radius ? el.radius * 2 : 100)));
+      const w = baseW * patternResScale;
+      const h = baseH * patternResScale;
       const img = new window.Image();
       img.crossOrigin = 'anonymous';
       img.onload = () => {
@@ -789,6 +840,8 @@ function ShapeElement({ el, isDrawingMode, setSelectedId, handleDragMove, handle
   if (dashStyle === 'dashed') dash = [10, 5];
   if (dashStyle === 'dotted') dash = [3, 3];
 
+  const hasPatternScaling = (fillType === 'image' || fillType === 'gradient') && fillPatternImg;
+
   const commonProps = {
     key: el.id,
     id: el.id,
@@ -797,6 +850,7 @@ function ShapeElement({ el, isDrawingMode, setSelectedId, handleDragMove, handle
     fill: fillType && fillType !== 'color' ? undefined : el.fill,
     fillPriority: fillPatternImg ? 'pattern' : 'color',
     fillPatternImage: fillPatternImg || undefined,
+    fillPatternScale: hasPatternScaling ? { x: 1 / patternResScale, y: 1 / patternResScale } : undefined,
     draggable: !isDrawingMode,
     onClick: () => !isDrawingMode && setSelectedId(el.id),
     onTap: () => !isDrawingMode && setSelectedId(el.id),
@@ -2651,7 +2705,13 @@ export default function DesignEditorSection() {
               </button>
               <button
                 type="button"
-                onClick={() => updateSelected('fillType', 'texture')}
+                onClick={() => {
+                  updateSelected('fillType', 'texture');
+                  if (!selectedElement.patternColor) {
+                    const defaultPatColor = (selectedElement.fill || '#BAFDC1') === '#BAFDC1' ? '#111114' : '#BAFDC1';
+                    updateSelected('patternColor', defaultPatColor);
+                  }
+                }}
                 style={{
                   flex: 1, padding: '0.3rem 0.2rem', fontSize: '0.68rem', fontWeight: 700, borderRadius: 'var(--radius-sm)',
                   backgroundColor: selectedElement.fillType === 'texture' ? 'var(--accent)' : 'transparent',
@@ -2757,26 +2817,100 @@ export default function DesignEditorSection() {
             )}
 
             {selectedElement.fillType === 'texture' && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.3rem' }}>
-                  {['grid', 'dots', 'stripes', 'noise', 'paper'].map(pat => (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.7rem' }}>
+                <label style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', fontWeight: 600 }}>
+                  Estilo de Trama Vectorial:
+                </label>
+
+                {/* Selector de Tramas Vectoriales Nativas */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.35rem' }}>
+                  {[
+                    { id: 'grid', label: 'Cuadrícula', icon: '📐' },
+                    { id: 'dots', label: 'Puntos', icon: '⚪' },
+                    { id: 'stripes', label: 'Franjas', icon: '📊' },
+                    { id: 'checkerboard', label: 'Ajedrez', icon: '🏁' },
+                    { id: 'paper', label: 'Lino/Red', icon: '📜' },
+                    { id: 'waves', label: 'Olas', icon: '🌊' }
+                  ].map((pat) => (
                     <button
-                      key={pat}
+                      key={pat.id}
                       type="button"
-                      onClick={() => updateSelected('patternType', pat)}
+                      onClick={() => updateSelected('patternType', pat.id)}
                       style={{
-                        padding: '0.3rem', fontSize: '0.65rem', borderRadius: 'var(--radius-sm)',
-                        border: `1px solid ${(selectedElement.patternType || 'grid') === pat ? 'var(--accent)' : 'var(--border-subtle)'}`,
-                        backgroundColor: (selectedElement.patternType || 'grid') === pat ? 'var(--accent-muted)' : 'var(--bg-surface-2)',
-                        color: (selectedElement.patternType || 'grid') === pat ? 'var(--accent)' : 'var(--text-primary)',
-                        cursor: 'pointer', textTransform: 'capitalize'
+                        padding: '0.45rem 0.2rem', fontSize: '0.65rem', borderRadius: 'var(--radius-sm)',
+                        border: `1.5px solid ${(selectedElement.patternType || 'grid') === pat.id ? 'var(--accent)' : 'var(--border-subtle)'}`,
+                        backgroundColor: (selectedElement.patternType || 'grid') === pat.id ? 'var(--accent-muted)' : 'var(--bg-surface-2)',
+                        color: (selectedElement.patternType || 'grid') === pat.id ? 'var(--accent)' : 'var(--text-primary)',
+                        cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.2rem'
                       }}
                     >
-                      {pat}
+                      <span style={{ fontSize: '1rem' }}>{pat.icon}</span>
+                      <span style={{ fontWeight: 600 }}>{pat.label}</span>
                     </button>
                   ))}
                 </div>
 
+                {/* CONTROLES DIRECTOS DE COLOR */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', backgroundColor: 'var(--bg-surface-2)', padding: '0.65rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-subtle)' }}>
+                  <span style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--accent)' }}>
+                    🎨 Paleta de Colores de la Trama:
+                  </span>
+                  
+                  <div style={{ display: 'flex', gap: '0.5rem' }}>
+                    <div style={{ flex: 1 }}>
+                      <label style={{ fontSize: '0.68rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '0.2rem', fontWeight: 600 }}>
+                        🎨 Color Base (Fondo):
+                      </label>
+                      <input
+                        type="color"
+                        value={selectedElement.fill || '#111114'}
+                        onChange={(e) => updateSelected('fill', e.target.value)}
+                        style={{ width: '100%', height: '34px', border: 'none', borderRadius: '4px', cursor: 'pointer', backgroundColor: 'transparent' }}
+                      />
+                    </div>
+                    <div style={{ flex: 1 }}>
+                      <label style={{ fontSize: '0.68rem', color: 'var(--accent)', display: 'block', marginBottom: '0.2rem', fontWeight: 600 }}>
+                        🏁 Color de Trama:
+                      </label>
+                      <input
+                        type="color"
+                        value={selectedElement.patternColor || '#BAFDC1'}
+                        onChange={(e) => updateSelected('patternColor', e.target.value)}
+                        style={{ width: '100%', height: '34px', border: 'none', borderRadius: '4px', cursor: 'pointer', backgroundColor: 'transparent' }}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* TAMAÑO / ESCALA */}
+                <div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.68rem', color: 'var(--text-secondary)' }}>
+                    <span>Tamaño de Trama:</span>
+                    <span className="font-mono" style={{ color: 'var(--accent)', fontWeight: 700 }}>{(selectedElement.patternScale || 1).toFixed(1)}x</span>
+                  </div>
+                  <input
+                    type="range" min={0.4} max={3.5} step={0.1}
+                    value={selectedElement.patternScale || 1}
+                    onChange={(e) => updateSelected('patternScale', Number(e.target.value))}
+                    style={{ width: '100%', accentColor: 'var(--accent)' }}
+                  />
+                </div>
+
+                {/* ESPACIADO */}
+                <div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.68rem', color: 'var(--text-secondary)' }}>
+                    <span>Espaciado Trama:</span>
+                    <span className="font-mono" style={{ color: 'var(--accent)', fontWeight: 700 }}>{selectedElement.patternSpacing || 30}px</span>
+                  </div>
+                  <input
+                    type="range" min={12} max={100} step={2}
+                    value={selectedElement.patternSpacing || 30}
+                    onChange={(e) => updateSelected('patternSpacing', Number(e.target.value))}
+                    style={{ width: '100%', accentColor: 'var(--accent)' }}
+                  />
+                </div>
+
+                {/* INCLINACIÓN */}
                 <div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.68rem', color: 'var(--text-secondary)' }}>
                     <span>Inclinación Trama:</span>
