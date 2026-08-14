@@ -577,9 +577,13 @@ function ThumbnailCard({
 
       <div
         onClick={() => {
-          if (isFoliadoStep && onSelect) {
-            onSelect(sheetNum, undefined, side);
-          }
+          // Antes esto llamaba onSelect(sheetNum, undefined, side) acá mismo,
+          // lo que actualizaba refPdfPage (la hoja) sin tocar refBookPage (el
+          // número impreso), dejando ambos valores desincronizados —
+          // refiriéndose a dos hojas distintas — hasta que se confirmara en
+          // el visor ampliado. Ahora abrir el visor ampliado es el único
+          // paso: la confirmación real (que sí actualiza los dos juntos) pasa
+          // por handleConfirm más abajo, evitando estados a medio actualizar.
           onOpenLightbox(item);
         }}
         style={{

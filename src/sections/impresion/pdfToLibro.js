@@ -262,6 +262,18 @@ async function procesarComoImagenes(file, mode, options = {}, onProgress) {
     cMapPacked: true,
   }).promise;
 
+  // Resolución de renderizado adaptativa. A 300 DPI fijos, un libro de
+  // varios cientos de páginas genera cientos de imágenes JPEG en memoria
+  // y, al final, pdf-lib tiene que serializar TODO en un único ArrayBuffer
+  // — eso es lo que dispara el "Array buffer allocation failed" en libros
+  // grandes (p. ej. 800 páginas). Bajamos el DPI progresivamente solo
+  // cuando hace falta, así los folletos chicos/medianos siguen a 300 DPI
+  // y los libros grandes evitan el techo de memoria del navegador.
+  const totalSourcePages = pdf.numPages;
+  const renderDPI = totalSourcePages > 600 ? 150 : totalSourcePages > 300 ? 200 : 300;
+  const renderScale = renderDPI / 72;
+  const jpegQuality = totalSourcePages > 300 ? 0.85 : 0.92;
+
   let isFirstProcessedSheet = true;
 
   const insertarBlancosDetrasDeTapa = (count, width, height) => {
@@ -325,7 +337,7 @@ async function procesarComoImagenes(file, mode, options = {}, onProgress) {
       if (!finalCanvas) {
         const page = await pdf.getPage(sheetNum);
         const userRotation = pageRotations[sheetNum] || 0;
-        const viewport = page.getViewport({ scale: 300 / 72, rotation: userRotation });
+        const viewport = page.getViewport({ scale: renderScale, rotation: userRotation });
 
         const tempCanvas = document.createElement('canvas');
         tempCanvas.width = viewport.width; tempCanvas.height = viewport.height;
@@ -359,7 +371,7 @@ async function procesarComoImagenes(file, mode, options = {}, onProgress) {
         const leftCanvas = document.createElement('canvas');
         leftCanvas.width = leftW; leftCanvas.height = fullH;
         leftCanvas.getContext('2d').drawImage(finalCanvas, 0, 0, leftW, fullH, 0, 0, leftW, fullH);
-        const leftImg = await newPdf.embedJpg(leftCanvas.toDataURL('image/jpeg', 0.92));
+        const leftImg = await newPdf.embedJpg(leftCanvas.toDataURL('image/jpeg', jpegQuality));
         const pageL = newPdf.addPage([leftW, fullH]);
         pageL.drawImage(leftImg, { x: 0, y: 0, width: leftW, height: fullH });
         leftCanvas.width = 0; leftCanvas.height = 0;
@@ -367,7 +379,7 @@ async function procesarComoImagenes(file, mode, options = {}, onProgress) {
         const rightCanvas = document.createElement('canvas');
         rightCanvas.width = rightW; rightCanvas.height = fullH;
         rightCanvas.getContext('2d').drawImage(finalCanvas, splitX, 0, rightW, fullH, 0, 0, rightW, fullH);
-        const rightImg = await newPdf.embedJpg(rightCanvas.toDataURL('image/jpeg', 0.92));
+        const rightImg = await newPdf.embedJpg(rightCanvas.toDataURL('image/jpeg', jpegQuality));
         const pageR = newPdf.addPage([rightW, fullH]);
         pageR.drawImage(rightImg, { x: 0, y: 0, width: rightW, height: fullH });
         rightCanvas.width = 0; rightCanvas.height = 0;
@@ -397,7 +409,7 @@ async function procesarComoImagenes(file, mode, options = {}, onProgress) {
 
     const page = await pdf.getPage(pageNum);
     const userRotation = pageRotations[pageNum] || 0;
-    const viewport = page.getViewport({ scale: 300 / 72, rotation: userRotation });
+    const viewport = page.getViewport({ scale: renderScale, rotation: userRotation });
 
     const tempCanvas = document.createElement('canvas');
     tempCanvas.width = viewport.width;
@@ -442,7 +454,7 @@ async function procesarComoImagenes(file, mode, options = {}, onProgress) {
         rightCanvas.width = rightW; rightCanvas.height = fullH;
         rightCanvas.getContext('2d').drawImage(finalCanvas, splitX, 0, rightW, fullH, 0, 0, rightW, fullH);
 
-        const rightImg = await newPdf.embedJpg(rightCanvas.toDataURL('image/jpeg', 0.92));
+        const rightImg = await newPdf.embedJpg(rightCanvas.toDataURL('image/jpeg', jpegQuality));
         const pageR = newPdf.addPage([rightW, fullH]);
         pageR.drawImage(rightImg, { x: 0, y: 0, width: rightW, height: fullH });
 
@@ -459,8 +471,8 @@ async function procesarComoImagenes(file, mode, options = {}, onProgress) {
         rightCanvas.width = rightW; rightCanvas.height = fullH;
         rightCanvas.getContext('2d').drawImage(finalCanvas, splitX, 0, rightW, fullH, 0, 0, rightW, fullH);
 
-        const leftImg = await newPdf.embedJpg(leftCanvas.toDataURL('image/jpeg', 0.92));
-        const rightImg = await newPdf.embedJpg(rightCanvas.toDataURL('image/jpeg', 0.92));
+        const leftImg = await newPdf.embedJpg(leftCanvas.toDataURL('image/jpeg', jpegQuality));
+        const rightImg = await newPdf.embedJpg(rightCanvas.toDataURL('image/jpeg', jpegQuality));
 
         const pageL = newPdf.addPage([leftW, fullH]);
         pageL.drawImage(leftImg, { x: 0, y: 0, width: leftW, height: fullH });
@@ -481,7 +493,7 @@ async function procesarComoImagenes(file, mode, options = {}, onProgress) {
       if (finalCanvas !== tempCanvas) { finalCanvas.width = 0; finalCanvas.height = 0; }
       isFirstProcessedSheet = false;
     } else {
-      const imgData = tempCanvas.toDataURL('image/jpeg', 0.92);
+      const imgData = tempCanvas.toDataURL('image/jpeg', jpegQuality);
       const jpgImage = await newPdf.embedJpg(imgData);
       const newPage = newPdf.addPage([tempCanvas.width, tempCanvas.height]);
       newPage.drawImage(jpgImage, { x: 0, y: 0, width: tempCanvas.width, height: tempCanvas.height });
@@ -617,11 +629,18 @@ export async function pdfToLibro(file, mode, options = {}, onProgress) {
 
     const halfWidth = sheetWidth / 2;
 
-    const scaleL = Math.min(halfWidth / embedL.width, sheetHeight / embedL.height) * 0.95;
+    // Antes se escalaba cada página al 95% del espacio disponible
+    // (`* 0.95`), lo que dejaba un margen/borde blanco proporcional bastante
+    // grande alrededor de CADA página del libro — incluida la tapa y
+    // contratapa — sin importar el tamaño del papel. Se reemplaza por un
+    // margen mínimo fijo de 1mm (en puntos PDF), como pediste.
+    const MARGIN_PT = 2.83465; // 1mm en puntos PDF (72pt = 25.4mm)
+
+    const scaleL = Math.min((halfWidth - MARGIN_PT * 2) / embedL.width, (sheetHeight - MARGIN_PT * 2) / embedL.height);
     const scaledWidthL = embedL.width * scaleL;
     const scaledHeightL = embedL.height * scaleL;
 
-    const scaleR = Math.min(halfWidth / embedR.width, sheetHeight / embedR.height) * 0.95;
+    const scaleR = Math.min((halfWidth - MARGIN_PT * 2) / embedR.width, (sheetHeight - MARGIN_PT * 2) / embedR.height);
     const scaledWidthR = embedR.width * scaleR;
     const scaledHeightR = embedR.height * scaleR;
 

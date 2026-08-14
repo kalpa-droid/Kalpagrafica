@@ -5,7 +5,7 @@ import {
   Sun, Contrast as ContrastIcon, Droplet, Focus, Brush, Smile, Sliders, Layers, 
   RotateCw, Copy, AlignCenter, Maximize2, X
 } from 'lucide-react';
-import { Stage, Layer, Text, Rect, Circle, Line, Star, Image as KonvaImage, Transformer } from 'react-konva';
+import { Stage, Layer, Text, Rect, Circle, Line, Star, Shape, Image as KonvaImage, Transformer } from 'react-konva';
 import Konva from 'konva';
 import jsPDF from 'jspdf';
 
@@ -778,6 +778,30 @@ function ShapeElement({ el, isDrawingMode, setSelectedId, handleDragMove, handle
   if (el.type === 'star') return <Star {...commonProps} numPoints={5} innerRadius={(cleanProps.radius || 40)*0.45} outerRadius={cleanProps.radius || 40} />;
   if (el.type === 'star6') return <Star {...commonProps} numPoints={6} innerRadius={(cleanProps.radius || 40)*0.5} outerRadius={cleanProps.radius || 40} />;
   if (el.type === 'star8') return <Star {...commonProps} numPoints={8} innerRadius={(cleanProps.radius || 40)*0.5} outerRadius={cleanProps.radius || 40} />;
+
+  // Formas restantes del catálogo (hexágono, octágono, diamante, escudo,
+  // insignia, corazón, triángulo): antes caían todas en el "return <Rect />"
+  // de más abajo y se dibujaban como un simple rectángulo. Ahora reutilizan
+  // el mismo trazado de path que ya usa el recorte de imágenes
+  // (drawCustomClipShape) dentro de un Shape genérico de Konva, así que
+  // heredan fill/stroke/dash/degradado/textura igual que cualquier otra forma.
+  const PATH_SHAPES = ['hexagon', 'octagon', 'diamond', 'shield', 'badge', 'heart', 'triangle'];
+  if (PATH_SHAPES.includes(el.type)) {
+    const w = cleanProps.width || (cleanProps.radius ? cleanProps.radius * 2 : 80);
+    const h = cleanProps.height || (cleanProps.radius ? cleanProps.radius * 2 : 80);
+    return (
+      <Shape
+        {...commonProps}
+        width={w}
+        height={h}
+        sceneFunc={(ctx, shape) => {
+          drawCustomClipShape(ctx, w, h, el.type, 0, 1, 1);
+          ctx.fillStrokeShape(shape);
+        }}
+      />
+    );
+  }
+
   return <Rect {...commonProps} />;
 }
 
@@ -842,10 +866,23 @@ function URLImage({ image, ...props }) {
 
 export default function DesignEditorSection() {
   const [preset, setPreset] = useState(PRESETS[0]);
-  const [bgColor, setBgColor] = useState('#111114');
-  
+
   // Dúplex Frente / Dorso
   const [currentSide, setCurrentSide] = useState('front'); // 'front' | 'back'
+
+  // Fondo del lienzo — un color/imagen POR CADA LADO (antes era un único
+  // estado `bgColor` compartido: el fondo del dorso de una plantilla
+  // (`tmpl.backBg`) nunca se aplicaba y cambiar el color en un lado pisaba
+  // el del otro). `bgColor`/`setBgColor` se mantienen como alias derivados
+  // del lado activo para no tener que tocar el resto del componente.
+  const [bgColorFront, setBgColorFront] = useState('#111114');
+  const [bgColorBack, setBgColorBack] = useState('#111114');
+  const bgColor = currentSide === 'front' ? bgColorFront : bgColorBack;
+  const setBgColor = (value) => {
+    const setter = currentSide === 'front' ? setBgColorFront : setBgColorBack;
+    if (typeof value === 'function') setter((prev) => value(prev));
+    else setter(value);
+  };
   const [elementsFront, setElementsFront] = useState([
     { id: 'el-1', type: 'text', text: 'KALPAGRÁFICA', x: 40, y: 50, fontSize: 26, fill: '#BAFDC1', fontFamily: 'Space Grotesk', fontWeight: 'bold' },
     { id: 'el-2', type: 'text', text: 'Estudio de Diseño & Preimpresión', x: 40, y: 90, fontSize: 14, fill: '#E5E5E7', fontFamily: 'Inter' },
@@ -993,7 +1030,37 @@ export default function DesignEditorSection() {
     return () => window.removeEventListener('resize', compute);
   }, [isMobile, mobileFullscreen, mobileToolOpen, preset]);
 
-  const displayScale = (isMobile && mobileFullscreen) ? mobileStageScale : 1;
+  // Escalado automático del lienzo en escritorio: la columna central del
+  // editor mide ~1fr (hasta ~730px), pero formatos como Díptico/Tríptico A4
+  // (842px de ancho) o A3 superan ese ancho. Sin este cálculo, el Stage se
+  // renderizaba a tamaño completo dentro de un contenedor angosto con
+  // overflow:auto, por lo que la plantilla se veía "recortada" al no notarse
+  // el scroll horizontal. Se escala solo la vista (Konva scaleX/scaleY); la
+  // exportación siempre resetea a preset.width/height a escala 1, así que la
+  // resolución final (300 DPI) nunca se ve afectada.
+  const desktopCanvasWrapRef = useRef(null);
+  const [desktopStageScale, setDesktopStageScale] = useState(1);
+
+  useEffect(() => {
+    if (isMobile) return;
+    const el = desktopCanvasWrapRef.current;
+    if (!el) return;
+    const compute = () => {
+      const availW = Math.max(120, el.clientWidth - 48);
+      const availH = Math.max(120, window.innerHeight * 0.68);
+      const scale = Math.min(1, availW / preset.width, availH / preset.height);
+      setDesktopStageScale(scale > 0 ? scale : 1);
+    };
+    compute();
+    const ro = new ResizeObserver(compute);
+    ro.observe(el);
+    window.addEventListener('resize', compute);
+    return () => { ro.disconnect(); window.removeEventListener('resize', compute); };
+  }, [isMobile, preset.width, preset.height]);
+
+  const displayScale = isMobile
+    ? (mobileFullscreen ? mobileStageScale : 1)
+    : desktopStageScale;
 
   // Refs de Konva e Historial Undo/Redo
   const stageRef = useRef(null);
@@ -1058,6 +1125,7 @@ export default function DesignEditorSection() {
       fontSize,
       fill: '#FFFFFF',
       fontFamily,
+      lineHeight: 1.2,
       opacity: 1,
       rotation: 0
     };
@@ -1322,16 +1390,28 @@ export default function DesignEditorSection() {
 
       const a = document.createElement('a');
       a.href = dataURL;
-      a.download = `Diseno_${preset.id}_HD.png`;
+      const sideLabel = currentSide === 'front' ? 'Frente' : 'Dorso';
+      a.download = `Diseno_${preset.id}_${sideLabel}_HD.png`;
       a.click();
     }, 100);
   };
 
   // Exportar a PDF Imprimible (300 DPI)
-  const exportPDF = () => {
+  // Exportar a PDF Imprimible (300 DPI).
+  // Fix 1: el tamaño físico de página ahora se toma de `preset.unit` (el
+  // mismo criterio que ya usaba exportImpositionPDF) en vez de un divisor
+  // fijo "/4" que no correspondía al mm real declarado por cada formato
+  // (p. ej. para A4 daba 148x210mm en lugar de 210x297mm).
+  // Fix 2: si la pieza tiene contenido en el dorso, se agrega como segunda
+  // página del mismo PDF — antes "PDF Imprimible" exportaba solo el lado
+  // que estuviera activo en pantalla y el dorso (frecuente en Dípticos y
+  // Trípticos) se perdía por completo del archivo final.
+  const exportPDF = async () => {
     if (!stageRef.current) return;
-    setSelectedId(null);
-    setTimeout(() => {
+    try {
+      setSelectedId(null);
+      await new Promise((res) => setTimeout(res, 100));
+
       const stage = stageRef.current;
       const prevW = stage.width(), prevH = stage.height();
       const prevScale = stage.scale();
@@ -1339,21 +1419,52 @@ export default function DesignEditorSection() {
       stage.height(preset.height);
       stage.scale({ x: 1, y: 1 });
       stage.batchDraw();
-      const dataURL = stage.toDataURL({ pixelRatio: 3 });
+
+      const savedSide = currentSide;
+      setCurrentSide('front');
+      await new Promise((r) => setTimeout(r, 60));
+      const frontDataURL = stage.toDataURL({ pixelRatio: 3 });
+
+      const hasBack = elementsBack && elementsBack.length > 0;
+      let backDataURL = null;
+      if (hasBack) {
+        setCurrentSide('back');
+        await new Promise((r) => setTimeout(r, 60));
+        backDataURL = stage.toDataURL({ pixelRatio: 3 });
+      }
+
+      setCurrentSide(savedSide);
       stage.width(prevW);
       stage.height(prevH);
       stage.scale(prevScale);
       stage.batchDraw();
 
-      const isLandscape = preset.width > preset.height;
+      let pageW = preset.width / 4;
+      let pageH = preset.height / 4;
+      if (preset.unit && preset.unit.includes('mm')) {
+        const parts = preset.unit.replace(' mm', '').split('x');
+        if (parts.length === 2) {
+          pageW = parseFloat(parts[0]);
+          pageH = parseFloat(parts[1]);
+        }
+      }
+
+      const isLandscape = pageW > pageH;
       const pdf = new jsPDF({
         orientation: isLandscape ? 'landscape' : 'portrait',
         unit: 'mm',
-        format: [preset.width / 4, preset.height / 4]
+        format: [pageW, pageH]
       });
-      pdf.addImage(dataURL, 'PNG', 0, 0, preset.width / 4, preset.height / 4);
+      pdf.addImage(frontDataURL, 'PNG', 0, 0, pageW, pageH);
+      if (backDataURL) {
+        pdf.addPage([pageW, pageH], isLandscape ? 'landscape' : 'portrait');
+        pdf.addImage(backDataURL, 'PNG', 0, 0, pageW, pageH);
+      }
       pdf.save(`Diseno_${preset.id}_Impresion.pdf`);
-    }, 100);
+    } catch (err) {
+      console.error('Error al generar el PDF imprimible:', err);
+      alert('Hubo un problema al generar el PDF. Intenta nuevamente.');
+    }
   };
 
   // Generador de PDF Mosaico Flexible (Dúplex Sangrado 3.5mm o Frente Simple con Espaciado Manual)
@@ -1571,7 +1682,9 @@ export default function DesignEditorSection() {
                     type="button"
                     onClick={() => {
                       if (window.confirm(`¿Cargar la plantilla "${tmpl.name}"? Reemplazará los elementos del frente y dorso.`)) {
-                        setBgColor(tmpl.frontBg);
+                        saveStateToHistory();
+                        setBgColorFront(tmpl.frontBg);
+                        setBgColorBack(tmpl.backBg);
                         setElementsFront(JSON.parse(JSON.stringify(tmpl.frontElements)));
                         setElementsBack(JSON.parse(JSON.stringify(tmpl.backElements)));
                         setSelectedId(null);
@@ -2009,7 +2122,9 @@ export default function DesignEditorSection() {
                   type="button"
                   onClick={() => {
                     if (window.confirm(`¿Cargar la plantilla "${tmpl.name}"?\nReemplazará los elementos actuales del frente y dorso.`)) {
-                      setBgColor(tmpl.frontBg);
+                      saveStateToHistory();
+                      setBgColorFront(tmpl.frontBg);
+                      setBgColorBack(tmpl.backBg);
                       setElementsFront(JSON.parse(JSON.stringify(tmpl.frontElements)));
                       setElementsBack(JSON.parse(JSON.stringify(tmpl.backElements)));
                       setSelectedId(null);
@@ -2050,14 +2165,14 @@ export default function DesignEditorSection() {
           <>
             <div>
               <label style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '0.3rem' }}>
-                Contenido de Texto
+                Contenido de Texto <span style={{ color: 'var(--text-disabled)', fontWeight: 400 }}>(Enter = salto de línea / punto aparte)</span>
               </label>
-              <input
-                type="text"
+              <textarea
                 value={selectedElement.text}
                 onChange={(e) => updateSelected('text', e.target.value)}
                 className="input"
-                style={{ width: '100%', fontSize: '0.85rem' }}
+                rows={Math.max(3, (selectedElement.text.match(/\n/g)?.length || 0) + 2)}
+                style={{ width: '100%', fontSize: '0.85rem', fontFamily: selectedElement.fontFamily, resize: 'vertical', lineHeight: 1.4, whiteSpace: 'pre-wrap' }}
               />
             </div>
 
@@ -2094,6 +2209,21 @@ export default function DesignEditorSection() {
 
             <div>
               <label style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '0.3rem' }}>
+                Interlineado / Espaciado entre Líneas ({(selectedElement.lineHeight ?? 1.2).toFixed(1)})
+              </label>
+              <input
+                type="range"
+                min={0.8}
+                max={2.5}
+                step={0.1}
+                value={selectedElement.lineHeight ?? 1.2}
+                onChange={(e) => updateSelected('lineHeight', Number(e.target.value))}
+                style={{ width: '100%', accentColor: 'var(--accent)' }}
+              />
+            </div>
+
+            <div>
+              <label style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '0.3rem' }}>
                 Color de Texto
               </label>
               <input
@@ -2106,7 +2236,7 @@ export default function DesignEditorSection() {
           </>
         )}
 
-        {(selectedElement.type === 'rect' || selectedElement.type === 'circle' || selectedElement.type === 'star') && (
+        {['rect', 'circle', 'star', 'star6', 'star8', 'hexagon', 'octagon', 'diamond', 'shield', 'badge', 'heart', 'triangle'].includes(selectedElement.type) && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
             <label style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', fontWeight: 600 }}>
               Tipo de Relleno de la Forma:
@@ -2236,6 +2366,68 @@ export default function DesignEditorSection() {
                 </div>
               </div>
             )}
+
+            {/* Borde: color, grosor y tipo de línea — antes no existían
+                controles para esto y solo se podía cambiar el relleno. */}
+            <div style={{ borderTop: '1px solid var(--border-subtle)', paddingTop: '0.7rem', display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
+              <label style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', fontWeight: 600 }}>
+                Borde de la Forma:
+              </label>
+              <div style={{ display: 'flex', gap: '0.5rem' }}>
+                <div style={{ flex: 1 }}>
+                  <label style={{ fontSize: '0.68rem', color: 'var(--text-secondary)' }}>Color de Borde:</label>
+                  <input
+                    type="color"
+                    value={selectedElement.stroke || '#BAFDC1'}
+                    onChange={(e) => updateSelected('stroke', e.target.value)}
+                    style={{ width: '100%', height: '30px', border: 'none', borderRadius: '4px', cursor: 'pointer', backgroundColor: 'transparent' }}
+                  />
+                </div>
+                <button
+                  type="button"
+                  title="Quitar borde"
+                  onClick={() => { updateSelected('stroke', undefined); updateSelected('strokeWidth', 0); }}
+                  className="btn btn-sm"
+                  style={{ alignSelf: 'flex-end', height: '30px' }}
+                >
+                  Sin borde
+                </button>
+              </div>
+
+              <div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.68rem', color: 'var(--text-secondary)' }}>
+                  <span>Grosor de Borde:</span>
+                  <span className="font-mono" style={{ color: 'var(--accent)', fontWeight: 700 }}>{selectedElement.strokeWidth ?? 0}px</span>
+                </div>
+                <input
+                  type="range" min={0} max={20} step={1}
+                  value={selectedElement.strokeWidth ?? 0}
+                  onChange={(e) => updateSelected('strokeWidth', Number(e.target.value))}
+                  style={{ width: '100%', accentColor: 'var(--accent)' }}
+                />
+              </div>
+
+              <div>
+                <label style={{ fontSize: '0.68rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '0.2rem' }}>Tipo de Línea:</label>
+                <div style={{ display: 'flex', gap: '0.3rem', backgroundColor: 'var(--bg-surface-2)', padding: '3px', borderRadius: 'var(--radius-sm)' }}>
+                  {[{ id: 'solid', label: 'Sólida' }, { id: 'dashed', label: 'Discontinua' }, { id: 'dotted', label: 'Punteada' }].map((opt) => (
+                    <button
+                      key={opt.id}
+                      type="button"
+                      onClick={() => updateSelected('dashStyle', opt.id)}
+                      style={{
+                        flex: 1, padding: '0.3rem 0.2rem', fontSize: '0.68rem', fontWeight: 700, borderRadius: 'var(--radius-sm)',
+                        backgroundColor: (selectedElement.dashStyle || 'solid') === opt.id ? 'var(--accent)' : 'transparent',
+                        color: (selectedElement.dashStyle || 'solid') === opt.id ? '#000' : 'var(--text-secondary)',
+                        border: 'none', cursor: 'pointer'
+                      }}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
           </div>
         )}
 
@@ -2528,7 +2720,7 @@ export default function DesignEditorSection() {
                   />
                 );
               }
-              if (el.type === 'rect' || el.type === 'circle' || el.type === 'star' || el.type === 'star6' || el.type === 'star8') {
+              if (['rect', 'circle', 'star', 'star6', 'star8', 'hexagon', 'octagon', 'diamond', 'shield', 'badge', 'heart', 'triangle'].includes(el.type)) {
                 return (
                   <ShapeElement
                     key={el.id}
@@ -2659,7 +2851,7 @@ export default function DesignEditorSection() {
           </div>
 
           {/* Columna Central: Konva Interactive Canvas Stage */}
-          <div style={{
+          <div ref={desktopCanvasWrapRef} style={{
             backgroundColor: 'var(--bg-surface-2)', padding: '1.5rem', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border-subtle)',
             display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', overflow: 'auto', minHeight: '480px', position: 'relative'
           }}>
