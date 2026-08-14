@@ -3,7 +3,7 @@ import {
   Palette, Type, Square, Circle as CircleIcon, Image as ImageIcon, Download, 
   Printer, FileText, Trash2, ArrowUp, ArrowDown, Sparkles, Wand2, Undo2, Redo2, 
   Sun, Contrast as ContrastIcon, Droplet, Focus, Brush, Smile, Sliders, Layers, 
-  RotateCw, Copy, AlignCenter, Maximize2, X
+  RotateCw, Copy, AlignCenter, Maximize2, X, Upload
 } from 'lucide-react';
 import { Stage, Layer, Text, Rect, Circle, Line, Star, Shape, Image as KonvaImage, Transformer, Group } from 'react-konva';
 import Konva from 'konva';
