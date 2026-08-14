@@ -858,7 +858,7 @@ function URLImage({ image, ...props }) {
       shapeRef.current.clearCache();
       const hasFilter = props.brightness || props.contrast || props.saturation || props.blurRadius;
       if (hasFilter) {
-        shapeRef.current.cache({ pixelRatio: 2.5 });
+        shapeRef.current.cache({ pixelRatio: 3 });
       }
       shapeRef.current.getLayer()?.batchDraw();
     } catch (e) {
@@ -1438,6 +1438,35 @@ export default function DesignEditorSection() {
     setAlignGuides({ showX: false, showY: false });
   };
 
+  // Antes de exportar, recachea a resolución completa cualquier imagen que tenga
+  // filtros (brillo/contraste/saturación/desenfoque). El cacheo en vivo usa un
+  // pixelRatio bajo (pensado solo para que la edición vaya fluida); si no se
+  // vuelve a cachear a la resolución final, la imagen sale borrosa en el PNG/PDF
+  // exportado aunque en pantalla se viera bien. El recorte por forma NO necesita
+  // este recacheo: va en el Group contenedor (ver URLImage) y se dibuja en vivo
+  // en cada frame, siempre nítido a cualquier resolución de exportación.
+  // Devuelve la lista de nodos tocados para poder revertirlos después de exportar.
+  const recacheImagesForExport = (stage, exportPixelRatio) => {
+    const touched = [];
+    stage.find('Image').forEach((node) => {
+      const hasFilters = node.filters() && node.filters().length > 0;
+      if (hasFilters) {
+        node.cache({ pixelRatio: exportPixelRatio * 1.4 });
+        touched.push(node);
+      }
+    });
+    stage.batchDraw();
+    return touched;
+  };
+
+  const restoreImagesAfterExport = (touched) => {
+    touched.forEach((node) => {
+      node.clearCache();
+      const hasFilters = node.filters() && node.filters().length > 0;
+      if (hasFilters) node.cache({ pixelRatio: 3 }); // vuelve al cacheo liviano de edición
+    });
+  };
+
   // Exportar a Imagen PNG HD (300 DPI) — siempre a resolución completa,
   // independientemente de la escala visual usada en mobile.
   const exportPNG = () => {
@@ -1451,7 +1480,9 @@ export default function DesignEditorSection() {
       stage.height(preset.height);
       stage.scale({ x: 1, y: 1 });
       stage.batchDraw();
+      const touchedImages = recacheImagesForExport(stage, 3);
       const dataURL = stage.toDataURL({ pixelRatio: 3 });
+      restoreImagesAfterExport(touchedImages);
       stage.width(prevW);
       stage.height(prevH);
       stage.scale(prevScale);
@@ -1492,14 +1523,18 @@ export default function DesignEditorSection() {
       const savedSide = currentSide;
       setCurrentSide('front');
       await new Promise((r) => setTimeout(r, 60));
+      let touchedImages = recacheImagesForExport(stage, 3);
       const frontDataURL = stage.toDataURL({ pixelRatio: 3 });
+      restoreImagesAfterExport(touchedImages);
 
       const hasBack = elementsBack && elementsBack.length > 0;
       let backDataURL = null;
       if (hasBack) {
         setCurrentSide('back');
         await new Promise((r) => setTimeout(r, 60));
+        touchedImages = recacheImagesForExport(stage, 3);
         backDataURL = stage.toDataURL({ pixelRatio: 3 });
+        restoreImagesAfterExport(touchedImages);
       }
 
       setCurrentSide(savedSide);
@@ -1855,6 +1890,284 @@ export default function DesignEditorSection() {
                 <span style={{ fontSize: '0.85rem', color: 'var(--text-primary)' }} className="font-mono">
                   {typeof bgColor === 'string' && bgColor.startsWith('#') ? bgColor : 'Sólido Custom'}
                 </span>
+              </div>
+            )}
+
+            {/* Textura / Trama */}
+            {canvasBgMode === 'texture' && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.7rem' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.35rem' }}>
+                  {[
+                    { id: 'grid', label: 'Cuadrícula', icon: '📐' },
+                    { id: 'dots', label: 'Puntos', icon: '⚪' },
+                    { id: 'stripes', label: 'Franjas', icon: '📊' },
+                    { id: 'noise', label: 'Ruido HD', icon: '📺' },
+                    { id: 'paper', label: 'Lino/Papel', icon: '📜' }
+                  ].map((pat) => (
+                    <button
+                      key={pat.id}
+                      type="button"
+                      onClick={() => {
+                        setPatternType(pat.id);
+                        setCustomImgSrc(null);
+                        createTexturePatternUrl({
+                          patternType: pat.id,
+                          bgColor: typeof bgColor === 'string' && bgColor.startsWith('#') ? bgColor : '#111114',
+                          patternColor, patternAngle, patternScale, patternSpacing
+                        }, (texUrl) => setBgColor(texUrl));
+                      }}
+                      style={{
+                        padding: '0.5rem 0.3rem', borderRadius: 'var(--radius-sm)',
+                        border: `1.5px solid ${!customImgSrc && patternType === pat.id ? 'var(--accent)' : 'var(--border-subtle)'}`,
+                        backgroundColor: !customImgSrc && patternType === pat.id ? 'var(--accent-muted)' : 'var(--bg-surface-2)',
+                        color: !customImgSrc && patternType === pat.id ? 'var(--accent)' : 'var(--text-primary)',
+                        cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.2rem'
+                      }}
+                    >
+                      <span style={{ fontSize: '1.1rem' }}>{pat.icon}</span>
+                      <span style={{ fontSize: '0.65rem', fontWeight: 600 }}>{pat.label}</span>
+                    </button>
+                  ))}
+
+                  {/* Textura a partir de un ícono/imagen propia (sin fondo, se repite en trama) */}
+                  <label
+                    style={{
+                      padding: '0.5rem 0.3rem', borderRadius: 'var(--radius-sm)',
+                      border: `1.5px solid ${customImgSrc ? 'var(--accent)' : 'var(--border-subtle)'}`,
+                      backgroundColor: customImgSrc ? 'var(--accent-muted)' : 'var(--bg-surface-2)',
+                      color: customImgSrc ? 'var(--accent)' : 'var(--text-primary)',
+                      cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.2rem'
+                    }}
+                  >
+                    <Upload size={15} />
+                    <span style={{ fontSize: '0.65rem', fontWeight: 600 }}>Mi Ícono</span>
+                    <input
+                      type="file" accept="image/*" style={{ display: 'none' }}
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (!file) return;
+                        const reader = new FileReader();
+                        reader.onload = (ev) => {
+                          const url = ev.target.result;
+                          setCustomImgSrc(url);
+                          createTexturePatternUrl({
+                            patternType, bgColor: typeof bgColor === 'string' && bgColor.startsWith('#') ? bgColor : '#111114',
+                            patternColor, patternAngle, patternScale, patternSpacing, customImgSrc: url
+                          }, (texUrl) => setBgColor(texUrl));
+                        };
+                        reader.readAsDataURL(file);
+                      }}
+                    />
+                  </label>
+                </div>
+
+                <div>
+                  <label style={{ fontSize: '0.72rem', color: 'var(--text-secondary)' }}>Color de Trama:</label>
+                  <input
+                    type="color"
+                    value={patternColor}
+                    onChange={(e) => {
+                      setPatternColor(e.target.value);
+                      createTexturePatternUrl({
+                        patternType, bgColor: typeof bgColor === 'string' && bgColor.startsWith('#') ? bgColor : '#111114',
+                        patternColor: e.target.value, patternAngle, patternScale, patternSpacing, customImgSrc
+                      }, (texUrl) => setBgColor(texUrl));
+                    }}
+                    style={{ width: '100%', height: '32px', border: 'none', borderRadius: '4px', cursor: 'pointer', backgroundColor: 'transparent' }}
+                  />
+                </div>
+
+                <div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: 'var(--text-secondary)' }}>
+                    <span>Inclinación:</span>
+                    <span className="font-mono" style={{ color: 'var(--accent)', fontWeight: 700 }}>{patternAngle}°</span>
+                  </div>
+                  <input
+                    type="range" min={0} max={359} step={1}
+                    value={patternAngle}
+                    onChange={(e) => {
+                      const v = Number(e.target.value);
+                      setPatternAngle(v);
+                      createTexturePatternUrl({
+                        patternType, bgColor: typeof bgColor === 'string' && bgColor.startsWith('#') ? bgColor : '#111114',
+                        patternColor, patternAngle: v, patternScale, patternSpacing, customImgSrc
+                      }, (texUrl) => setBgColor(texUrl));
+                    }}
+                    style={{ width: '100%', accentColor: 'var(--accent)' }}
+                  />
+                </div>
+
+                <div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: 'var(--text-secondary)' }}>
+                    <span>Tamaño:</span>
+                    <span className="font-mono" style={{ color: 'var(--accent)', fontWeight: 700 }}>{patternScale.toFixed(1)}x</span>
+                  </div>
+                  <input
+                    type="range" min={0.3} max={3} step={0.1}
+                    value={patternScale}
+                    onChange={(e) => {
+                      const v = Number(e.target.value);
+                      setPatternScale(v);
+                      createTexturePatternUrl({
+                        patternType, bgColor: typeof bgColor === 'string' && bgColor.startsWith('#') ? bgColor : '#111114',
+                        patternColor, patternAngle, patternScale: v, patternSpacing, customImgSrc
+                      }, (texUrl) => setBgColor(texUrl));
+                    }}
+                    style={{ width: '100%', accentColor: 'var(--accent)' }}
+                  />
+                </div>
+
+                <div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: 'var(--text-secondary)' }}>
+                    <span>Separación:</span>
+                    <span className="font-mono" style={{ color: 'var(--accent)', fontWeight: 700 }}>{patternSpacing}px</span>
+                  </div>
+                  <input
+                    type="range" min={16} max={90} step={1}
+                    value={patternSpacing}
+                    onChange={(e) => {
+                      const v = Number(e.target.value);
+                      setPatternSpacing(v);
+                      createTexturePatternUrl({
+                        patternType, bgColor: typeof bgColor === 'string' && bgColor.startsWith('#') ? bgColor : '#111114',
+                        patternColor, patternAngle, patternScale, patternSpacing: v, customImgSrc
+                      }, (texUrl) => setBgColor(texUrl));
+                    }}
+                    style={{ width: '100%', accentColor: 'var(--accent)' }}
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Degradado */}
+            {canvasBgMode === 'gradient' && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.7rem' }}>
+                <div style={{ display: 'flex', gap: '0.3rem' }}>
+                  {[
+                    { id: 'smooth', label: 'Suave' },
+                    { id: 'sharp', label: 'Mitad 50/50' },
+                    { id: 'radial', label: 'Radial' }
+                  ].map((st) => (
+                    <button
+                      key={st.id}
+                      type="button"
+                      onClick={() => {
+                        setGradStyle(st.id);
+                        const css = st.id === 'radial'
+                          ? `radial-gradient(circle at center, ${gradColor1} 0%, ${gradColor2} 100%)`
+                          : st.id === 'sharp'
+                            ? `linear-gradient(${gradAngle}deg, ${gradColor1} 0% ${gradStop}%, ${gradColor2} ${gradStop}% 100%)`
+                            : `linear-gradient(${gradAngle}deg, ${gradColor1} 0%, ${gradColor2} 100%)`;
+                        setBgColor(css);
+                      }}
+                      style={{
+                        flex: 1, padding: '0.3rem 0.2rem', fontSize: '0.68rem', fontWeight: 600, borderRadius: 'var(--radius-sm)',
+                        backgroundColor: gradStyle === st.id ? 'var(--accent)' : 'var(--bg-surface-2)',
+                        color: gradStyle === st.id ? '#000' : 'var(--text-primary)', border: '1px solid var(--border-subtle)', cursor: 'pointer'
+                      }}
+                    >
+                      {st.label}
+                    </button>
+                  ))}
+                </div>
+
+                <div style={{ display: 'flex', gap: '0.6rem' }}>
+                  <div style={{ flex: 1 }}>
+                    <label style={{ fontSize: '0.72rem', color: 'var(--text-secondary)' }}>Color 1:</label>
+                    <input
+                      type="color" value={gradColor1}
+                      onChange={(e) => {
+                        setGradColor1(e.target.value);
+                        const css = gradStyle === 'radial'
+                          ? `radial-gradient(circle at center, ${e.target.value} 0%, ${gradColor2} 100%)`
+                          : gradStyle === 'sharp'
+                            ? `linear-gradient(${gradAngle}deg, ${e.target.value} 0% ${gradStop}%, ${gradColor2} ${gradStop}% 100%)`
+                            : `linear-gradient(${gradAngle}deg, ${e.target.value} 0%, ${gradColor2} 100%)`;
+                        setBgColor(css);
+                      }}
+                      style={{ width: '100%', height: '32px', border: 'none', borderRadius: '4px', cursor: 'pointer', backgroundColor: 'transparent' }}
+                    />
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <label style={{ fontSize: '0.72rem', color: 'var(--text-secondary)' }}>Color 2:</label>
+                    <input
+                      type="color" value={gradColor2}
+                      onChange={(e) => {
+                        setGradColor2(e.target.value);
+                        const css = gradStyle === 'radial'
+                          ? `radial-gradient(circle at center, ${gradColor1} 0%, ${e.target.value} 100%)`
+                          : gradStyle === 'sharp'
+                            ? `linear-gradient(${gradAngle}deg, ${gradColor1} 0% ${gradStop}%, ${e.target.value} ${gradStop}% 100%)`
+                            : `linear-gradient(${gradAngle}deg, ${gradColor1} 0%, ${e.target.value} 100%)`;
+                        setBgColor(css);
+                      }}
+                      style={{ width: '100%', height: '32px', border: 'none', borderRadius: '4px', cursor: 'pointer', backgroundColor: 'transparent' }}
+                    />
+                  </div>
+                </div>
+
+                {gradStyle !== 'radial' && (
+                  <div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: 'var(--text-secondary)' }}>
+                      <span>Ángulo:</span>
+                      <span className="font-mono" style={{ color: 'var(--accent)', fontWeight: 700 }}>{gradAngle}°</span>
+                    </div>
+                    <input
+                      type="range" min={0} max={359} step={1} value={gradAngle}
+                      onChange={(e) => {
+                        const v = Number(e.target.value);
+                        setGradAngle(v);
+                        const css = gradStyle === 'sharp'
+                          ? `linear-gradient(${v}deg, ${gradColor1} 0% ${gradStop}%, ${gradColor2} ${gradStop}% 100%)`
+                          : `linear-gradient(${v}deg, ${gradColor1} 0%, ${gradColor2} 100%)`;
+                        setBgColor(css);
+                      }}
+                      style={{ width: '100%', accentColor: 'var(--accent)' }}
+                    />
+                  </div>
+                )}
+
+                {gradStyle === 'sharp' && (
+                  <div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: 'var(--text-secondary)' }}>
+                      <span>Punto de Corte:</span>
+                      <span className="font-mono" style={{ color: 'var(--accent)', fontWeight: 700 }}>{gradStop}%</span>
+                    </div>
+                    <input
+                      type="range" min={5} max={95} step={1} value={gradStop}
+                      onChange={(e) => {
+                        const v = Number(e.target.value);
+                        setGradStop(v);
+                        setBgColor(`linear-gradient(${gradAngle}deg, ${gradColor1} 0% ${v}%, ${gradColor2} ${v}% 100%)`);
+                      }}
+                      style={{ width: '100%', accentColor: 'var(--accent)' }}
+                    />
+                  </div>
+                )}
+
+                <div>
+                  <label style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '0.3rem' }}>Presets:</label>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.3rem' }}>
+                    {GRADIENT_PRESETS.map((grad) => (
+                      <button
+                        key={grad.name}
+                        type="button"
+                        onClick={() => {
+                          setGradColor1(grad.colors[0]);
+                          setGradColor2(grad.colors[grad.colors.length - 1]);
+                          setGradAngle(grad.angle);
+                          setGradStyle('smooth');
+                          setBgColor(`linear-gradient(${grad.angle}deg, ${grad.colors.join(', ')})`);
+                        }}
+                        title={grad.name}
+                        style={{
+                          height: '32px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-subtle)', cursor: 'pointer',
+                          background: `linear-gradient(${grad.angle}deg, ${grad.colors.join(', ')})`
+                        }}
+                      />
+                    ))}
+                  </div>
+                </div>
               </div>
             )}
           </div>
