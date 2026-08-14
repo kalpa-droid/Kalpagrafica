@@ -344,9 +344,10 @@ const PRESETS = [
   { id: 'legal', category: 'Impresión Estándar', name: 'Tamaño Oficio (Legal)', width: 612, height: 1008, unit: '216x356 mm' }
 ];
 
-// Definición de las 7 herramientas de creación
+// Definición de las herramientas de creación
 const TAB_DEFS = [
   { id: 'canvas', label: 'Lienzo', icon: Sliders },
+  { id: 'layers', label: 'Capas', icon: Layers },
   { id: 'text', label: 'Texto', icon: Type },
   { id: 'emojis', label: 'Emojis', icon: Smile },
   { id: 'draw', label: 'Pincel', icon: Brush },
@@ -847,15 +848,18 @@ function ShapeElement({ el, isDrawingMode, setSelectedId, handleDragMove, handle
     id: el.id,
     ...cleanProps,
     dash,
+    visible: !el.hidden,
+    listening: !el.isLocked && !isDrawingMode,
+    draggable: !el.isLocked && !isDrawingMode,
+    onClick: () => !isDrawingMode && !el.isLocked && setSelectedId(el.id),
+    onTap: () => !isDrawingMode && !el.isLocked && setSelectedId(el.id),
+    onDragStart: () => setSelectedId(el.id),
+    onDragMove: (e) => handleDragMove(e, el.id),
+    onDragEnd: (e) => handleDragEnd(e, el.id),
     fill: fillType && fillType !== 'color' ? undefined : el.fill,
     fillPriority: fillPatternImg ? 'pattern' : 'color',
     fillPatternImage: fillPatternImg || undefined,
-    fillPatternScale: hasPatternScaling ? { x: 1 / patternResScale, y: 1 / patternResScale } : undefined,
-    draggable: !isDrawingMode,
-    onClick: () => !isDrawingMode && setSelectedId(el.id),
-    onTap: () => !isDrawingMode && setSelectedId(el.id),
-    onDragMove: (e) => handleDragMove(e, el.id),
-    onDragEnd: (e) => { handleDragEnd(); updateSelected('x', e.target.x()); updateSelected('y', e.target.y()); }
+    fillPatternScale: hasPatternScaling ? { x: 1 / patternResScale, y: 1 / patternResScale } : undefined
   };
 
   if (el.type === 'rect') return <Rect {...commonProps} />;
@@ -1469,7 +1473,7 @@ export default function DesignEditorSection() {
     if (isDrawingMode) setIsDrawing(false);
   };
 
-  // Guías de alineación al arrastrar
+  // Guías de alineación y arrastre estricto por ID
   const handleDragMove = (e, id) => {
     const node = e.target;
     const stageCenterX = preset.width / 2;
@@ -1484,12 +1488,75 @@ export default function DesignEditorSection() {
     if (isNearY) node.y(stageCenterY);
 
     setAlignGuides({ showX: isNearX, showY: isNearY });
-    updateSelected('x', node.x());
-    updateSelected('y', node.y());
   };
 
-  const handleDragEnd = () => {
+  const handleDragEnd = (e, id) => {
     setAlignGuides({ showX: false, showY: false });
+    if (!id || !e || !e.target) return;
+    saveStateToHistory();
+    const nx = Math.round(e.target.x());
+    const ny = Math.round(e.target.y());
+    setElements((prev) =>
+      prev.map((item) => (item.id === id ? { ...item, x: nx, y: ny } : item))
+    );
+  };
+
+  // Guardado permanente de redimensionado/rotación para que el tamaño persista intacto entre Frente y Dorso
+  const handleTransformEnd = (e) => {
+    const node = e.target;
+    if (!node) return;
+    const id = node.id();
+    if (!id) return;
+
+    saveStateToHistory();
+
+    const scaleX = node.scaleX();
+    const scaleY = node.scaleY();
+    const rotation = Math.round(node.rotation());
+    const x = Math.round(node.x());
+    const y = Math.round(node.y());
+
+    // Resetear escala del nodo Konva para evitar doble aplicación al renderizar React
+    node.scaleX(1);
+    node.scaleY(1);
+
+    setElements((prev) =>
+      prev.map((el) => {
+        if (el.id !== id) return el;
+
+        if (el.type === 'rect') {
+          const w = Math.max(10, Math.round((el.width || 100) * scaleX));
+          const h = Math.max(10, Math.round((el.height || 60) * scaleY));
+          node.width(w);
+          node.height(h);
+          return { ...el, x, y, rotation, width: w, height: h, scaleX: 1, scaleY: 1 };
+        }
+        if (el.type === 'circle') {
+          const r = Math.max(5, Math.round((el.radius || 40) * Math.max(scaleX, scaleY)));
+          return { ...el, x, y, rotation, radius: r, scaleX: 1, scaleY: 1 };
+        }
+        if (['star', 'star6', 'star8', 'hexagon', 'octagon', 'diamond', 'shield', 'badge', 'heart', 'triangle'].includes(el.type)) {
+          const r = Math.max(5, Math.round((el.radius || 40) * Math.max(scaleX, scaleY)));
+          const w = Math.max(10, Math.round((el.width || 80) * scaleX));
+          const h = Math.max(10, Math.round((el.height || 80) * scaleY));
+          return { ...el, x, y, rotation, radius: r, width: w, height: h, scaleX: 1, scaleY: 1 };
+        }
+        if (el.type === 'text') {
+          const fs = Math.max(8, Math.round((el.fontSize || 22) * Math.max(scaleX, scaleY)));
+          return { ...el, x, y, rotation, fontSize: fs, scaleX: 1, scaleY: 1 };
+        }
+        if (el.type === 'image') {
+          const w = Math.max(10, Math.round((el.width || 100) * scaleX));
+          const h = Math.max(10, Math.round((el.height || 100) * scaleY));
+          return { ...el, x, y, rotation, width: w, height: h, scaleX: 1, scaleY: 1 };
+        }
+        if (el.type === 'line') {
+          const points = el.points ? el.points.map((p, idx) => (idx % 2 === 0 ? Math.round(p * scaleX) : Math.round(p * scaleY))) : el.points;
+          return { ...el, x, y, rotation, points, scaleX: 1, scaleY: 1 };
+        }
+        return { ...el, x, y, rotation, scaleX: 1, scaleY: 1 };
+      })
+    );
   };
 
   // Antes de exportar, recachea a resolución completa cualquier imagen que tenga
@@ -1760,6 +1827,123 @@ export default function DesignEditorSection() {
   // ---------------------------------------------------------------------
   const renderActiveTabContent = () => (
     <>
+      {activeTab === 'layers' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <h4 style={{ fontSize: '0.85rem', color: 'var(--accent)', fontWeight: 700, margin: 0, textTransform: 'uppercase' }}>
+              Gestor de Capas ({currentSide === 'front' ? 'Frente' : 'Dorso'})
+            </h4>
+            <span style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', fontWeight: 600 }}>
+              {elements.length} elementos
+            </span>
+          </div>
+
+          {elements.length === 0 ? (
+            <div style={{ fontSize: '0.78rem', color: 'var(--text-disabled)', textAlign: 'center', padding: '1.5rem 0' }}>
+              No hay elementos en esta cara. Añadí texto, formas o imágenes para gestionarlos aquí.
+            </div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', maxHeight: '420px', overflowY: 'auto' }}>
+              {elements.map((el, idx) => {
+                const isSelected = el.id === selectedId;
+                let label = el.type === 'text' ? `🔤 "${el.text || 'Texto'}"` :
+                            el.type === 'image' ? '🖼️ Imagen' :
+                            el.type === 'line' ? '🖌️ Trazo Pincel' :
+                            `📐 ${el.type.toUpperCase()}`;
+
+                return (
+                  <div
+                    key={el.id}
+                    onClick={() => {
+                      if (!el.isLocked) setSelectedId(el.id);
+                    }}
+                    style={{
+                      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                      padding: '0.5rem 0.6rem', borderRadius: 'var(--radius-sm)',
+                      border: `1.5px solid ${isSelected ? 'var(--accent)' : 'var(--border-subtle)'}`,
+                      backgroundColor: isSelected ? 'var(--accent-muted)' : 'var(--bg-surface-2)',
+                      cursor: 'pointer', opacity: el.hidden ? 0.45 : 1
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      <span style={{ fontSize: '0.75rem', fontWeight: 600, color: isSelected ? 'var(--accent)' : 'var(--text-primary)' }}>
+                        {label}
+                      </span>
+                    </div>
+
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }} onClick={(e) => e.stopPropagation()}>
+                      {/* Bloquear Capa */}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          saveStateToHistory();
+                          setElements((prev) => prev.map((item) => item.id === el.id ? { ...item, isLocked: !item.isLocked } : item));
+                        }}
+                        title={el.isLocked ? 'Desbloquear capa' : 'Bloquear capa (evita movimiento accidental)'}
+                        style={{
+                          background: 'transparent', border: 'none', cursor: 'pointer', padding: '0.2rem',
+                          color: el.isLocked ? '#F59E0B' : 'var(--text-disabled)', fontSize: '0.8rem'
+                        }}
+                      >
+                        {el.isLocked ? '🔒' : '🔓'}
+                      </button>
+
+                      {/* Visibilidad */}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          saveStateToHistory();
+                          setElements((prev) => prev.map((item) => item.id === el.id ? { ...item, hidden: !item.hidden } : item));
+                        }}
+                        title={el.hidden ? 'Mostrar capa' : 'Ocultar capa'}
+                        style={{
+                          background: 'transparent', border: 'none', cursor: 'pointer', padding: '0.2rem',
+                          color: el.hidden ? '#F87171' : 'var(--text-secondary)', fontSize: '0.8rem'
+                        }}
+                      >
+                        {el.hidden ? '🙈' : '👁️'}
+                      </button>
+
+                      {/* Subir de capa */}
+                      <button
+                        type="button"
+                        onClick={() => { setSelectedId(el.id); moveLayer('up'); }}
+                        disabled={idx === elements.length - 1}
+                        title="Subir de capa"
+                        style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: '0.1rem', color: 'var(--text-secondary)' }}
+                      >
+                        <ArrowUp size={13} />
+                      </button>
+
+                      {/* Bajar de capa */}
+                      <button
+                        type="button"
+                        onClick={() => { setSelectedId(el.id); moveLayer('down'); }}
+                        disabled={idx === 0}
+                        title="Bajar de capa"
+                        style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: '0.1rem', color: 'var(--text-secondary)' }}
+                      >
+                        <ArrowDown size={13} />
+                      </button>
+
+                      {/* Eliminar */}
+                      <button
+                        type="button"
+                        onClick={() => { setSelectedId(el.id); deleteSelected(); }}
+                        title="Eliminar elemento"
+                        style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: '0.2rem', color: '#F87171' }}
+                      >
+                        <Trash2 size={13} />
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
+
       {activeTab === 'canvas' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.2rem' }}>
           {/* Bloque 1: Dimensiones de Lienzo Categorizadas & Orientación */}
@@ -3271,11 +3455,14 @@ export default function DesignEditorSection() {
                 return (
                   <Text
                     key={el.id} id={el.id} {...el}
-                    draggable={!isDrawingMode}
-                    onClick={() => !isDrawingMode && setSelectedId(el.id)}
-                    onTap={() => !isDrawingMode && setSelectedId(el.id)}
+                    visible={!el.hidden}
+                    listening={!el.isLocked && !isDrawingMode}
+                    draggable={!el.isLocked && !isDrawingMode}
+                    onClick={() => !isDrawingMode && !el.isLocked && setSelectedId(el.id)}
+                    onTap={() => !isDrawingMode && !el.isLocked && setSelectedId(el.id)}
+                    onDragStart={() => setSelectedId(el.id)}
                     onDragMove={(e) => handleDragMove(e, el.id)}
-                    onDragEnd={(e) => { handleDragEnd(); updateSelected('x', e.target.x()); updateSelected('y', e.target.y()); }}
+                    onDragEnd={(e) => handleDragEnd(e, el.id)}
                   />
                 );
               }
@@ -3293,17 +3480,32 @@ export default function DesignEditorSection() {
                 );
               }
               if (el.type === 'line') {
-                return <Line key={el.id} id={el.id} {...el} draggable={!isDrawingMode} onClick={() => !isDrawingMode && setSelectedId(el.id)} onTap={() => !isDrawingMode && setSelectedId(el.id)} />;
+                return (
+                  <Line
+                    key={el.id} id={el.id} {...el}
+                    visible={!el.hidden}
+                    listening={!el.isLocked && !isDrawingMode}
+                    draggable={!el.isLocked && !isDrawingMode}
+                    onClick={() => !isDrawingMode && !el.isLocked && setSelectedId(el.id)}
+                    onTap={() => !isDrawingMode && !el.isLocked && setSelectedId(el.id)}
+                    onDragStart={() => setSelectedId(el.id)}
+                    onDragMove={(e) => handleDragMove(e, el.id)}
+                    onDragEnd={(e) => handleDragEnd(e, el.id)}
+                  />
+                );
               }
               if (el.type === 'image') {
                 return (
                   <URLImage
                     key={el.id} id={el.id} image={{ src: el.src }} {...el}
-                    draggable={!isDrawingMode}
-                    onClick={() => !isDrawingMode && setSelectedId(el.id)}
-                    onTap={() => !isDrawingMode && setSelectedId(el.id)}
+                    visible={!el.hidden}
+                    listening={!el.isLocked && !isDrawingMode}
+                    draggable={!el.isLocked && !isDrawingMode}
+                    onClick={() => !isDrawingMode && !el.isLocked && setSelectedId(el.id)}
+                    onTap={() => !isDrawingMode && !el.isLocked && setSelectedId(el.id)}
+                    onDragStart={() => setSelectedId(el.id)}
                     onDragMove={(e) => handleDragMove(e, el.id)}
-                    onDragEnd={(e) => { handleDragEnd(); updateSelected('x', e.target.x()); updateSelected('y', e.target.y()); }}
+                    onDragEnd={(e) => handleDragEnd(e, el.id)}
                   />
                 );
               }
@@ -3313,7 +3515,16 @@ export default function DesignEditorSection() {
             {alignGuides.showX && <Line points={[preset.width / 2, 0, preset.width / 2, preset.height]} stroke="#18f668" strokeWidth={1} dash={[4, 4]} />}
             {alignGuides.showY && <Line points={[0, preset.height / 2, preset.width, preset.height / 2]} stroke="#18f668" strokeWidth={1} dash={[4, 4]} />}
 
-            {!isDrawingMode && <Transformer ref={trRef} />}
+            {!isDrawingMode && (
+              <Transformer
+                ref={trRef}
+                onTransformEnd={handleTransformEnd}
+                boundBoxFunc={(oldBox, newBox) => {
+                  if (newBox.width < 5 || newBox.height < 5) return oldBox;
+                  return newBox;
+                }}
+              />
+            )}
           </Layer>
         </Stage>
       </div>
