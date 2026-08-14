@@ -380,11 +380,21 @@ export const GRADIENT_PRESETS = [
   { name: 'Kalpa Slate', colors: ['#111114', '#1f2421', '#0b1612'], angle: 135 }
 ];
 
-// Función de trazado para recortes con forma, rotación y deformación
+// Función de trazado para recortes con forma, rotación y deformación.
+// FIX: antes se aplicaba translate/rotate/scale al contexto sin guardarlo
+// con ctx.save() ni restaurarlo con ctx.restore(). Como Konva reutiliza el
+// MISMO contexto para dibujar el contenido de la imagen justo después de
+// establecer el clip, esa transformación quedaba "pegada" y también
+// rotaba/escalaba la imagen real (no solo la máscara de recorte),
+// produciendo resultados inesperados o vacíos según la forma y el orden
+// de dibujo. Ahora se aísla con save()/restore() para que el trazado del
+// recorte nunca contamine lo que se dibuja después.
 function drawCustomClipShape(ctx, width, height, clipShape, clipRotation = 0, clipScaleX = 1, clipScaleY = 1) {
+  ctx.save();
   ctx.beginPath();
   if (!clipShape || clipShape === 'none') {
     ctx.rect(0, 0, width, height);
+    ctx.restore();
     return;
   }
 
@@ -510,6 +520,7 @@ function drawCustomClipShape(ctx, width, height, clipShape, clipRotation = 0, cl
       break;
     }
   }
+  ctx.restore();
 }
 
 // Generador de texturas/patrones en canvas con soporte para inclinación, escala, espaciado e imagen propia
@@ -743,6 +754,26 @@ function ShapeElement({ el, isDrawingMode, setSelectedId, handleDragMove, handle
         img.onload = () => setFillPatternImg(img);
         img.src = dataUrl;
       });
+    } else if (el.fillType === 'image' && el.customImgSrc) {
+      // Relleno de "Imagen de Fondo" para la forma: a diferencia de la
+      // Textura (que repite la imagen en mosaico), acá se recorta/ajusta la
+      // imagen a modo "cover" para que llene la forma una sola vez, entera.
+      const w = Math.max(20, Math.round(el.width || (el.radius ? el.radius * 2 : 100)));
+      const h = Math.max(20, Math.round(el.height || (el.radius ? el.radius * 2 : 100)));
+      const img = new window.Image();
+      img.crossOrigin = 'anonymous';
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        canvas.width = w;
+        canvas.height = h;
+        const ctx = canvas.getContext('2d');
+        const scale = Math.max(w / img.width, h / img.height);
+        const dw = img.width * scale;
+        const dh = img.height * scale;
+        ctx.drawImage(img, (w - dw) / 2, (h - dh) / 2, dw, dh);
+        setFillPatternImg(canvas);
+      };
+      img.src = el.customImgSrc;
     } else {
       setFillPatternImg(null);
     }
@@ -2279,6 +2310,18 @@ export default function DesignEditorSection() {
               >
                 🏁 Textura
               </button>
+              <button
+                type="button"
+                onClick={() => updateSelected('fillType', 'image')}
+                style={{
+                  flex: 1, padding: '0.3rem 0.2rem', fontSize: '0.68rem', fontWeight: 700, borderRadius: 'var(--radius-sm)',
+                  backgroundColor: selectedElement.fillType === 'image' ? 'var(--accent)' : 'transparent',
+                  color: selectedElement.fillType === 'image' ? '#000' : 'var(--text-secondary)',
+                  border: 'none', cursor: 'pointer'
+                }}
+              >
+                🖼️ Imagen
+              </button>
             </div>
 
             {(!selectedElement.fillType || selectedElement.fillType === 'color') && (
@@ -2328,6 +2371,37 @@ export default function DesignEditorSection() {
                     style={{ width: '100%', accentColor: 'var(--accent)' }}
                   />
                 </div>
+              </div>
+            )}
+
+            {selectedElement.fillType === 'image' && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
+                <label className="btn btn-secondary btn-sm" style={{ width: '100%', justifyContent: 'center', gap: '0.5rem', cursor: 'pointer' }}>
+                  <ImageIcon size={14} />
+                  <span>{selectedElement.customImgSrc ? 'Cambiar Imagen de Fondo' : 'Subir Imagen de Fondo'}</span>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    style={{ display: 'none' }}
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (!file) return;
+                      const reader = new FileReader();
+                      reader.onload = (ev) => updateSelectedWithHistory('customImgSrc', ev.target.result);
+                      reader.readAsDataURL(file);
+                    }}
+                  />
+                </label>
+                {selectedElement.customImgSrc && (
+                  <img
+                    src={selectedElement.customImgSrc}
+                    alt="Vista previa"
+                    style={{ width: '100%', maxHeight: '90px', objectFit: 'cover', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-subtle)' }}
+                  />
+                )}
+                <span style={{ fontSize: '0.66rem', color: 'var(--text-disabled)' }}>
+                  La imagen se recorta para llenar toda la forma (modo "cubrir").
+                </span>
               </div>
             )}
 
